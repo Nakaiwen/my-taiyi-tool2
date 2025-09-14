@@ -3847,7 +3847,7 @@ const switchToNationalBtn = document.getElementById('switch-to-national-btn');
 if (switchToNationalBtn) {
     switchToNationalBtn.addEventListener('click', () => {
         // 跳轉到國運工具的 tn_index.html
-        window.location.href = '../taiyi-national/tn_index.html';
+        window.location.href = 'taiyi-national/tn_index.html';
     });
 }
 

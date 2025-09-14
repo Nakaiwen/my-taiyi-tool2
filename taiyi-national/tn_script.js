@@ -2010,7 +2010,7 @@ const switchToPersonalBtn = document.getElementById('switch-to-personal-btn');
 if (switchToPersonalBtn) {
     switchToPersonalBtn.addEventListener('click', () => {
         // 跳轉到人道命法工具的 index.html
-        window.location.href = '../taiyi-personal/index.html';
+        window.location.href = '../index.html';
     });
 }
 

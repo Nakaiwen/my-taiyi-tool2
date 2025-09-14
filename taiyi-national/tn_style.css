@@ -122,63 +122,6 @@
     font-weight: bold;
     }
 
-    /* --- 「皇恩星」的專屬樣式 --- */
-    .huang-en-style {
-    font-size: 12px;    /* 【可調整】設定字體大小 */
-    fill: #DAA520;      /* 【可調整】設定字體顏色 (此為金色 GoldenRod) */
-    font-weight: bold;
-    }
-
-    /* 「陽九限」的專屬樣式 */
-    .yang-jiu-style {
-    font-size: 10px;      /* 字體大小 */
-    fill: #006ddbff;      /* 字體顏色 (範例為藍色，可自行修改) */
-    font-weight: bold;
-    }
-
-    /* 「百六限」的專屬樣式 */
-    .bai-liu-style {
-    font-size: 10px;      /* 字體大小 */
-    fill: #bf00b8ff;      /* 字體顏色 (範例為紫色，可自行修改) */
-    font-weight: bold;
-    }
-
-    /* 「大遊真限」的專屬樣式 */
-    .da-you-zhen-xian-style {
-    font-size: 10px;      /* 字體大小 */
-    fill: #501dd3;      /* 字體顏色 (範例為深紅色，可自行修改) */
-    font-weight: bold;
-    }
-
-    /* 「飛馬大限」的專屬樣式 */
-    .fei-ma-da-xian-style {
-    font-size: 10px;      /* 字體大小 */
-    fill: #008a8a;        /* 字體顏色 (範例為藍綠色，可自行修改) */
-    font-weight: bold;
-    }
-
-    /* 「飛祿大限」、「飛祿流年」的共用樣式 */
-   .fei-lu-da-xian-style,
-   .fei-lu-liu-nian-style { /* <-- 在這裡加上一行 */
-    font-size: 10px;
-    fill: #008a00; 
-    font-weight: bold;
-    }
-
-    /* 「飛馬大限」與「飛馬流年」的共用樣式 */
-    .fei-ma-da-xian-style,
-    .fei-ma-liu-nian-style {
-    font-size: 10px;     
-    fill: #008a8a;       
-    font-weight: bold;
-    }
-
-    /* 「黑符」的專屬樣式 */
-    .hei-fu-style {
-    font-size: 10px;      
-    fill: #2d2d2d;     
-    font-weight: bold;  
-    }
 
 
     /* 圓心特殊宮位的文字樣式 */
@@ -249,7 +192,7 @@
 .input-row input,
 .input-row select {
     padding: 6px;
-    font-size: 14px;
+    font-size: 12px;
     border-radius: 4px;
     border: 1px solid #ccc;
     margin-right: 5px; /* 微調右邊間距 */

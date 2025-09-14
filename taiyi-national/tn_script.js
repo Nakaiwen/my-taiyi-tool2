@@ -9,8 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const PALACE_ID_TO_BRANCH = Object.fromEntries(Object.entries(BRANCH_TO_PALACE_ID).map(([k, v]) => [v, k]));
     const VALID_PALACES_CLOCKWISE = [ 'pZi', 'pChou', 'pYin', 'pMao', 'pChen', 'pSi', 'pWu', 'pWei', 'pShen', 'pYou', 'pXu', 'pHai' ];
     const LIFE_PALACE_NAMES = [ '命', '兄', '妻', '孫', '財', '田', '官', '奴', '疾', '福', '貌', '父' ];
-    const AGE_LIMIT_DATA = [ '1-15', '16-20', '21-31', '32-35.5', '35.6-40', '41-45', '46-60', '61-64.5', '64.6-71.5', '71.6-82.5', '82.6-96.5', '96.6-106' ];
-    const ANNUAL_LIMIT_DISPLAY_YEARS = 8; // 顯示當前歲數。您可以隨意修改這個數字 (例如改成 7 或 15)
 
     // ▼▼▼ 盤面的位置設定 ▼▼▼ 
     const RADIAL_LAYOUT = {
@@ -19,9 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
         angleOffset: 6,
         bottomPalaceRadiusOffset: 20, // 控制巳午未宮位文字要再離圓心多遠
         radii: {
-            lineLeft:   { fieldA: 135, fieldB: 175, fieldG: 215 },
-            lineCenter: { fieldC: 135, fieldD: 165, fieldC2: 195, fieldD2: 225 },
-            lineRight:  { fieldE: 135, fieldF: 165, fieldE2: 195, fieldF2: 225 }
+            lineLeft:   { fieldA: 120, fieldB: 165, fieldG: 205 },
+            lineCenter: { fieldC: 120, fieldD: 150, fieldC2: 180, fieldD2: 210 },
+            lineRight:  { fieldE: 120, fieldF: 150, fieldE2: 180, fieldF2: 210 }
         },
         // ▼▼▼ 定義圓心 4 個欄位的座標 ▼▼▼
         centerFields: {
@@ -185,6 +183,44 @@ document.addEventListener('DOMContentLoaded', () => {
     2029: { summer: { date: new Date("2029-06-21T09:47:00"), dayPillar: "壬午", dayBureau: 67, dayJishu: 11434098 }, winter: { date: new Date("2029-12-21T22:13:00"), dayPillar: "乙酉", dayBureau: 34, dayJishu: 11434281 } },
     2030: { summer: { date: new Date("2030-06-21T15:30:00"), dayPillar: "丁亥", dayBureau: 72, dayJishu: 11434463 }, winter: { date: new Date("2030-12-22T04:09:00"), dayPillar: "辛卯", dayBureau: 40, dayJishu: 11434647 } }
     };
+
+    // ▼▼▼ 時區資料庫 (詳細版) ▼▼▼
+    const TIMEZONES = [
+    { text: '(UTC-12:00) 國際換日線西側', value: -12 },
+    { text: '(UTC-11:00) 世界協調時間-11', value: -11 },
+    { text: '(UTC-10:00) 夏威夷', value: -10 },
+    { text: '(UTC-09:00) 阿拉斯加', value: -9 },
+    { text: '(UTC-08:00) 太平洋標準時間(美加)', value: -8 },
+    { text: '(UTC-07:00) 山地標準時間(美加)', value: -7 },
+    { text: '(UTC-06:00) 中部標準時間(美加)', value: -6 },
+    { text: '(UTC-05:00) 東部標準時間(美加)', value: -5 },
+    { text: '(UTC-04:00) 大西洋標準時間(加拿大)', value: -4 },
+    { text: '(UTC-03:30) 紐芬蘭', value: -3.5 },
+    { text: '(UTC-03:00) 巴西利亞, 布宜諾斯艾利斯', value: -3 },
+    { text: '(UTC-02:00) 世界協調時間-2', value: -2 },
+    { text: '(UTC-01:00) 維德角, 亞速', value: -1 },
+    { text: '(UTC+00:00) 倫敦, 里斯本, 卡薩布蘭卡', value: 0 },
+    { text: '(UTC+01:00) 巴黎, 柏林, 羅馬', value: 1 },
+    { text: '(UTC+02:00) 雅典, 開羅, 耶路撒冷', value: 2 },
+    { text: '(UTC+03:00) 莫斯科, 巴格達, 奈洛比', value: 3 },
+    { text: '(UTC+03:30) 德黑蘭', value: 3.5 },
+    { text: '(UTC+04:00) 巴庫, 杜拜, 馬斯喀特', value: 4 },
+    { text: '(UTC+04:30) 喀布爾', value: 4.5 },
+    { text: '(UTC+05:00) 伊斯蘭馬巴德, 喀拉蚩', value: 5 },
+    { text: '(UTC+05:30) 新德里, 孟買, 加爾各答', value: 5.5 },
+    { text: '(UTC+05:45) 加德滿都', value: 5.75 },
+    { text: '(UTC+06:00) 達卡, 努爾-蘇丹', value: 6 },
+    { text: '(UTC+06:30) 仰光', value: 6.5 },
+    { text: '(UTC+07:00) 曼谷, 河內, 雅加達', value: 7 },
+    { text: '(UTC+08:00) 台北, 北京, 新加坡, 伯斯', value: 8 },
+    { text: '(UTC+09:00) 東京, 首爾, 大阪', value: 9 },
+    { text: '(UTC+09:30) 阿得雷德, 達爾文', value: 9.5 },
+    { text: '(UTC+10:00) 雪梨, 墨爾本, 關島', value: 10 },
+    { text: '(UTC+11:00) 海參崴, 索羅門群島', value: 11 },
+    { text: '(UTC+12:00) 威靈頓, 奧克蘭, 斐濟', value: 12 },
+    { text: '(UTC+13:00) 薩摩亞, 努瓜婁發', value: 13 },
+    { text: '(UTC+14:00) 吉里巴斯', value: 14 }
+    ];
 
     // ▼▼▼ 144局的完整資料庫 (已新增「定目」) ▼▼▼
     const BUREAU_DATA = [
@@ -606,13 +642,6 @@ document.addEventListener('DOMContentLoaded', () => {
         '40': '單陰數、無人之數'
     };
 
-    // ▼▼▼ 皇恩星的規則資料庫 ▼▼▼
-    const HUANG_EN_RULES = {
-        '子': '申', '丑': '巳', '寅': '寅', '卯': '亥',
-        '辰': '申', '巳': '巳', '午': '寅', '未': '亥',
-        '申': '申', '酉': '巳', '戌': '寅', '亥': '亥'
-    };
-
     // ▼▼▼ 陽九大限的規則資料庫 ▼▼▼
     const YANG_JIU_RULES = {
     '甲': { startBranch: '午', firstAge: 5 }, '己': { startBranch: '午', firstAge: 5 },
@@ -873,7 +902,7 @@ function addCenterText(text, coords, className) {
 }
 
 // --- 繪圖主函式 (最終整理版) ---
-function renderChart(mainData, palacesData, agesData, sdrData, centerData, outerRingData, xingNianData, yangJiuData, baiLiuData, baiLiuXiaoXianData, daYouZhenXianData, feiLuDaXianData, feiMaDaXianData, feiLuLiuNianData, feiMaLiuNianData, heiFuData) {    
+function renderChart(mainData, palacesData, agesData, sdrData, centerData, outerRingData) {    
     clearDynamicData();
         if (outerRingData) {
             const ringConfig = RADIAL_LAYOUT.outerRing;
@@ -939,7 +968,6 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         // 繪製其他環圈
     addSingleCharRing(palacesData, RADIAL_LAYOUT.lifePalacesRing);
     addSdrRing(sdrData, RADIAL_LAYOUT.sdrRing);
-    addRotatedRingText(agesData, RADIAL_LAYOUT.ageLimitRing);
     
     // ▼▼▼ 繪製月將十二神環圈 ▼▼▼
     if (mainData && mainData.yueJiangData) {
@@ -1005,16 +1033,6 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         if (riPalace) { if (!result[riPalace]) result[riPalace] = []; result[riPalace].push('日'); }
         if (shiPalace) { if (!result[shiPalace]) result[shiPalace] = []; result[shiPalace].push('時'); }
         return result;
-    }
-    function arrangeAgeLimits(arrangedLifePalaces) {
-        const newAgeLimits = new Array(12).fill("");
-        arrangedLifePalaces.forEach((palaceName, index) => {
-            const originalIndex = LIFE_PALACE_NAMES.indexOf(palaceName);
-            if (originalIndex !== -1) {
-                newAgeLimits[index] = AGE_LIMIT_DATA[originalIndex];
-            }
-        });
-        return newAgeLimits;
     }
     function lookupBureauData(bureau) {
         return BUREAU_DATA.find(item => item.局 === bureau) || null;
@@ -1577,7 +1595,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     }
    
     // ▼▼▼ 每次增加星都要更新的函式 ▼▼▼
-    function generateMainChartData(lookupResult, deitiesResult, suanStarsResult, shiWuFuResult, xiaoYouResult, junJiResult, chenJiResult, minJiResult, tianYiResult, diYiResult, siShenResult, feiFuResult, daYouResult, yueJiangData, guiRenData, xingNianData, huangEnResult) {
+    function generateMainChartData(lookupResult, deitiesResult, suanStarsResult, shiWuFuResult, xiaoYouResult, junJiResult, chenJiResult, minJiResult, tianYiResult, diYiResult, siShenResult, feiFuResult, daYouResult, yueJiangData, guiRenData) {
     const chartData = {};
     const allPalaceKeys = Object.keys(RADIAL_LAYOUT.angles);
     allPalaceKeys.forEach(key => {
@@ -1620,7 +1638,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         }
     }
 
-    // ▼▼▼ 新增：處理「定目」 ▼▼▼
+    // ▼▼▼ 處理「定目」 ▼▼▼
     if (lookupResult && lookupResult.定目) {
         const palaceName = lookupResult.定目;
         const palaceId = BRANCH_TO_PALACE_ID[palaceName];
@@ -1782,20 +1800,6 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                 });
             }
     }
-
-    // ▼▼▼ 處理「皇恩星」 ▼▼▼
-    if (huangEnResult) {
-        const palaceId = BRANCH_TO_PALACE_ID[huangEnResult];
-        if (palaceId && chartData[palaceId]) { // <-- 修正點：移除多餘的 .palaces
-            const fields = ['fieldE', 'fieldF', 'fieldE2', 'fieldF2'];
-            for (const field of fields) {
-                if (!chartData[palaceId].lineRight[field]) { // <-- 修正點：移除多餘的 .palaces
-                    chartData[palaceId].lineRight[field] = '皇恩星'; // <-- 修正點：移除多餘的 .palaces
-                    break;
-                }
-            }
-        }
-    }
         
     // 處理「大遊」
     if (daYouResult) {
@@ -1819,10 +1823,10 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     return chartData;
     }
     
+    // =================================================================
+    //  SECTION 4: UI 互動與主流程 (國運版最終修正版)
+    // =================================================================
 
-    // =================================================================
-    //  SECTION 4: UI 互動與主流程 (最終整理版)
-    // =================================================================
     function populateDateSelectors() {
         const yearSelect = document.getElementById('birth-year');
         const monthSelect = document.getElementById('birth-month');
@@ -1834,44 +1838,50 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         for (let i = 0; i <= 23; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; hourSelect.appendChild(option); }
     }
 
+    function populateTimezoneSelector() {
+        const timezoneSelect = document.getElementById('timezone-select');
+        TIMEZONES.forEach(tz => {
+            const option = document.createElement('option');
+            option.value = tz.value;
+            option.textContent = tz.text;
+            if (tz.value === 8) {
+                option.selected = true;
+            }
+            timezoneSelect.appendChild(option);
+        });
+    }
+
     const dayJishuDisplay = document.getElementById('day-jishu-display');
     const hourJishuDisplay = document.getElementById('hour-jishu-display');
     const calculateBtn = document.getElementById('calculate-btn');
     const savePdfBtn = document.getElementById('save-pdf-btn'); 
+    const switchToPersonalBtn = document.getElementById('switch-to-personal-btn');
 
     function prefillTestData() {
-        document.getElementById('birth-year').value = '1976';
-        document.getElementById('birth-month').value = '10';
-        document.getElementById('birth-day').value = '14';
-        document.getElementById('birth-hour').value = '22';
+        const now = new Date();
+        document.getElementById('birth-year').value = now.getFullYear();
+        document.getElementById('birth-month').value = now.getMonth() + 1;
+        document.getElementById('birth-day').value = now.getDate();
+        document.getElementById('birth-hour').value = now.getHours();
     }
 
-    function runCalculation(dataForCalculation, hour, xingNianData) { 
+    function runCalculation(dataForCalculation, hour) { 
         const bureauResult = dataForCalculation.bureauResult;
-        const lookupResult = lookupBureauData(bureauResult);
-        const yearStem = dataForCalculation.yearPillar.charAt(0);
-        const direction = determineDirection(yearStem, dataForCalculation.gender);
-        const lifePalaceId = findPalaceByCounting(dataForCalculation.yearPillar.charAt(1), dataForCalculation.monthPillar.charAt(1), dataForCalculation.hourPillar.charAt(1), direction);
-        const newLifePalacesData = lifePalaceId ? arrangeLifePalaces(lifePalaceId, direction) : [];
-        const newSdrData = calculateSdrPalaces(dataForCalculation, direction);
-        const newAgeLimitData = arrangeAgeLimits(newLifePalacesData);
-        const lunarDateForYueJiang = solarLunar.solar2lunar(
-        parseInt(dataForCalculation.birthDate.split('/')[0], 10),
-        parseInt(dataForCalculation.birthDate.split('/')[1], 10),
-        parseInt(dataForCalculation.birthDate.split('/')[2], 10),hour);
-        const yueJiangData = calculateYueJiang(lunarDateForYueJiang, dataForCalculation.hourPillar.charAt(1));
+        const lookupResult = dataForCalculation.lookupResult;
+        const newLifePalacesData = dataForCalculation.arrangedLifePalaces;
+        const newSdrData = calculateSdrPalaces(dataForCalculation, dataForCalculation.direction);
+        const newAgeLimitData = [];
+        const yueJiangData = calculateYueJiang(solarLunar.solar2lunar(parseInt(dataForCalculation.birthDate.split('/')[0]), parseInt(dataForCalculation.birthDate.split('/')[1]), parseInt(dataForCalculation.birthDate.split('/')[2]), hour), dataForCalculation.hourPillar.charAt(1));
         const outerRingData = calculateOuterRingData(bureauResult, dataForCalculation.hourJishu, lookupResult);
         const guiRenData = calculateGuiRen(dataForCalculation.dayPillar.charAt(0), dataForCalculation.hourPillar.charAt(1), yueJiangData);
-   
 
-        // ▼▼▼ 這邊有新增新星都要增加，注意要寫成dataForCalculation，這個函式是「建築師」 ▼▼▼
         const newMainChartData = generateMainChartData(
-            lookupResult,
-            dataForCalculation.deitiesResult, dataForCalculation.suanStarsResult,
+            lookupResult, dataForCalculation.deitiesResult, dataForCalculation.suanStarsResult,
             dataForCalculation.shiWuFuResult, dataForCalculation.xiaoYouResult,
             dataForCalculation.junJiResult, dataForCalculation.chenJiResult, dataForCalculation.minJiResult,
             dataForCalculation.tianYiResult, dataForCalculation.diYiResult, dataForCalculation.siShenResult, dataForCalculation.feiFuResult,
-            dataForCalculation.daYouResult, yueJiangData, guiRenData, xingNianData, dataForCalculation.huangEnResult);
+            dataForCalculation.daYouResult, yueJiangData, guiRenData
+        );
 
         const centerData = {
              field1: dataForCalculation.suanStarsResult.centerStars[0] || '',
@@ -1882,148 +1892,101 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
 
         renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData); 
 
-        
         const shenPalaceId = Object.keys(newSdrData).find(k => newSdrData[k].includes('身'));
         const shenPalaceBranch = shenPalaceId ? PALACE_ID_TO_BRANCH[shenPalaceId] : '計算失敗';
         
+        let outputText = `\n  局數 : ${bureauResult}\n  命宮 : ${dataForCalculation.lifePalaceId ? PALACE_ID_TO_BRANCH[dataForCalculation.lifePalaceId] + '宮' : '計算失敗'}\n  身宮 : ${shenPalaceBranch}宮`;
         
-        let outputText = ''; 
-        outputText += `  局數 : ${bureauResult}\n  命宮 : ${lifePalaceId ? PALACE_ID_TO_BRANCH[lifePalaceId] + '宮' : '計算失敗'}\n  身宮 : ${shenPalaceBranch}宮`;
-        
-
         if (lookupResult) {
-            // 從資料庫中查找每個算數對應的屬性文字
             const zhuSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.主算] || '';
             const keSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.客算] || '';
             const dingSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.定算] || '';
-
-            // 在數字後面，加上帶有新 class 的 <span> 標籤來顯示屬性
             outputText += `\n  主算 : ${lookupResult.主算} <span class="suan-attribute-style">(${zhuSuanAttr})</span>`;
             outputText += `\n  客算 : ${lookupResult.客算} <span class="suan-attribute-style">(${keSuanAttr})</span>`;
             outputText += `\n  定算 : ${lookupResult.定算} <span class="suan-attribute-style">(${dingSuanAttr})</span>`;
         }
-
+        
         const summaryP = document.getElementById('calculation-summary');
         summaryP.innerHTML = outputText;
-        
     }
-    
-    // (這個calculateBtn.addEventListener 函式就是工廠老闆, runCalculation是老師傅)
-    calculateBtn.addEventListener('click', () => {
-    const year = parseInt(document.getElementById('birth-year').value, 10);
-    const month = parseInt(document.getElementById('birth-month').value, 10);
-    const day = parseInt(document.getElementById('birth-day').value, 10);
-    const hour = parseInt(document.getElementById('birth-hour').value, 10);
-    const birthDateObject = new Date(year, month - 1, day, hour);
-    const precisionResult = calculateJishuAndBureau(birthDateObject);
 
-    // 步驟 2B: 自動「顯示」計算出的日積數與時積數
-    if (precisionResult) {
+    calculateBtn.addEventListener('click', () => {
+        const year = parseInt(document.getElementById('birth-year').value, 10);
+        const month = parseInt(document.getElementById('birth-month').value, 10);
+        const day = parseInt(document.getElementById('birth-day').value, 10);
+        const hour = parseInt(document.getElementById('birth-hour').value, 10);
+        const timezoneOffset = parseInt(document.getElementById('timezone-select').value, 10);
+        const chartType = document.querySelector('input[name="chart-type"]:checked')?.value || 'year';
+        const birthDateObject = new Date(year, month - 1, day, hour);
+        const precisionResult = calculateJishuAndBureau(birthDateObject);
+
+        if (!precisionResult) {
+            alert("無法計算，請確認輸入的日期在 1900-2030 年之間。");
+            return;
+        }
+
         dayJishuDisplay.textContent = precisionResult.dayJishu;
         hourJishuDisplay.textContent = precisionResult.hourJishu;
-    } else {
-        dayJishuDisplay.textContent = '計算失敗';
-        hourJishuDisplay.textContent = '計算失敗';
-    }
-
-    const lunarDate = solarLunar.solar2lunar(year, month, day, hour);
-    // 步驟 3B: 執行「雙重」交叉驗證 (結果會顯示在主控台 F12)
-    if (precisionResult) {
-        console.log("--- 四柱交叉驗證 ---");
-        const baziDayPillar = lunarDate.getDayInGanZhi();
-        console.log("日柱 (solar-lunar.js):", baziDayPillar);
-        console.log("日柱 (基準點推算):", precisionResult.dayPillar);
-        if (baziDayPillar === precisionResult.dayPillar) {
-            console.log("✅ 日柱驗證通過！");
-        } else { console.error("❌ 日柱驗證失敗！"); }
         
-        const baziHourPillar = lunarDate.getTimeInGanZhi();
-        console.log("時柱 (solar-lunar.js):", baziHourPillar);
-        console.log("時柱 (時積數反推):", precisionResult.validatedHourPillar);
-        if (baziHourPillar === precisionResult.validatedHourPillar) {
-            console.log("✅ 時柱驗證通過！");
-        } else { console.error("❌ 時柱驗證失敗！"); }
-        console.log("--------------------");
-    }
+        const lunarDate = solarLunar.solar2lunar(year, month, day, hour);
+        const direction = 'clockwise';
+        const lifePalaceId = 'pMao'; // 暫時預設命宮在卯
+        const arrangedLifePalaces = lifePalaceId ? arrangeLifePalaces(lifePalaceId, direction) : [];
 
-    const yearPillar = lunarDate.getYearInGanZhi();
-    const monthPillar = lunarDate.getMonthInGanZhi();
-    const dayPillar = lunarDate.getDayInGanZhi();
-    const hourPillar = lunarDate.getTimeInGanZhi();
-    
-    document.getElementById('year-pillar-stem').textContent = yearPillar.charAt(0);
-    document.getElementById('year-pillar-branch').textContent = yearPillar.charAt(1);
-    document.getElementById('month-pillar-stem').textContent = monthPillar.charAt(0);
-    document.getElementById('month-pillar-branch').textContent = monthPillar.charAt(1);
-    document.getElementById('day-pillar-stem').textContent = dayPillar.charAt(0);
-    document.getElementById('day-pillar-branch').textContent = dayPillar.charAt(1);
-    document.getElementById('hour-pillar-stem').textContent = hourPillar.charAt(0);
-    document.getElementById('hour-pillar-branch').textContent = hourPillar.charAt(1);
-    
-    const today = new Date();
-    const currentUserAge = today.getFullYear() - year + 1;
-    const startAge = currentUserAge - 20;
-    const endAge = currentUserAge + 40;
-    const yearStemForDirection = lunarDate.getYearInGanZhi().charAt(0);
-    const genderForDirection = document.querySelector('input[name="gender"]:checked').value === 'male' ? '男' : '女';
-    const direction = determineDirection(yearStemForDirection, genderForDirection);
-    const lifePalaceId = findPalaceByCounting(lunarDate.getYearInGanZhi().charAt(1), lunarDate.getMonthInGanZhi().charAt(1), lunarDate.getTimeInGanZhi().charAt(1), direction);
-    const arrangedLifePalaces = lifePalaceId ? arrangeLifePalaces(lifePalaceId, direction) : [];
+        const dataForCalculation = {
+            birthDate: `${year}/${month}/${day}`,
+            yearPillar: lunarDate.getYearInGanZhi(),
+            monthPillar: lunarDate.getMonthInGanZhi(),
+            dayPillar: lunarDate.getDayInGanZhi(),
+            hourPillar: lunarDate.getTimeInGanZhi(),
+            dayJishu: precisionResult.dayJishu,
+            hourJishu: precisionResult.hourJishu,
+            direction: direction,
+            lifePalaceId: lifePalaceId,
+            arrangedLifePalaces: arrangedLifePalaces,
+            bureauResult: precisionResult.calculatedBureau
+        };
 
-
-    // (您把工具都放進了這個工具箱, 然後您把整個工具箱(dataForCalculation)交給了 runCalculation 工人)
-    const dataForCalculation = {
-        birthDate: `${year}/${month}/${day}`,
-        gender: document.querySelector('input[name="gender"]:checked').value === 'male' ? '男' : '女',
-        yearPillar: lunarDate.getYearInGanZhi(),
-        monthPillar: lunarDate.getMonthInGanZhi(),
-        dayPillar: lunarDate.getDayInGanZhi(),
-        hourPillar: lunarDate.getTimeInGanZhi(),
-        dayJishu: precisionResult ? precisionResult.dayJishu : 0,
-        hourJishu: precisionResult ? precisionResult.hourJishu : 0,
-        currentUserAge: currentUserAge,
-        arrangedLifePalaces: arrangedLifePalaces
-    };
-
-    const bureauResult = precisionResult ? precisionResult.calculatedBureau : '計算失敗';
-    const lookupResult = lookupBureauData(bureauResult);
-    dataForCalculation.bureauResult = bureauResult;
-    dataForCalculation.lookupResult = lookupResult;
-    dataForCalculation.deitiesResult = calculateDeities(bureauResult, dataForCalculation.hourPillar.charAt(1));
-    dataForCalculation.suanStarsResult = calculateSuanStars(lookupResult);
-    dataForCalculation.shiWuFuResult = calculateShiWuFu(dataForCalculation.hourJishu);
-    dataForCalculation.xiaoYouResult = calculateXiaoYou(dataForCalculation.hourJishu);
-    dataForCalculation.junJiResult = calculateJunJi(dataForCalculation.hourJishu);
-    dataForCalculation.chenJiResult = calculateChenJi(dataForCalculation.hourJishu);
-    dataForCalculation.minJiResult = calculateMinJi(dataForCalculation.hourJishu);
-    dataForCalculation.tianYiResult = calculateTianYi(dataForCalculation.hourJishu);
-    dataForCalculation.diYiResult = calculateDiYi(dataForCalculation.hourJishu);
-    dataForCalculation.siShenResult = calculateSiShen(dataForCalculation.hourJishu);
-    dataForCalculation.feiFuResult = calculateFeiFu(dataForCalculation.hourJishu);
-    dataForCalculation.daYouResult = calculateDaYou(dataForCalculation.hourJishu)
-
-    runCalculation(dataForCalculation, hour); 
-});
-
-// ▼▼▼ 切換回「人道命法」工具的按鈕邏輯 ▼▼▼
-const switchToPersonalBtn = document.getElementById('switch-to-personal-btn');
-if (switchToPersonalBtn) {
-    switchToPersonalBtn.addEventListener('click', () => {
-        // 跳轉到人道命法工具的 index.html
-        window.location.href = '../index.html';
+        document.getElementById('year-pillar-stem').textContent = dataForCalculation.yearPillar.charAt(0);
+        document.getElementById('year-pillar-branch').textContent = dataForCalculation.yearPillar.charAt(1);
+        document.getElementById('month-pillar-stem').textContent = dataForCalculation.monthPillar.charAt(0);
+        document.getElementById('month-pillar-branch').textContent = dataForCalculation.monthPillar.charAt(1);
+        document.getElementById('day-pillar-stem').textContent = dataForCalculation.dayPillar.charAt(0);
+        document.getElementById('day-pillar-branch').textContent = dataForCalculation.dayPillar.charAt(1);
+        document.getElementById('hour-pillar-stem').textContent = dataForCalculation.hourPillar.charAt(0);
+        document.getElementById('hour-pillar-branch').textContent = dataForCalculation.hourPillar.charAt(1);
+        
+        const lookupResult = lookupBureauData(dataForCalculation.bureauResult);
+        dataForCalculation.lookupResult = lookupResult;
+        dataForCalculation.deitiesResult = calculateDeities(dataForCalculation.bureauResult, dataForCalculation.hourPillar.charAt(1));
+        dataForCalculation.suanStarsResult = calculateSuanStars(lookupResult);
+        dataForCalculation.shiWuFuResult = calculateShiWuFu(dataForCalculation.hourJishu);
+        dataForCalculation.xiaoYouResult = calculateXiaoYou(dataForCalculation.hourJishu);
+        dataForCalculation.junJiResult = calculateJunJi(dataForCalculation.hourJishu);
+        dataForCalculation.chenJiResult = calculateChenJi(dataForCalculation.hourJishu);
+        dataForCalculation.minJiResult = calculateMinJi(dataForCalculation.hourJishu);
+        dataForCalculation.tianYiResult = calculateTianYi(dataForCalculation.hourJishu);
+        dataForCalculation.diYiResult = calculateDiYi(dataForCalculation.hourJishu);
+        dataForCalculation.siShenResult = calculateSiShen(dataForCalculation.hourJishu);
+        dataForCalculation.feiFuResult = calculateFeiFu(dataForCalculation.hourJishu);
+        dataForCalculation.daYouResult = calculateDaYou(dataForCalculation.hourJishu);
+        
+        runCalculation(dataForCalculation, hour); 
     });
-}
 
-// ▼▼▼ 新增：PDF 儲存功能 (使用列印模式) ▼▼▼
-savePdfBtn.addEventListener('click', () => {
-    window.print();
+    if (switchToPersonalBtn) {
+        switchToPersonalBtn.addEventListener('click', () => {
+            window.location.href =  '../index.html';
+        });
+    }
+    savePdfBtn.addEventListener('click', () => {
+        window.print();
+    });
+
+    populateDateSelectors();
+    populateTimezoneSelector();
+    prefillTestData();
+    setTimeout(() => {
+        calculateBtn.click();
+    }, 10);
 });
-
-    // --- 頁面初始化 ---
-populateDateSelectors();
-prefillTestData();
-setTimeout(() => {
-    calculateBtn.click();
-}, 10);
-
-}); // <-- 確保這個是檔案的最後一行

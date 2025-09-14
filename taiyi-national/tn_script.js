@@ -2005,13 +2005,6 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     runCalculation(dataForCalculation, hour); 
 });
 
-    // --- 頁面初始化 ---
-populateDateSelectors();
-prefillTestData();
-setTimeout(() => {
-    calculateBtn.click();
-}, 10);
-
 // ▼▼▼ 切換回「人道命法」工具的按鈕邏輯 ▼▼▼
 const switchToPersonalBtn = document.getElementById('switch-to-personal-btn');
 if (switchToPersonalBtn) {
@@ -2020,11 +2013,17 @@ if (switchToPersonalBtn) {
         window.location.href = '../taiyi-personal/index.html';
     });
 }
-    
 
 // ▼▼▼ 新增：PDF 儲存功能 (使用列印模式) ▼▼▼
 savePdfBtn.addEventListener('click', () => {
     window.print();
 });
+
+    // --- 頁面初始化 ---
+populateDateSelectors();
+prefillTestData();
+setTimeout(() => {
+    calculateBtn.click();
+}, 10);
 
 });

@@ -2026,4 +2026,4 @@ setTimeout(() => {
     calculateBtn.click();
 }, 10);
 
-});
+}); // <-- 確保這個是檔案的最後一行

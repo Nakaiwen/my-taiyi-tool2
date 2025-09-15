@@ -682,6 +682,15 @@ document.addEventListener('DOMContentLoaded', () => {
     '壬': { startBranch: '申', startAge: 1 }, '癸': { startBranch: '申', startAge: 1 }
     };
 
+    // ▼▼▼ 飛馬流年(小限)的規則資料庫 ▼▼▼
+    const FEI_MA_ANNUAL_RULES = {
+    '甲': { startBranch: '亥', startAge: 1 }, '乙': { startBranch: '亥', startAge: 1 },
+    '丙': { startBranch: '寅', startAge: 1 }, '丁': { startBranch: '寅', startAge: 1 },
+    '戊': { startBranch: '午', startAge: 1 }, '己': { startBranch: '午', startAge: 1 },
+    '庚': { startBranch: '巳', startAge: 1 }, '辛': { startBranch: '巳', startAge: 1 },
+    '壬': { startBranch: '申', startAge: 1 }, '癸': { startBranch: '申', startAge: 1 }
+    };
+
     // ▼▼▼ 黑符的規則資料庫 ▼▼▼
     const HEI_FU_RULES = {
     '甲': '寅', '乙': '卯', '丙': '子', '丁': '亥', '戊': '戌',
@@ -1386,7 +1395,7 @@ function renderFortuneChart(ageLabels, scoreData) {
                 x: { // ▼▼▼ 唯一的修改點：新增 X 軸的設定 ▼▼▼
                     ticks: {
                         autoSkip: true, // 允許自動跳過標籤以避免重疊
-                        maxTicksLimit: 15 // 最多顯示約 15 個標籤
+                        maxTicksLimit: 18 // 最多顯示約 15 個標籤
                     }
                 },
                 y: {
@@ -3162,6 +3171,96 @@ function renderFortuneChart(ageLabels, scoreData) {
     // 規則 9: 將最終的行年分數乘以 0.7 倍
     return annualScore * 0.7;
     }
+    // ▼▼▼ 查找「祿馬交馳」年份的函式 ▼▼▼
+    function findLuMaJiaoChiYears(data) {
+    const threeWayMatches = []; // 存放「行年 + 飛祿 + 飛馬」三者重合的年份
+    const twoWayMatches = [];   // 存放「飛祿 + 飛馬」兩者同宮的年份
+
+    // --- 1. 建立「行年」的完整地圖 (歲數 -> 宮位ID) ---
+    const xingNianMap = {};
+    const fullXingNianData = calculateXingNian(data.gender, 1, 120);
+    Object.keys(fullXingNianData).forEach(palaceId => {
+        fullXingNianData[palaceId].ages.forEach(age => {
+            xingNianMap[age] = palaceId;
+        });
+    });
+
+    // --- 2. 建立「飛祿流年」的完整地圖 (借用 calculateFeiLuLiuNian 的核心邏輯) ---
+    const feiLuMap = {};
+    const feiLuRule = FEI_LU_ANNUAL_RULES[data.yearPillar.charAt(0)];
+    if (feiLuRule) {
+        const yangStems = ['甲', '丙', '戊', '庚', '壬'];
+        const isDayStemYang = yangStems.includes(data.dayPillar.charAt(0));
+        const feiLuDirection = ((isDayStemYang && data.gender === '男') || (!isDayStemYang && data.gender === '女')) ? 1 : -1;
+        
+        const feiLuStartPalaceIndex = EARTHLY_BRANCHES.indexOf(feiLuRule.startBranch);
+        const guanLuPalaceIndex = data.arrangedLifePalaces.indexOf('官');
+        
+        let currentAge = feiLuRule.startAge;
+        let currentPalaceIndex = feiLuStartPalaceIndex;
+        // 迴圈推算足夠的年份
+        for (let i = 0; i < 150 && currentAge <= 120; ) {
+            const palaceId = VALID_PALACES_CLOCKWISE[currentPalaceIndex];
+            feiLuMap[currentAge] = palaceId;
+            
+            if (currentPalaceIndex === guanLuPalaceIndex) {
+                feiLuMap[currentAge + 1] = palaceId;
+                feiLuMap[currentAge + 2] = palaceId;
+                currentAge += 3;
+            } else {
+                currentAge += 1;
+            }
+            currentPalaceIndex = (currentPalaceIndex + feiLuDirection + 12) % 12;
+        }
+    }
+
+    // --- 3. 建立「飛馬流年」的完整地圖 (借用 calculateFeiMaLiuNian 的核心邏輯) ---
+    const feiMaMap = {};
+    const feiMaRule = FEI_MA_ANNUAL_RULES[data.hourPillar.charAt(0)];
+    if (feiMaRule) {
+        const yangStems = ['甲', '丙', '戊', '庚', '壬'];
+        const isDayStemYang = yangStems.includes(data.dayPillar.charAt(0));
+        const feiMaDirection = ((isDayStemYang && data.gender === '男') || (!isDayStemYang && data.gender === '女')) ? -1 : 1;
+
+        const feiMaStartPalaceIndex = EARTHLY_BRANCHES.indexOf(feiMaRule.startBranch);
+        const jiEPalaceIndex = data.arrangedLifePalaces.indexOf('疾');
+
+        let currentAge = feiMaRule.startAge;
+        let currentPalaceIndex = feiMaStartPalaceIndex;
+        for (let i = 0; i < 150 && currentAge <= 120; ) {
+            const palaceId = VALID_PALACES_CLOCKWISE[currentPalaceIndex];
+            feiMaMap[currentAge] = palaceId;
+
+            if (currentPalaceIndex === jiEPalaceIndex) {
+                feiMaMap[currentAge + 1] = palaceId;
+                feiMaMap[currentAge + 2] = palaceId;
+                currentAge += 3;
+            } else {
+                currentAge += 1;
+            }
+            currentPalaceIndex = (currentPalaceIndex + feiMaDirection + 12) % 12;
+        }
+    }
+
+    // --- 2. 遍歷 1 到 106 歲，找出所有符合條件的年份 ---
+    for (let age = 1; age <= 106; age++) {
+        const xingNianPalace = xingNianMap[age];
+        const feiLuPalace = feiLuMap[age];
+        const feiMaPalace = feiMaMap[age];
+
+        // 檢查條件
+        if (feiLuPalace && feiMaPalace && feiLuPalace === feiMaPalace) {
+            // 如果祿馬同宮，再檢查行年是否也同宮
+            if (xingNianPalace && xingNianPalace === feiLuPalace) {
+                threeWayMatches.push(age);
+            } else {
+                twoWayMatches.push(age);
+            }
+        }
+    }
+    
+    return { threeWay: threeWayMatches, twoWay: twoWayMatches };
+    }
 
     // ▼▼▼ 分析「強旺建議」的函式 (已整合遞補邏輯) ▼▼▼
     function analyzeStrengthSuggestions(chartModel) {
@@ -3716,6 +3815,7 @@ function renderFortuneChart(ageLabels, scoreData) {
         const yangJiuForDisplay = findCurrentYangJiuForDisplay(dataForCalculation.yangJiuResult, dataForCalculation.currentUserAge);
         const baiLiuForDisplay = findCurrentBaiLiuForDisplay(dataForCalculation.baiLiuResult, dataForCalculation.currentUserAge);
         const daYouForDisplay = findCurrentAndNextDaYouForDisplay(dataForCalculation.daYouZhenXianResult, dataForCalculation.currentUserAge);
+        
 
 
         // ▼▼▼ 這邊有新增新星都要增加，注意要寫成dataForCalculation，這個函式是「建築師」 ▼▼▼
@@ -3744,7 +3844,7 @@ function renderFortuneChart(ageLabels, scoreData) {
         const shouQiResult = dataForCalculation.shouQiResult;
         const birthHexagramResult = dataForCalculation.birthHexagramResult;
         const liYeHexagramResult = dataForCalculation.liYeHexagramResult;
-        const annualHexagramResult = dataForCalculation.annualHexagramResult;    
+        const annualHexagramResult = dataForCalculation.annualHexagramResult;  
     
         
         // 2. 按照您想要的順序，重新組合 outputText 字串
@@ -3818,12 +3918,11 @@ function renderFortuneChart(ageLabels, scoreData) {
         strengthInfoDiv.innerHTML = formatStrengthInfo(dataForCalculation.strengthSuggestions, newLifePalacesData, newSdrData);
         }
 
-
         // ▼▼▼ 更新：現在這裡只負責觸發預設的圖表更新 ▼▼▼
         document.querySelector('input[name="chart-mode"][value="mingGong"]').checked = true; // 預設選中命宮
         updateChart(); 
 
-        // 1. 檢查是否為女性命盤
+        // 命宮補充：檢查是否為女性命盤
         if (dataForCalculation.gender === '女') {
         const lifePalaceShortName = '命';
         const lifePalaceFullName = '命宮';
@@ -3884,9 +3983,32 @@ function renderFortuneChart(ageLabels, scoreData) {
         }
         }
 
+        // 祿馬交馳：呼叫新的分析引擎
+        const luMaResults = findLuMaJiaoChiYears(dataForCalculation);
+        // 祿馬交馳：將結果顯示在新的 div 中
+        const luMaInfoDiv = document.getElementById('luma-info');
+        if (luMaInfoDiv) {
+        let html = '<strong>祿馬交馳年份：</strong>';
+        let found = false;
+        
+        if (luMaResults.threeWay.length > 0) {
+            html += `<br>三合（行年+祿+馬）：${luMaResults.threeWay.join('歲、')}歲`;
+            found = true;
+        }
+        if (luMaResults.twoWay.length > 0) {
+            html += `<br>雙合（祿+馬）：${luMaResults.twoWay.join('歲、')}歲`;
+            found = true;
+        }
+        
+        if (!found) {
+            html += ' 此盤無';
+        }
+        
+        luMaInfoDiv.innerHTML = html;
+        }
+
     }
 
-    
 
     // ▼▼▼ 更新能量趨勢圖的專屬函式 (最終穩定版) ▼▼▼
     let currentChartData = {}; 

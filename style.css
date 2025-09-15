@@ -216,7 +216,7 @@
 
 /* 1. 控制「整個左欄」的寬度 */
 .controls-column {
-    flex: 0 0 330px;  /* 這是在Flexbox佈局中設定欄位寬度為 400px，您可以調整這個數值 */
+    flex: 0 0 300px;  /* 這是在Flexbox佈局中設定欄位寬度為 400px，您可以調整這個數值 */
 }
 
 /* 2. 控制「資訊容器」的整體外觀 */
@@ -249,7 +249,7 @@
 .input-row input,
 .input-row select {
     padding: 6px;
-    font-size: 14px;
+    font-size: 12px;
     border-radius: 4px;
     border: 1px solid #ccc;
     margin-right: 5px; /* 微調右邊間距 */
@@ -550,7 +550,7 @@
 #fortune-chart-container {
     width: 100%;  /* 【可調整】您可以自由設定想要的高度，例如 350px */
     height: 300px; 
-    max-width: 680px; /* 【可調整】新增此行，限制圖表的最大寬度 */     
+    max-width: 650px; /* 【可調整】新增此行，限制圖表的最大寬度 */     
     max-height: none;
     padding: 20px;
     box-sizing: border-box;

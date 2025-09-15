@@ -510,6 +510,12 @@
     margin-top: 4px;   /* 星曜條目之間的微小間距 */
 }
 
+/* 女性命宮專屬描述的樣式 */
+.star-palace-description-female {
+    font-size: 12px;
+    color: #444; /* 使用不同的顏色 (範例為中紫色) 以作區分 */
+}
+
 /* 強旺建議區塊的樣式 */
 .strength-item {
     margin-bottom: 10px;
@@ -543,7 +549,8 @@
 /* 專門設定「人生能量趨勢圖」容器的高度 */
 #fortune-chart-container {
     width: 100%;  /* 【可調整】您可以自由設定想要的高度，例如 350px */
-    height: 300px;      
+    height: 300px; 
+    max-width: 680px; /* 【可調整】新增此行，限制圖表的最大寬度 */     
     max-height: none;
     padding: 20px;
     box-sizing: border-box;

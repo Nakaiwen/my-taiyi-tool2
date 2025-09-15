@@ -803,6 +803,26 @@ document.addEventListener('DOMContentLoaded', () => {
     '客參':   { '命宮': '你成功的關鍵在於找到對的「貴人」並與之合作，尤其適合離開家鄉往外地發展。建議你多結交有經驗的前輩或有資源的夥伴，在商業領域，借力使力將是你最快的成功途徑。', '兄弟宮': '你的手足數量2位，可能存在同父異母或同母異父的非典型連結，或是爸媽有認義子之類。', '夫妻宮': '主入贅妻家，伴侶方的影響力較大。同時，這也提醒你要注意感情中的界線，避免陷入複雜的多角關係。', '子孫宮': '你的子女緣分可能會來得較晚，或是有非典型的家庭連結。有得二子的潛力。', '財帛宮': '你的財富來自於人脈與外部資源。積極與外人合作，尤其在貿易或商業領域，將是你的致富之道。', '田宅宮': '離開家鄉發展對你更有利。同時，你也容易透過貴人的幫助來獲得理想的居住環境或不動產。', '官祿宮': '你的事業需要依靠貴人或加入一個強大的平台才能成功。單打獨鬥可能比較辛苦，找到對的夥伴或組織是你的成功關鍵。', '奴僕宮': '你的人際關係非常好，能同時獲得下屬的效力和朋友的扶持，形成一個互助互利的良好循環。', '疾厄宮': '你的健康重點在於肝臟和眼睛的保養，建議避免熬夜和過度用眼。同時，在外地時要特別注意飲食衛生和環境適應，預防疾病。', '福德宮': '你的福氣在遠方。建議你多往外地發展或旅行，離開家鄉更能讓你開闊眼界，並從中獲得實質的利益與人生的樂趣。', '相貌宮': '你的相貌輪廓分明，骨骼清奇，並且言辭表達非常犀利、一針見血。', '父母宮': '你的家庭連結比較多元，除了原生父母，可能還會認乾爹、乾媽來擴展你的家庭支持網絡。' }
     };
 
+    // ▼▼▼ 星曜命宮代表意義資料庫 (女性 - 命宮專用) ▼▼▼
+    const STAR_PALACE_DESCRIPTIONS_FEMALE = {
+    '小遊':   { '命宮': '你的個性較為率直，不追求浮華的裝飾，偏好簡潔。' },
+    '計神':   { '命宮': '你的個性比較急，有時容易捲入口舌是非。但子女緣分佳，且天性勤勞，即使年長也樂於操持。' },
+    '文昌':   { '命宮': '你可能出身於書香世家，天生氣質文雅、品德賢淑。這是一個能成為「貴夫人」或「貴人母」的訊號，代表聰慧與心靈手巧。' },
+    '始擊':   { '命宮': '你擁有不依靠他人、獨立自強的堅毅性格。' },
+    '時五福': { '命宮': '你天生福澤深厚，雖然過程可能有些辛勞，但晚年必能安享福壽。' },
+    '君基':   { '命宮': '你的性格沉靜有德，聰明且富有智慧，是能夠兼顧家庭與事業的賢內助。' },
+    '臣基':   { '命宮': '你天生帶有溫柔隨和的品德，能夠輔助他人並取得極高的成就。' },
+    '民基':   { '命宮': '你具備管理和領導的才能，有機會在家庭或事業中掌握權力。' },
+    '天乙':   { '命宮': '你的個性剛毅正直，有自己獨特的原則，喜歡保持內心的清靜。' },
+    '地乙':   { '命宮': '你的性格嫻靜有德，同時也樂於主導和管理事務。' },
+    '四神':   { '命宮': '你天生愛乾淨，可能帶有精神上的潔癖，是一位賢慧淑德的女性。' },
+    '飛符':   { '命宮': '你的人生可能是先苦後甘的類型。年輕時可能比較辛勞，或需要輔助他人，但晚年將能享受到豐厚的福氣。' },
+    '主大':   { '命宮': '你的性格聰明伶俐，樂於助人，是團隊中不可或缺的核心人物。' },
+    '主參':   { '命宮': '你具備管理家庭與事業的能力，是天生的掌權者。' },
+    '客大':   { '命宮': '你心地善良且聰慧，有幫夫運。感情或事業的緣分可能在遠方，有機會遠嫁他鄉，晚年可能追求精神層面的平靜。' },
+    '客參':   { '命宮': '你的緣分在外地，容易發展異地戀情或遠嫁他鄉。' }
+    };
+
 
 
 
@@ -817,8 +837,6 @@ if (svgPlate) { svgPlate.appendChild(dynamicGroup); }
 let pathCounter = 0;
 
 // --- 所有的繪圖「工具函式」都集中在這裡 ---
-// ▼▼▼ 繪製放射狀文字的工具函式 (可翻轉版) ▼▼▼
-// ▼▼▼ 繪製放射狀文字的工具函式 (可針對特定宮位翻轉) ▼▼▼
 // ▼▼▼ 繪製放射狀文字的工具函式 (可翻轉、可調整距離版) ▼▼▼
 function addRadialText(palaceId, angle, startRadius, text, className) {
     
@@ -1329,8 +1347,8 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     }
 }
 
-// ▼▼▼ 繪製運勢趨勢圖的函式 ▼▼▼
-let fortuneChartInstance = null; // 用來存放圖表實例
+// ▼▼▼ 繪製運勢趨勢圖的函式 (最終穩定版) ▼▼▼
+let fortuneChartInstance = null;
 function renderFortuneChart(ageLabels, scoreData) {
     const ctx = document.getElementById('fortune-chart').getContext('2d');
 
@@ -1338,12 +1356,22 @@ function renderFortuneChart(ageLabels, scoreData) {
         fortuneChartInstance.destroy();
     }
 
+    // 根據傳入的數據，動態決定圖表標題
+    const selectedMode = document.querySelector('input[name="chart-mode"]:checked')?.value || 'mingGong';
+    let chartTitle = '人生能量趨勢';
+    switch(selectedMode) {
+        case 'annual': chartTitle = '人生能量趨勢 (行年)'; break;
+        case 'daYou': chartTitle = '人生能量趨勢 (大遊真限)'; break;
+        case 'baiLiu': chartTitle = '人生能量趨勢 (百六大限)'; break;
+        case 'yangJiu': chartTitle = '人生能量趨勢 (陽九限)'; break;
+    }
+
     fortuneChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
             labels: ageLabels,
             datasets: [{
-                label: '人生能量趨勢',
+                label: chartTitle, // 使用動態標題
                 data: scoreData,
                 borderColor: 'rgba(75, 192, 192, 1)',
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -1353,9 +1381,16 @@ function renderFortuneChart(ageLabels, scoreData) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             scales: {
+                x: { // ▼▼▼ 唯一的修改點：新增 X 軸的設定 ▼▼▼
+                    ticks: {
+                        autoSkip: true, // 允許自動跳過標籤以避免重疊
+                        maxTicksLimit: 15 // 最多顯示約 15 個標籤
+                    }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: false // 允許 Y 軸從負數開始，以顯示完整的負分
                 }
             }
         }
@@ -2831,6 +2866,7 @@ function renderFortuneChart(ageLabels, scoreData) {
                 if (details.length > 0) {
                     starLine += `(<span class="star-details">${details.join(' / ')}</span>)`;
                 }
+                
                 const description = STAR_PALACE_DESCRIPTIONS[star.name]?.[palaceFullName];
                 if (description && description !== '待完成') {
                     starLine += `：<span class="star-palace-description">${description}</span>`;
@@ -2968,6 +3004,8 @@ function renderFortuneChart(ageLabels, scoreData) {
         if (palaceData.patterns.length > 0) { score *= patternMultiplier; }
         return score;
     };
+
+    
     
     const hourBranch = hourPillar.charAt(1);
     const timePalaceId = BRANCH_TO_PALACE_ID[hourBranch];
@@ -2987,6 +3025,144 @@ function renderFortuneChart(ageLabels, scoreData) {
     }
     return scores;
     }
+    // ▼▼▼ 計算「單一宮位」基礎分數的通用輔助函式 (獨立版) ▼▼▼
+    function getBaseScoreForPalace(palaceId, chartModel, lookupResult) {
+    const palaceData = chartModel[palaceId];
+    if (!palaceData) return 0;
+    
+    let score = 0;
+    const palaceBranch = PALACE_ID_TO_BRANCH[palaceId];
+    
+    let allStarsInPalace = [...Object.values(palaceData.stars)];
+    const guestPalaceId = Object.keys(JI_GONG_MAP).find(key => JI_GONG_MAP[key] === palaceId);
+    if (guestPalaceId && chartModel[guestPalaceId]) {
+        allStarsInPalace.push(...Object.values(chartModel[guestPalaceId].stars));
+    }
+    if (lookupResult && chartModel['pCenter']?.stars) {
+        const zhuSuan = lookupResult.主算; const keSuan = lookupResult.客算;
+        const centerStars = Object.values(chartModel['pCenter'].stars);
+        centerStars.forEach(star => {
+            let hostBranch = null;
+            if (['主大', '主參'].includes(star.name) && zhuSuan && CENTER_PALACE_JI_GONG_RULES['主算'][zhuSuan]) {
+                hostBranch = CENTER_PALACE_JI_GONG_RULES['主算'][zhuSuan][star.name];
+            } else if (['客大', '客參'].includes(star.name) && keSuan && CENTER_PALACE_JI_GONG_RULES['客算'][keSuan]) {
+                hostBranch = CENTER_PALACE_JI_GONG_RULES['客算'][keSuan][star.name];
+            }
+            if (hostBranch && BRANCH_TO_PALACE_ID[hostBranch] === palaceId) {
+                allStarsInPalace.push(star);
+            }
+        });
+    }
+    
+    let coreStars = allStarsInPalace.filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name));
+
+    if (coreStars.length === 0) {
+        const oppositePalaceId = OPPOSITE_PALACE_MAP[palaceId];
+        if (oppositePalaceId && chartModel[oppositePalaceId]) {
+            let borrowedStars = [...Object.values(chartModel[oppositePalaceId].stars)];
+            const oppositeGuestPalaceId = Object.keys(JI_GONG_MAP).find(key => JI_GONG_MAP[key] === oppositePalaceId);
+            if (oppositeGuestPalaceId && chartModel[oppositeGuestPalaceId]) {
+                borrowedStars.push(...Object.values(chartModel[oppositeGuestPalaceId].stars));
+            }
+            coreStars = borrowedStars.filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name));
+        }
+    }
+    
+    if (coreStars.length === 0 && palaceBranch) {
+        const trinePartners = SAN_HE_MAP[palaceBranch];
+        if (trinePartners) {
+            let trineStars = [];
+            trinePartners.forEach(partnerBranch => {
+                const partnerPalaceId = BRANCH_TO_PALACE_ID[partnerBranch];
+                if (partnerPalaceId && chartModel[partnerPalaceId]) {
+                    trineStars.push(...Object.values(chartModel[partnerPalaceId].stars));
+                    const partnerGuestPalaceId = Object.keys(JI_GONG_MAP).find(key => JI_GONG_MAP[key] === partnerPalaceId);
+                    if (partnerGuestPalaceId && chartModel[partnerGuestPalaceId]) {
+                        trineStars.push(...Object.values(chartModel[partnerGuestPalaceId].stars));
+                    }
+                }
+            });
+            coreStars = trineStars.filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name));
+        }
+    }
+
+    coreStars.forEach(star => {
+        let starBaseScore = 0;
+        const starName = star.name;
+        const starBranchForRating = PALACE_ID_TO_BRANCH[guestPalaceId] || palaceBranch;
+        
+        if (STAR_PROPERTIES[starName]) { starBaseScore += (SCORE_RULES.luckScores[STAR_PROPERTIES[starName].luck] || 0); }
+        if (STAR_RATING_DATA[starName] && STAR_RATING_DATA[starName][starBranchForRating]) { starBaseScore += (RATING_SCORES[STAR_RATING_DATA[starName][starBranchForRating]] || 0); }
+        if (star.strength) { starBaseScore += SCORE_RULES.strengthBonus; }
+        if (star.huaYao && star.huaYao.some(role => ['天元祿主', '天元官星', '地元福星'].includes(role))) {
+            starBaseScore *= SCORE_RULES.specialHuaYaoMultiplier;
+        }
+        score += starBaseScore;
+        if (star.huaYao && star.huaYao.length > 0) {
+            star.huaYao.forEach(yaoName => {
+                if (yaoName === '忌星' || yaoName === '鬼星') {
+                    score -= SCORE_RULES.huaYaoScore;
+                } else if (!['天元祿主', '天元官星', '地元福星'].includes(yaoName)) {
+                    score += SCORE_RULES.huaYaoScore;
+                }
+            });
+        }
+    });
+
+    if (coreStars.some(star => star.name === '皇恩星')) { score *= SCORE_RULES.huangEnMultiplier; }
+    if (palaceData.patterns.length > 0) { score *= SCORE_RULES.patternMultiplier; }
+    return score;
+    }
+    // ▼▼▼ 計算指定歲數的「行年天干」▼▼▼
+    function findXingNianGanZhi(birthYearGan, gender, age) {
+    const startIndex = HEAVENLY_STEMS.indexOf(birthYearGan);
+    if (startIndex === -1) return null;
+    const direction = gender === '男' ? 1 : -1;
+    const offset = (age - 1) * direction;
+    const finalIndex = (startIndex + offset + 100) % 10;
+    return HEAVENLY_STEMS[finalIndex];
+    }
+    // ▼▼▼ 計算「單一年份行年分數」的專屬函式 ▼▼▼
+    function calculateAnnualScore(age, chartModel, data) {
+    // 1. 找到該歲數的行年宮位
+    const ageToAnnualPalaceMap = {};
+    const fullXingNianData = calculateXingNian(data.gender, 1, 120);
+    Object.keys(fullXingNianData).forEach(palaceId => {
+        fullXingNianData[palaceId].ages.forEach(a => { ageToAnnualPalaceMap[a] = palaceId; });
+    });
+    const annualPalaceId = ageToAnnualPalaceMap[age];
+    if (!annualPalaceId) return 0;
+    
+    // 2. 取得行年宮位的基礎分數 (使用我們現有的輔助函式)
+    let annualScore = getBaseScoreForPalace(annualPalaceId, chartModel, data.lookupResult);
+    
+    // 3. 應用專屬於「行年」的特殊規則
+    // 規則 4: 處理特殊的「年干化曜」加權
+    const annualStem = findXingNianGanZhi(data.yearPillar.charAt(0), data.gender, age);
+    const annualHuaYaoRule = NIAN_GAN_HUA_YAO[annualStem];
+    if (annualHuaYaoRule) {
+        const starsInAnnualPalace = Object.keys(chartModel[annualPalaceId]?.stars || {});
+        if (Object.values(annualHuaYaoRule).some(starList => starList.some(star => starsInAnnualPalace.includes(star)))) {
+            annualScore *= 1.5;
+        }
+    }
+    
+    // 規則 5 & 6: 處理皇恩星/飛祿/飛馬/黑符的加減分
+    const hasBonusStar = ['皇恩星'].some(s => Object.keys(chartModel[annualPalaceId]?.stars || {}).includes(s)) || 
+                         data.feiLuLiuNianResult.some(item => item.palaceId === annualPalaceId && item.text.includes(age)) || 
+                         data.feiMaLiuNianResult.some(item => item.palaceId === annualPalaceId && item.text.includes(age));
+
+    if (hasBonusStar) {
+        annualScore += 50;
+    }
+    if (data.heiFuResult[annualPalaceId]?.includes(age)) {
+        annualScore -= 50;
+    }
+    
+    // 規則 9: 將最終的行年分數乘以 0.7 倍
+    return annualScore * 0.7;
+    }
+
     // ▼▼▼ 分析「強旺建議」的函式 (已整合遞補邏輯) ▼▼▼
     function analyzeStrengthSuggestions(chartModel) {
     const suggestions = [];
@@ -3628,12 +3804,8 @@ function renderFortuneChart(ageLabels, scoreData) {
         // --- 更新下方資訊區，現在只顯示星曜強旺和化曜 ---
         const starStrengthInfoDiv = document.getElementById('star-strength-info');
         if (starStrengthInfoDiv) {
-        starStrengthInfoDiv.innerHTML = formatBottomInfoBox(dataForCalculation.chartModel, newLifePalacesData, newSdrData);
+        starStrengthInfoDiv.innerHTML = formatBottomInfoBox(dataForCalculation.chartModel, newLifePalacesData, newSdrData, dataForCalculation.gender);
         }
-        
-        // ▼▼▼ 更新：現在這裡只負責觸發預設的圖表更新 ▼▼▼
-        document.querySelector('input[name="chart-mode"][value="mingGong"]').checked = true; // 預設選中命宮
-        updateChart(); 
         
         // 解厄建議區塊 ▼▼▼
         const remedyInfoDiv = document.getElementById('remedy-info');
@@ -3647,59 +3819,183 @@ function renderFortuneChart(ageLabels, scoreData) {
         }
 
 
+        // ▼▼▼ 更新：現在這裡只負責觸發預設的圖表更新 ▼▼▼
+        document.querySelector('input[name="chart-mode"][value="mingGong"]').checked = true; // 預設選中命宮
+        updateChart(); 
+
+        // 1. 檢查是否為女性命盤
+        if (dataForCalculation.gender === '女') {
+        const lifePalaceShortName = '命';
+        const lifePalaceFullName = '命宮';
+        const lifePalaceIndex = newLifePalacesData.indexOf(lifePalaceShortName);
+        
+        if (lifePalaceIndex !== -1) {
+            const lifePalaceId = VALID_PALACES_CLOCKWISE[lifePalaceIndex];
+            const palaceBranch = PALACE_ID_TO_BRANCH[lifePalaceId];
+            
+            // 2. 重新計算一次「命宮」最終會顯示哪些星曜 (包含所有借宮邏輯)
+            let allStarsInLifePalace = [...Object.values(dataForCalculation.chartModel[lifePalaceId].stars)];
+            const guestPalaceId = Object.keys(JI_GONG_MAP).find(key => JI_GONG_MAP[key] === lifePalaceId);
+            if (guestPalaceId && dataForCalculation.chartModel[guestPalaceId]) {
+                allStarsInLifePalace.push(...Object.values(dataForCalculation.chartModel[guestPalaceId].stars));
+            }
+            let coreStarsInLifePalace = allStarsInLifePalace.filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name) && star.name !== '皇恩星');
+            if (coreStarsInLifePalace.length === 0) {
+                const oppositePalaceId = OPPOSITE_PALACE_MAP[lifePalaceId];
+                if (oppositePalaceId && dataForCalculation.chartModel[oppositePalaceId]) {
+                    coreStarsInLifePalace = Object.values(dataForCalculation.chartModel[oppositePalaceId].stars).filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name) && star.name !== '皇恩星');
+                }
+            }
+            if (coreStarsInLifePalace.length === 0) {
+                const trinePartners = SAN_HE_MAP[palaceBranch];
+                if (trinePartners) {
+                    let trineStars = [];
+                    trinePartners.forEach(partnerBranch => {
+                        const partnerPalaceId = BRANCH_TO_PALACE_ID[partnerBranch];
+                        if (partnerPalaceId && dataForCalculation.chartModel[partnerPalaceId]) {
+                            trineStars.push(...Object.values(dataForCalculation.chartModel[partnerPalaceId].stars));
+                        }
+                    });
+                    coreStarsInLifePalace = trineStars.filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name) && star.name !== '皇恩星');
+                }
+            }
+
+            // 3. 找到下方資訊區中，已經畫好的「命宮」區塊
+            const palaceBlocks = document.querySelectorAll('.palace-info-block');
+            palaceBlocks.forEach(block => {
+                const titleElement = block.querySelector('strong');
+                if (titleElement && titleElement.textContent.startsWith(lifePalaceFullName)) {
+                    
+                    // 4. 為命宮中的每一顆星，加上女性專屬的描述
+                    coreStarsInLifePalace.forEach(star => {
+                        const description = STAR_PALACE_DESCRIPTIONS_FEMALE[star.name]?.[lifePalaceFullName];
+                        if (description && description !== '待完成') {
+                            const starEntry = Array.from(block.querySelectorAll('.star-entry')).find(entry => entry.textContent.startsWith(star.name));
+                            if (starEntry) {
+                                const femaleDescSpan = document.createElement('span');
+                                femaleDescSpan.className = 'star-palace-description-female';
+                                femaleDescSpan.innerHTML = `${description}`;
+                                starEntry.appendChild(femaleDescSpan);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        }
+
     }
+
     
-    // ▼▼▼ 更新趨勢圖的專屬updateChart 函式 (已修正計分邏輯) ▼▼▼
+
+    // ▼▼▼ 更新能量趨勢圖的專屬函式 (最終穩定版) ▼▼▼
     let currentChartData = {}; 
     function updateChart() {
+        console.log("--- 進入 updateChart 函式 ---");
     const selectedMode = document.querySelector('input[name="chart-mode"]:checked').value;
+        console.log("當前選擇的模式:", selectedMode);
     
-    let limitData = [];
     let scores = [];
     let labels = [];
 
-    // 1. 根據選擇的模式，準備對應的大限列表
-    switch(selectedMode) {
-        case 'daYou':
-            limitData = currentChartData.daYouZhenXianResult;
-            break;
-        case 'baiLiu':
-            limitData = currentChartData.baiLiuResult;
-            break;
-        case 'yangJiu':
-            limitData = currentChartData.yangJiuResult;
-            break;
-        default: // 'mingGong' (限例太乙)
-            const ageLimits = arrangeAgeLimits(currentChartData.arrangedLifePalaces);
-            limitData = ageLimits.map((ageRange, index) => ({
-                palaceId: VALID_PALACES_CLOCKWISE[index],
-                ageRange: ageRange
-            })).filter(item => item.ageRange);
-            break;
-    }
-    
-    // 2. 根據不同的大限列表，重新計算對應宮位的分數
-    // 我們需要一個簡化版的計分函式，它只計算基礎分數，不包含時宮加權
-    const getSimpleScore = (palaceId) => {
-        const tempScores = calculateFortuneScores(currentChartData.chartModel, currentChartData.arrangedLifePalaces, [], currentChartData.hourPillar, currentChartData.lookupResult);
+    // --- 內部輔助函式：用來獲取任何一個宮位的「基礎分數」---
+    // 它的原理是：呼叫一次完整的計分引擎，然後只從結果中挑出我們需要的那一個宮位的分數
+    const getSimpleScoreForPalace = (palaceId) => {
+        // 我們傳入一個空陣列給 ageLimitData，告訴計分引擎「不要」計算時宮加權
+        const allPalaceBaseScores = calculateFortuneScores(currentChartData.chartModel, currentChartData.arrangedLifePalaces, [], currentChartData.hourPillar, currentChartData.lookupResult);
         const palaceIndex = VALID_PALACES_CLOCKWISE.indexOf(palaceId);
-        return palaceIndex !== -1 ? tempScores[palaceIndex] : 0;
+        return palaceIndex !== -1 ? allPalaceBaseScores[palaceIndex] : 0;
     };
 
-    if (selectedMode === 'mingGong') {
-        labels = limitData.map(item => item.ageRange);
-        scores = calculateFortuneScores(currentChartData.chartModel, currentChartData.arrangedLifePalaces, labels, currentChartData.hourPillar, currentChartData.lookupResult);
+    // --- 根據選擇的模式，準備對應的圖表資料 ---
+    if (selectedMode === 'annual') {
+        const ageLimits = arrangeAgeLimits(currentChartData.arrangedLifePalaces);
+        const greatLimitData = ageLimits.map((ageRange, index) => ({
+            palaceId: VALID_PALACES_CLOCKWISE[index],
+            ageRange: ageRange
+        })).filter(item => item.ageRange);
+        
+        // 1. 先算出「限例太乙」大限的完整分數 (包含時宮加權)
+        const greatLimitScoresWithBonus = calculateFortuneScores(currentChartData.chartModel, currentChartData.arrangedLifePalaces, ageLimits, currentChartData.hourPillar, currentChartData.lookupResult);
+        const greatLimitScoreMap = {};
+        greatLimitData.forEach((limit, index) => {
+            greatLimitScoreMap[limit.palaceId] = greatLimitScoresWithBonus[index];
+        });
+
+        // 2. 建立「歲數 -> 行年宮位」的對照表
+        const ageToAnnualPalaceMap = {};
+        const fullXingNianData = calculateXingNian(currentChartData.gender, 1, 120);
+        Object.keys(fullXingNianData).forEach(palaceId => {
+            fullXingNianData[palaceId].ages.forEach(age => {
+                ageToAnnualPalaceMap[age] = palaceId;
+            });
+        });
+        
+        // 3. 遍歷 1 到 106 歲，計算每年的最終分數
+        let finalScores = [];
+        let finalLabels = [];
+        for (let age = 1; age <= 106; age++) {
+            const currentGreatLimit = greatLimitData.find(l => {
+                const [start, end] = l.ageRange.split('-').map(Number);
+                return age >= start && age <= end;
+            });
+
+            if (currentGreatLimit) {
+                const greatLimitScore = greatLimitScoreMap[currentGreatLimit.palaceId] || 0;
+                const annualPalaceId = ageToAnnualPalaceMap[age];
+                const annualScore = annualPalaceId ? getSimpleScoreForPalace(annualPalaceId) : 0;
+                
+                // 應用您的公式：大限分數 + (流年分數 * 70%)
+                const finalScore = greatLimitScore + (annualScore * 0.7);
+                
+                finalLabels.push(age);
+                finalScores.push(finalScore);
+            }
+        }
+        labels = finalLabels;
+        scores = finalScores;
+
     } else {
+        // --- 處理其他四種大限的計分 ---
+        let limitData = [];
+        switch(selectedMode) {
+            case 'daYou': limitData = currentChartData.daYouZhenXianResult; break;
+            case 'baiLiu': limitData = currentChartData.baiLiuResult; break;
+            case 'yangJiu': limitData = currentChartData.yangJiuResult; break;
+            default: // 'mingGong' (限例太乙)
+                const ageLimits = arrangeAgeLimits(currentChartData.arrangedLifePalaces);
+                limitData = ageLimits.map((ageRange, index) => ({
+                    palaceId: VALID_PALACES_CLOCKWISE[index],
+                    ageRange: ageRange
+                })).filter(item => item.ageRange);
+                break;
+        }
         labels = limitData.map(item => item.ageRange);
-        scores = limitData.map(item => getSimpleScore(item.palaceId));
+        // 根據選擇的模式，計算對應的分數
+        if (selectedMode === 'mingGong') {
+            scores = calculateFortuneScores(currentChartData.chartModel, currentChartData.arrangedLifePalaces, labels, currentChartData.hourPillar, currentChartData.lookupResult);
+        } else {
+            scores = limitData.map(item => getSimpleScoreForPalace(item.palaceId));
+        }
     }
     
-    // 3. 重新排序並繪製圖表
-    let chartDataToSort = labels.map((label, index) => ({ ageRange: label, score: scores[index] })).filter(item => item.ageRange);
-    chartDataToSort.sort((a, b) => parseFloat(a.ageRange.split('-')[0]) - parseFloat(b.ageRange.split('-')[0]));
+    // ▼▼▼ 偵錯點：在繪製圖表前，印出最終的數據 ▼▼▼
+    console.log("準備傳入 renderFortuneChart 的 X 軸標籤 (labels):", labels);
+    console.log("準備傳入 renderFortuneChart 的 Y 軸分數 (scores):", scores);
+
+
+    // --- 重新排序並繪製圖表 ---
+    let chartDataToSort = labels.map((label, index) => ({ ageRange: label, score: scores[index] })).filter(item => item && item.ageRange !== undefined && item.score !== undefined);
+    if (selectedMode !== 'annual') {
+         chartDataToSort.sort((a, b) => parseFloat(a.ageRange.split('-')[0]) - parseFloat(b.ageRange.split('-')[0]));
+    }
+
+    console.log("排序後，最終用於繪圖的 X 軸標籤:", chartDataToSort.map(item => String(item.ageRange)));
+    console.log("排序後，最終用於繪圖的 Y 軸分數:", chartDataToSort.map(item => item.score));
+    console.log("---------------------------------");
     
     renderFortuneChart(
-        chartDataToSort.map(item => item.ageRange),
+        chartDataToSort.map(item => String(item.ageRange)),
         chartDataToSort.map(item => item.score)
     );
     }

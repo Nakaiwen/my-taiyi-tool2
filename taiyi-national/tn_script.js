@@ -49,6 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ▼▼▼ 中文月份名稱 ▼▼▼
     const MONTH_NAMES_CHINESE = ['正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
 
+    // ▼▼▼ 太乙基數 ▼▼▼
+    const TAI_YI_BASE_JISHU = 10153917;
+
     // ▼▼▼ 夏至冬至基準點資料庫 (1900-2030) ▼▼▼
     const SOLSTICE_DATA = {
     1900: { summer: { date: new Date("1900-06-22T05:39:00"), dayPillar: "丙寅", dayBureau: 39, dayJishu: 11386982 }, winter: { date: new Date("1900-12-22T14:41:00"), dayPillar: "己巳", dayBureau: 6, dayJishu: 11387165 } },
@@ -1367,6 +1370,40 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         calculatedBureau: calculatedBureau
     };
     }
+    // ▼▼▼ 計算「年積數」與「月積數」的函式 ▼▼▼
+    function calculateNationalJishu(year) {
+    // 1. 計算年積數及其衍生資料
+    const annualJishu = TAI_YI_BASE_JISHU + year;
+    
+    let annualBureauRem = annualJishu % 72;
+    const annualBureauNum = (annualBureauRem === 0) ? 72 : annualBureauRem;
+    const annualBureau = `陽${annualBureauNum}局`;
+    
+    let annualGanZhiRem = annualJishu % 60;
+    const annualGanZhiIndex = (annualGanZhiRem === 0) ? 59 : annualGanZhiRem - 1;
+    const annualGanZhi = JIAZI_CYCLE_ORDER[annualGanZhiIndex];
+
+    // 2. 計算月積數及其衍生資料
+    const monthlyJishu = annualJishu * 12;
+
+    let monthlyBureauRem = monthlyJishu % 72;
+    const monthlyBureauNum = (monthlyBureauRem === 0) ? 72 : monthlyBureauRem;
+    const monthlyBureau = `陽${monthlyBureauNum}局`;
+
+    let monthlyGanZhiRem = monthlyJishu % 60;
+    const monthlyGanZhiIndex = (monthlyGanZhiRem === 0) ? 59 : monthlyGanZhiRem - 1;
+    const monthlyGanZhi = JIAZI_CYCLE_ORDER[monthlyGanZhiIndex];
+
+    return {
+        annualJishu,
+        annualBureau,
+        annualGanZhi,
+        monthlyJishu,
+        monthlyBureau,
+        monthlyGanZhi
+    };
+    }
+
     // ▼▼▼ 計算「八門」位置的函式▼▼▼
     function calculateOuterRingData(bureauResult, hourJishu, lookupResult) {
     // 安全檢查：如果缺少必要的資料，則不顯示八門
@@ -1892,6 +1929,10 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
 
         renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData); 
 
+        // ▼▼▼ 更新：將年/月積數的數字，顯示在上方資訊列 ▼▼▼
+    document.getElementById('annual-jishu-display').textContent = dataForCalculation.nationalJishuResult.annualJishu;
+    document.getElementById('monthly-jishu-display').textContent = dataForCalculation.nationalJishuResult.monthlyJishu;
+
         const shenPalaceId = Object.keys(newSdrData).find(k => newSdrData[k].includes('身'));
         const shenPalaceBranch = shenPalaceId ? PALACE_ID_TO_BRANCH[shenPalaceId] : '計算失敗';
         
@@ -1916,36 +1957,74 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         const day = parseInt(document.getElementById('birth-day').value, 10);
         const hour = parseInt(document.getElementById('birth-hour').value, 10);
         const timezoneOffset = parseInt(document.getElementById('timezone-select').value, 10);
-        const chartType = document.querySelector('input[name="chart-type"]:checked')?.value || 'year';
+        const chartType = document.querySelector('input[name="chart-type"]:checked')?.value || 'hour';
         const birthDateObject = new Date(year, month - 1, day, hour);
-        const precisionResult = calculateJishuAndBureau(birthDateObject);
 
-        if (!precisionResult) {
-            alert("無法計算，請確認輸入的日期在 1900-2030 年之間。");
-            return;
+        // --- ▼▼▼ 核心修改點：根據盤面類型，決定使用哪個「積數」和「局數」▼▼▼ ---
+        let bureauResult;
+        let dayJishuForDisplay, hourJishuForDisplay;
+        let jishuForStarCalc = {};
+
+        const precisionResult = calculateJishuAndBureau(birthDateObject);
+        if (precisionResult) {
+        dayJishuForDisplay = precisionResult.dayJishu;
+        hourJishuForDisplay = precisionResult.hourJishu;
         }
 
-        dayJishuDisplay.textContent = precisionResult.dayJishu;
-        hourJishuDisplay.textContent = precisionResult.hourJishu;
+        switch (chartType) {
+        case 'year':
+            const nationalJishuYear = calculateNationalJishu(year);
+            bureauResult = nationalJishuYear.annualBureau;
+            jishuForStarCalc.hourJishu = nationalJishuYear.annualJishu; // 用年積數安星
+            break;
+        case 'month':
+            const nationalJishuMonth = calculateNationalJishu(year);
+            bureauResult = nationalJishuMonth.monthlyBureau;
+            jishuForStarCalc.hourJishu = nationalJishuMonth.monthlyJishu; // 用月積數安星
+            break;
+        case 'day':
+            if (precisionResult) {
+                bureauResult = `陽${((precisionResult.dayJishu % 72 === 0) ? 72 : precisionResult.dayJishu % 72)}局`;
+                jishuForStarCalc.hourJishu = precisionResult.dayJishu * 12; // 用日積數*12安星
+            }
+            break;
+        default: // 'hour' (時盤)
+            if (precisionResult) {
+                bureauResult = precisionResult.calculatedBureau;
+                jishuForStarCalc.hourJishu = precisionResult.hourJishu; // 用時積數安星
+            }
+            break;
+        }
+
+        if (!bureauResult) {
+        alert("無法計算局數，請確認日期。");
+        return;
+        }
+    
+        dayJishuDisplay.textContent = dayJishuForDisplay || '計算失敗';
+        hourJishuDisplay.textContent = hourJishuForDisplay || '計算失敗';
+    
         
         const lunarDate = solarLunar.solar2lunar(year, month, day, hour);
-        const direction = 'clockwise';
-        const lifePalaceId = 'pMao'; // 暫時預設命宮在卯
+        const gender = '男'; // 國運盤預設
+        const direction = determineDirection(lunarDate.getYearInGanZhi().charAt(0), gender);
+        const lifePalaceId = findPalaceByCounting(lunarDate.getYearInGanZhi().charAt(1), lunarDate.getMonthInGanZhi().charAt(1), lunarDate.getTimeInGanZhi().charAt(1), direction);
         const arrangedLifePalaces = lifePalaceId ? arrangeLifePalaces(lifePalaceId, direction) : [];
 
         const dataForCalculation = {
-            birthDate: `${year}/${month}/${day}`,
-            yearPillar: lunarDate.getYearInGanZhi(),
-            monthPillar: lunarDate.getMonthInGanZhi(),
-            dayPillar: lunarDate.getDayInGanZhi(),
-            hourPillar: lunarDate.getTimeInGanZhi(),
-            dayJishu: precisionResult.dayJishu,
-            hourJishu: precisionResult.hourJishu,
-            direction: direction,
-            lifePalaceId: lifePalaceId,
-            arrangedLifePalaces: arrangedLifePalaces,
-            bureauResult: precisionResult.calculatedBureau
-        };
+        birthDate: `${year}/${month}/${day}`,
+        gender: gender,
+        yearPillar: lunarDate.getYearInGanZhi(),
+        monthPillar: lunarDate.getMonthInGanZhi(),
+        dayPillar: lunarDate.getDayInGanZhi(),
+        hourPillar: lunarDate.getTimeInGanZhi(),
+        dayJishu: dayJishuForDisplay,
+        hourJishu: jishuForStarCalc.hourJishu, // 使用我們為安星選擇的積數
+        direction: direction,
+        lifePalaceId: lifePalaceId,
+        arrangedLifePalaces: arrangedLifePalaces,
+        bureauResult: bureauResult
+    };
 
         document.getElementById('year-pillar-stem').textContent = dataForCalculation.yearPillar.charAt(0);
         document.getElementById('year-pillar-branch').textContent = dataForCalculation.yearPillar.charAt(1);
@@ -1970,13 +2049,15 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         dataForCalculation.siShenResult = calculateSiShen(dataForCalculation.hourJishu);
         dataForCalculation.feiFuResult = calculateFeiFu(dataForCalculation.hourJishu);
         dataForCalculation.daYouResult = calculateDaYou(dataForCalculation.hourJishu);
+        dataForCalculation.nationalJishuResult = calculateNationalJishu(year);
         
         runCalculation(dataForCalculation, hour); 
     });
 
+    // --- 按鈕與頁面初始化 ---
     if (switchToPersonalBtn) {
         switchToPersonalBtn.addEventListener('click', () => {
-            window.location.href =  '../index.html';
+            window.location.href = '../index.html';
         });
     }
     savePdfBtn.addEventListener('click', () => {

@@ -337,7 +337,7 @@
     margin-right: 8px;
     font-size: 14px;
 }
-#day-jishu-display, #hour-jishu-display {
+#annual-jishu-display, #monthly-jishu-display, #day-jishu-display, #hour-jishu-display {
     font-family: monospace;
     font-weight: bold;
     color: #0056b3;     /* 使用與四柱相同的顏色 */

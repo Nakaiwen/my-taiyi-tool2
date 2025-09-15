@@ -571,3 +571,15 @@
     display: flex;
     align-items: center; 
 }
+
+/* AI 分析結果區塊的樣式 */
+#ai-summary-output {
+    white-space: pre-wrap; /* 讓 AI 結果可以正常換行 */
+    font-family: 'BiauKaiWeb', sans-serif; /* 使用標楷體，更有溫度 */
+    font-size: 15px;
+    line-height: 1.8;
+}
+#ai-summary-output h4 { /* AI 結果的小標題 */
+    margin-top: 0;
+    color: #0056b3;
+}

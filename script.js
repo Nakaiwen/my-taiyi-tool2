@@ -3521,6 +3521,69 @@ function renderFortuneChart(ageLabels, scoreData) {
     
     return html;
     }
+    // ▼▼▼ 產生 AI 年度能量總結的函式 (已轉為繁體中文) ▼▼▼
+    function generateAISummary(data) {
+    // 1. 收集所有 AI 分析需要的關鍵數據
+    const age = data.currentUserAge;
+    
+    // 找出當前歲數所在的大限宮位和分數
+    const ageLimits = arrangeAgeLimits(data.arrangedLifePalaces);
+    const greatLimitScores = calculateFortuneScores(data.chartModel, data.arrangedLifePalaces, ageLimits, data.hourPillar, data.lookupResult);
+    let currentGreatLimitName = '未知';
+    let currentGreatLimitScore = 0;
+    const currentGreatLimitIndex = ageLimits.findIndex(range => {
+        if (!range) return false;
+        const [start, end] = range.split('-').map(Number);
+        return age >= start && age <= end;
+    });
+    if (currentGreatLimitIndex !== -1) {
+        const palaceShortName = data.arrangedLifePalaces[currentGreatLimitIndex];
+        currentGreatLimitName = PALACE_FULL_NAME_MAP[palaceShortName] || palaceShortName;
+        currentGreatLimitScore = greatLimitScores[currentGreatLimitIndex];
+    }
+
+    // 找出當前歲數所在的行年宮位
+    const ageToAnnualPalaceMap = {};
+    const fullXingNianData = calculateXingNian(data.gender, 1, 120);
+    Object.keys(fullXingNianData).forEach(palaceId => {
+        fullXingNianData[palaceId].ages.forEach(age => {
+            ageToAnnualPalaceMap[age] = palaceId;
+        });
+    });
+    const annualPalaceId = ageToAnnualPalaceMap[age];
+    const annualPalaceShortName = annualPalaceId ? data.arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(annualPalaceId)] : '未知';
+    const annualPalaceFullName = PALACE_FULL_NAME_MAP[annualPalaceShortName] || annualPalaceShortName;
+
+    const annualHexagram = data.annualHexagramResult;
+    const changingHexagram = data.annualChangingHexagramResult;
+    const currentYear = new Date().getFullYear();
+
+    // 2. 組合出您設計的、更詳細的指令 (Prompt)
+    let prompt = `你是一位命理分析師。你根據使用者今年的歲數，來判定使用者今年對應的「限例太乙」宮位是十二宮的哪個宮位？以及行年流年宮位是十二宮的哪個宮位？來給出他的今年重要功課是在哪個人生領域。再從他的「限例太乙」人生能量趨勢圖在此階段的分數，以及結合今年流年卦與流年變卦的卦象，來給出今年的人生建議。請綜合這些資訊，為他撰寫一段約300字的年度能量總結與建議，你的責任是提醒他機會點與鼓舞人心，並且語氣溫和。\n\n`;
+    prompt += `分析依據如下：\n`;
+    prompt += `- 當前年份：${currentYear}年\n`;
+    prompt += `- 當前歲數：${age}歲\n`;
+    prompt += `- 「限例太乙」宮位：${currentGreatLimitName}\n`;
+    prompt += `- 「行年流年」宮位：${annualPalaceFullName}\n`;
+    prompt += `- 「限例太乙」能量分數：${currentGreatLimitScore.toFixed(0)}\n`;
+    if (annualHexagram) {
+        prompt += `- 流年卦：${annualHexagram.number} ${annualHexagram.name} (${annualHexagram.description})\n`;
+    }
+    if (changingHexagram) {
+        prompt += `- 流年變卦：${changingHexagram.number} ${changingHexagram.name} (${changingHexagram.description})\n`;
+    }
+    
+    // --- 模擬 AI 回應 (已轉為繁體中文) ---
+    let aiResponse = `<h4>${currentYear}年 (${age}歲) 能量總結與建議</h4>`;
+    aiResponse += `您好，綜合您今年的星盤資訊來看，這將會是充滿轉機與挑戰的一年。\n\n`;
+    aiResponse += `您今年的長期趨勢由「${currentGreatLimitName}」所主導，而短期焦點則落在了「${annualPalaceFullName}」。這代表您今年的重要功課，將會圍繞著與「${annualPalaceFullName.replace('宮','')}」相關的人事物上。您在此大限的能量分數為「${currentGreatLimitScore.toFixed(0)}」分，這是一個相對穩健的能量水平，代表您有足夠的基礎去應對挑戰。\n\n`;
+    aiResponse += `今年的流年卦走到了「${annualHexagram.name}」，它象徵著「${annualHexagram.description}」。綜合來看，這預示著您今年的核心課題在於順應時勢，並在變動中尋找新的穩定。結合您的「${annualPalaceFullName}」課題，建議您在相關領域可以更靈活一些，當外部環境變化時，勇敢地調整自己的步伐，而不是固守原地。這份變動，正是您今年成長的契機。\n\n`;
+    aiResponse += `您可以好好把握未來30天的吉日，完成自己想做的一些重要決策。`;
+    aiResponse += `挑選有「妻財」或是「天元祿主」的日子拓展訂單開拓財源；找有「偏祿」的日子，買張彩券碰碰運氣。也記得在「忌星」與「鬼星」的日子保守謹慎。\n`;
+    aiResponse += `<small style="color:#888;">（改變命運的第一步，從現在開始。）</small>`;
+    
+    return aiResponse;
+    }
     
     // ▼▼▼ 每次增加星都要更新的函式 ▼▼▼
     function generateMainChartData(lookupResult, deitiesResult, suanStarsResult, shiWuFuResult, xiaoYouResult, junJiResult, chenJiResult, minJiResult, tianYiResult, diYiResult, siShenResult, feiFuResult, daYouResult, yueJiangData, guiRenData, xingNianData, huangEnResult) {
@@ -4273,5 +4336,29 @@ if (switchToNationalBtn) {
 savePdfBtn.addEventListener('click', () => {
     window.print();
 });
+
+// ▼▼▼ AI 能量總結按鈕的事件監聽 ▼▼▼
+    const generateAiSummaryBtn = document.getElementById('generate-ai-summary-btn');
+    const aiSummaryOutput = document.getElementById('ai-summary-output');
+
+    if (generateAiSummaryBtn && aiSummaryOutput) {
+        generateAiSummaryBtn.addEventListener('click', () => {
+            // 檢查 currentChartData 是否有資料
+            if (!currentChartData || !currentChartData.currentUserAge) {
+                alert('請先排盤，再產生分析結果。');
+                return;
+            }
+
+            // 顯示「正在分析中...」的提示
+            aiSummaryOutput.style.display = 'block';
+            aiSummaryOutput.innerHTML = '正在為您產生分析結果，請稍候...';
+
+            // 模擬 AI 需要一點時間來思考
+            setTimeout(() => {
+                const summaryText = generateAISummary(currentChartData);
+                aiSummaryOutput.innerHTML = summaryText;
+            }, 500); // 延遲 0.5 秒，讓體驗更真實
+        });
+    }
 
 });

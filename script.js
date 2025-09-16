@@ -3572,15 +3572,16 @@ function renderFortuneChart(ageLabels, scoreData) {
     if (changingHexagram) {
         prompt += `- 流年變卦：${changingHexagram.number} ${changingHexagram.name} (${changingHexagram.description})\n`;
     }
+
     
     // --- 模擬 AI 回應 (已轉為繁體中文) ---
     let aiResponse = `<h4>${currentYear}年 (${age}歲) 能量總結與建議</h4>`;
-    aiResponse += `您好，綜合您今年的星盤資訊來看，這將會是充滿轉機與挑戰的一年。\n\n`;
-    aiResponse += `您今年的長期趨勢由「${currentGreatLimitName}」所主導，而短期焦點則落在了「${annualPalaceFullName}」。這代表您今年的重要功課，將會圍繞著與「${annualPalaceFullName.replace('宮','')}」相關的人事物上。您在此大限的能量分數為「${currentGreatLimitScore.toFixed(0)}」分，這是一個相對穩健的能量水平，代表您有足夠的基礎去應對挑戰。\n\n`;
-    aiResponse += `今年的流年卦走到了「${annualHexagram.name}」，它象徵著「${annualHexagram.description}」。綜合來看，這預示著您今年的核心課題在於順應時勢，並在變動中尋找新的穩定。結合您的「${annualPalaceFullName}」課題，建議您在相關領域可以更靈活一些，當外部環境變化時，勇敢地調整自己的步伐，而不是固守原地。這份變動，正是您今年成長的契機。\n\n`;
+    aiResponse += `您好，綜合您今年的太乙星盤資訊來看，可以獲得以下的資訊：\n\n`;
+    aiResponse += `您今年的十年運勢由「${currentGreatLimitName}」所主導，而流年運勢則落在了「${annualPalaceFullName}」。這代表您今年的重要功課，將會圍繞著與「${annualPalaceFullName.replace('宮','')}」相關的人事物上。您在此十年大限的能量分數為「${currentGreatLimitScore.toFixed(0)}」分，這是一個相對穩健的能量水平，代表您有足夠的基礎去應對挑戰。\n\n`;
+    aiResponse += `今年的流年卦走到了「${annualHexagram?.name}」，它象徵著「${annualHexagram?.description}」。流年變卦「${changingHexagram?.name}」，它象徵著下半年會轉變為「${changingHexagram?.description}」。綜合來看，這預示著您今年的核心課題在於順應時勢，並在變動中尋找新的穩定。結合您的「${annualPalaceFullName}」課題，建議您在相關領域可以更靈活一些，當外部環境變化時，勇敢地調整自己的步伐，而不是固守原地。這份變動，正是您今年成長的契機。流年月卦也是一個非常好的每月運勢參考指標，注意這裡指的是農曆唷。\n\n`;
     aiResponse += `您可以好好把握未來30天的吉日，完成自己想做的一些重要決策。`;
     aiResponse += `挑選有「妻財」或是「天元祿主」的日子拓展訂單開拓財源；找有「偏祿」的日子，買張彩券碰碰運氣。也記得在「忌星」與「鬼星」的日子保守謹慎。\n`;
-    aiResponse += `<small style="color:#888;">（改變命運的第一步，從現在開始。）</small>`;
+    aiResponse += `<small style="color:#888;">（改變命運的第一步，從現在開始。）</small>\n\n\n`;
     
     return aiResponse;
     }
@@ -4296,12 +4297,12 @@ function renderFortuneChart(ageLabels, scoreData) {
     dataForCalculation.feiMaLiuNianResult = calculateFeiMaLiuNian(dataForCalculation.hourPillar.charAt(0), dataForCalculation.dayPillar.charAt(0), dataForCalculation.gender, dataForCalculation.currentUserAge, dataForCalculation.arrangedLifePalaces);
     dataForCalculation.heiFuResult = calculateHeiFu(dataForCalculation.hourPillar.charAt(0), dataForCalculation.currentUserAge);
     dataForCalculation.liYeStartAge = calculateLiYeStartAge(dataForCalculation.birthHexagramResult);
+    dataForCalculation.baiLiuResult = calculateBaiLiuLimit(dataForCalculation.shouQiResult, dataForCalculation.gender);
     dataForCalculation.annualChangingHexagramResult = calculateAnnualChangingHexagram(dataForCalculation.annualHexagramResult, dataForCalculation.baiLiuResult, dataForCalculation.currentUserAge);
     dataForCalculation.monthlyHexagramsResult = calculateMonthlyHexagrams(dataForCalculation.annualHexagramResult?.number);
     // ▼▼▼ 更新：一次性計算出所有大限的完整序列 ▼▼▼
     
     dataForCalculation.yangJiuResult = calculateYangJiu(dataForCalculation.monthPillar.charAt(0), dataForCalculation.gender);
-    dataForCalculation.baiLiuResult = calculateBaiLiuLimit(dataForCalculation.shouQiResult, dataForCalculation.gender);
     dataForCalculation.daYouZhenXianResult = calculateDaYouZhenXian(dataForCalculation.hourPillar.charAt(1));
     dataForCalculation.chartModel = buildChartModel(dataForCalculation);
     dataForCalculation.remedySuggestions = analyzeRemedySuggestions(dataForCalculation.chartModel, dataForCalculation.arrangedLifePalaces);

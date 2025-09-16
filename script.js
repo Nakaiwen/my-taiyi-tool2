@@ -3862,10 +3862,10 @@ function renderFortuneChart(ageLabels, scoreData) {
     const savePdfBtn = document.getElementById('save-pdf-btn'); 
 
     function prefillTestData() {
-        document.getElementById('birth-year').value = '1976';
-        document.getElementById('birth-month').value = '10';
-        document.getElementById('birth-day').value = '14';
-        document.getElementById('birth-hour').value = '22';
+        document.getElementById('birth-year').value = '1988';
+        document.getElementById('birth-month').value = '8';
+        document.getElementById('birth-day').value = '8';
+        document.getElementById('birth-hour').value = '8';
         document.getElementById('gender-female').checked = true;
     }
 

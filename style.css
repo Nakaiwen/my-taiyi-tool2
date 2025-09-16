@@ -259,7 +259,21 @@
     width: 150px;
 }
 
-/* 6. 控制「更新盤面資訊」按鈕的樣式 */
+
+/* 「更新盤面資訊」按鈕的專屬醒目樣式 */
+#calculate-btn {
+    background-color: #dc6b02; /* 主要顏色 (範例為亮藍色) */
+    border-color: #007bff;
+    color: white;
+    font-weight: bold;
+}
+
+#calculate-btn:hover {
+    background-color: #be3000; /* 滑鼠移上去時的深色效果 */
+    border-color: #0056b3;
+}
+
+/* 6. 控制「儲存PDF」「切換太乙國運」按鈕的樣式 */
 .input-row button {
     cursor: pointer;
     background-color: #0092db;

@@ -358,72 +358,72 @@ document.addEventListener('DOMContentLoaded', () => {
     '癸酉': 33, '癸未': 33, '癸巳': 23, '癸卯': 31, '癸丑': 33, '癸亥': 21
     };
 
-    // ▼▼▼ 易經六十四卦資料庫 (已升級卦象描述) ▼▼▼
+    // ▼▼▼ 易經六十四卦資料庫 (已新增白話解釋) ▼▼▼
     const I_CHING_HEXAGRAMS = [
-    { number: 1,  name: '乾為天',    symbol: '䷀', description: '創造與進取，剛健自強。廣大包容之象' },
-    { number: 2,  name: '坤為地',    symbol: '䷁', description: '包容承載，順應萬物。君倡臣和之象' },
-    { number: 3,  name: '水雷屯',    symbol: '䷂', description: '萬事起頭難，困境中成長。萬物如生之象' },
-    { number: 4,  name: '山水蒙',    symbol: '䷃', description: '蒙昧未明，需啟蒙學習。萬物發生之象' },
-    { number: 5,  name: '水天需',    symbol: '䷄', description: '蓄勢待時，耐心等待。密雲不雨之象' },
-    { number: 6,  name: '天水訟',    symbol: '䷅', description: '爭訟不利，慎防爭端。天水相違之象' },
-    { number: 7,  name: '地水師',    symbol: '䷆', description: '師眾齊心，領導用兵。以寡服眾之象' },
-    { number: 8,  name: '水地比',    symbol: '䷇', description: '親比合群，團隊合作。水行地上之象' },
-    { number: 9,  name: '風天小畜',  symbol: '䷈', description: '小有積蓄，漸進不躁。密雲不雨之象' },
-    { number: 10, name: '天澤履',    symbol: '䷉', description: '謹慎前行，腳踏實地。安中防危之象' },
-    { number: 11, name: '地天泰',    symbol: '䷊', description: '天地交泰，和諧亨通。小往大來之象' },
-    { number: 12, name: '天地否',    symbol: '䷋', description: '陰陽不交，閉塞不通。人口不實之象' },
-    { number: 13, name: '天火同人',  symbol: '䷌', description: '志同道合，共同合作。二人分金之象' },
-    { number: 14, name: '火天大有',  symbol: '䷍', description: '富有充實，光明順遂。日麗中天之象' },
-    { number: 15, name: '地山謙',    symbol: '䷎', description: '謙遜處世，以退為進。仰高就下之象' },
-    { number: 16, name: '雷地豫',    symbol: '䷏', description: '喜樂和順，居安思危。萬物發生之象' },
-    { number: 17, name: '澤雷隨',    symbol: '䷐', description: '隨順時勢，靈活應變。如水推車之象' },
-    { number: 18, name: '山風蠱',    symbol: '䷑', description: '整頓腐敗，革故鼎新。以惡害義之象' },
-    { number: 19, name: '地澤臨',    symbol: '䷒', description: '君子臨下，教化眾人。以上臨下之象' },
-    { number: 20, name: '風地觀',    symbol: '䷓', description: '觀察省思，以德感人。春花競發之象' },
-    { number: 21, name: '火雷噬嗑',  symbol: '䷔', description: '以剛破險，懲惡揚善。順中有物之象' },
-    { number: 22, name: '山火賁',    symbol: '䷕', description: '文飾外表，內守真實。光明通泰之象' },
-    { number: 23, name: '山地剝',    symbol: '䷖', description: '否極泰來，萬物剝落。去舊生新之象' },
-    { number: 24, name: '地雷復',    symbol: '䷗', description: '失而復得，循環更新。反復往來之象' },
-    { number: 25, name: '天雷无妄',  symbol: '䷘', description: '順應自然，真誠無妄。守舊安常之象' },
-    { number: 26, name: '山天大畜',  symbol: '䷙', description: '積蓄能量，以待時機。積小成大之象' },
-    { number: 27, name: '山雷頤',    symbol: '䷚', description: '養生之道，修身養性。遷善遠惡之象' },
-    { number: 28, name: '澤風大過',  symbol: '䷛', description: '陰陽失衡，承重過大。本末俱弱之象' },
-    { number: 29, name: '坎為水',    symbol: '䷜', description: '重險之境，反覆考驗。外虛中實之象' },
-    { number: 30, name: '離為火',    symbol: '䷝', description: '光明照耀，文明進取。大明當天之象' },
-    { number: 31, name: '澤山咸',    symbol: '䷞', description: '以感化人，兩情相悅。至誠感神之象' },
-    { number: 32, name: '雷風恆',    symbol: '䷟', description: '恆久不變，堅守正道。四時不沒之象' },
-    { number: 33, name: '天山遯',    symbol: '䷠', description: '避險退隱，明哲保身。守道去惡之象' },
-    { number: 34, name: '雷天大壯',  symbol: '䷡', description: '剛健壯盛，須防妄動。先曲後順之象' },
-    { number: 35, name: '火地晉',    symbol: '䷢', description: '進取向上，光明前途。以臣遇君之象' },
-    { number: 36, name: '地火明夷',  symbol: '䷣', description: '智者避世，光明受傷。出明入暗之象' },
-    { number: 37, name: '風火家人',  symbol: '䷤', description: '齊家之道，內外有序。開花結子之象' },
-    { number: 38, name: '火澤睽',    symbol: '䷥', description: '分歧矛盾，異中求同。猛虎陷阱之象' },
-    { number: 39, name: '水山蹇',    symbol: '䷦', description: '艱難困阻，謹慎前行。背明向暗之象' },
-    { number: 40, name: '雷水解',    symbol: '䷧', description: '困境化解，解難得助。患難解散之象' },
-    { number: 41, name: '山澤損',    symbol: '䷨', description: '減損有益，損中有得。鑿石見玉之象' },
-    { number: 42, name: '風雷益',    symbol: '䷩', description: '損上益下，積善得福。河水溢出之象' },
-    { number: 43, name: '澤天夬',    symbol: '䷪', description: '果決斷行，剛健能和。先損後益之象' },
-    { number: 44, name: '天風姤',    symbol: '䷫', description: '陽遇陰，偶然相逢。或聚或散之象' },
-    { number: 45, name: '澤地萃',    symbol: '䷬', description: '萃聚人心，群體團結。魚龍會聚之象' },
-    { number: 46, name: '地風升',    symbol: '䷭', description: '節節高升，漸進發展。積小成大之象' },
-    { number: 47, name: '澤水困',    symbol: '䷮', description: '陷入困境，內心堅忍。守己待時之象' },
-    { number: 48, name: '水風井',    symbol: '䷯', description: '取之不竭，資源共享。守靜安常之象' },
-    { number: 49, name: '澤火革',    symbol: '䷰', description: '革新變革，順應時代。改舊從新之象' },
-    { number: 50, name: '火風鼎',    symbol: '䷱', description: '鼎新立業，革故鼎新。去故取新之象' },
-    { number: 51, name: '震為雷',    symbol: '䷲', description: '動盪驚雷，警醒人心。震驚百里之象' },
-    { number: 52, name: '艮為山',    symbol: '䷳', description: '靜止止步，內心安定。積小成高之象' },
-    { number: 53, name: '風山漸',    symbol: '䷴', description: '漸進之道，循序漸進。積小成大之象' },
-    { number: 54, name: '雷澤歸妹',  symbol: '䷵', description: '婚姻成家，社會秩序。陰陽不交之象' },
-    { number: 55, name: '雷火豐',    symbol: '䷶', description: '豐盛繁榮，需防盈滿。藏暗向明之象' },
-    { number: 56, name: '火山旅',    symbol: '䷷', description: '遊歷漂泊，異地發展。歡極哀生之象' },
-    { number: 57, name: '巽為風',    symbol: '䷸', description: '謙遜入微，柔順滲透。上行下放之象' },
-    { number: 58, name: '兌為澤',    symbol: '䷹', description: '喜悅交流，柔中帶剛。天峰雨澤之象' },
-    { number: 59, name: '風水渙',    symbol: '䷺', description: '分散化解，團結一心。大風吹物之象' },
-    { number: 60, name: '水澤節',    symbol: '䷻', description: '節制有度，分寸得宜。寒暑有節之象' },
-    { number: 61, name: '風澤中孚',  symbol: '䷼', description: '誠信中正，內外相應。事有定期之象' },
-    { number: 62, name: '雷山小過',  symbol: '䷽', description: '謹慎行事，小心謙遜。上逆下順之象' },
-    { number: 63, name: '水火既濟',  symbol: '䷾', description: '事事圓滿，盛極須防。陰陽配合之象' },
-    { number: 64, name: '火水未濟',  symbol: '䷿', description: '未竟之業，臨終待成。憂中望喜之象' }
+    { number: 1,  name: '乾為天',    symbol: '䷀', description: '創造與進取，剛健自強。廣大包容之象', explanation: '代表純粹的創造力與行動力。現在是發揮領導才能、積極進取的好時機，應當自強不息，勇於開創，不要猶豫。' },
+    { number: 2,  name: '坤為地',    symbol: '䷁', description: '包容承載，順應萬物。君倡臣和之象', explanation: '代表大地般的包容與順從。此時應採取輔助、配合的姿態，厚德載物，耐心積累。順應自然，方能承載福氣。' },
+    { number: 3,  name: '水雷屯',    symbol: '䷂', description: '萬事起頭難，困境中成長。萬物如生之象', explanation: '象徵萬物初生的艱難。眼前可能充滿挑戰與混亂，但這正是成長的開始。需要耐心建立根基，不可輕舉妄動。' },
+    { number: 4,  name: '山水蒙',    symbol: '䷃', description: '蒙昧未明，需啟蒙學習。萬物發生之象', explanation: '代表啟蒙與教育。目前可能處於迷惘或知識不足的狀態，應虛心求教，尋找良師益友的指導來掃除迷霧。' },
+    { number: 5,  name: '水天需',    symbol: '䷄', description: '蓄勢待時，耐心等待。密雲不雨之象', explanation: '意味著需要耐心等待最佳時機。目前條件尚未成熟，急於求成只會徒勞無功。應專注於積蓄實力，靜候轉機。' },
+    { number: 6,  name: '天水訟',    symbol: '䷅', description: '爭訟不利，慎防爭端。天水相違之象', explanation: '暗示著衝突與爭執。此時不宜與人爭辯或興訟，容易兩敗俱傷。應尋求和解之道，退一步方能海闊天空。' },
+    { number: 7,  name: '地水師',    symbol: '䷆', description: '師眾齊心，領導用兵。以寡服眾之象', explanation: '代表領導與團隊。若要採取行動，必須師出有名、目標明確，並獲得眾人支持。團結一致是成功的關鍵。' },
+    { number: 8,  name: '水地比',    symbol: '䷇', description: '親比合群，團隊合作。水行地上之象', explanation: '象徵親近與合作。這是一個建立人脈、鞏固團隊關係的好時機。主動與人親近，能得到有力的支持與幫助。' },
+    { number: 9,  name: '風天小畜',  symbol: '䷈', description: '小有積蓄，漸進不躁。密雲不雨之象', explanation: '意味著小有積累，但能量尚不足以造成大的改變。應持續努力，專注於小目標的達成，耐心等待雲開雨來。' },
+    { number: 10, name: '天澤履',    symbol: '䷉', description: '謹慎前行，腳踏實地。安中防危之象', explanation: '提醒我們行事需謹慎小心，如履薄冰。即使在看似平順的道路上，也要注意潛在的風險，遵守規則才能安全。' },
+    { number: 11, name: '地天泰',    symbol: '䷊', description: '天地交泰，和諧亨通。小往大來之象', explanation: '代表著和諧、順暢與亨通。這是運勢極佳的時期，陰陽調和，萬事如意。應把握機會，積極作為，必有大成。' },
+    { number: 12, name: '天地否',    symbol: '䷋', description: '陰陽不交，閉塞不通。人口不實之象', explanation: '象徵著閉塞與不通。目前主客觀條件互相違背，溝通困難，諸事不順。此時應守正道，靜待時機轉變。' },
+    { number: 13, name: '天火同人',  symbol: '䷌', description: '志同道合，共同合作。二人分金之象', explanation: '意味著與人合作。尋找志同道合的夥伴，在陽光下坦誠合作，共同追求目標，將能克服困難，獲得成功。' },
+    { number: 14, name: '火天大有',  symbol: '䷍', description: '富有充實，光明順遂。日麗中天之象', explanation: '代表著大豐收與富足。如同太陽高掛天空，光明普照。你的努力將得到極大回報，應當順天應人，分享成果。' },
+    { number: 15, name: '地山謙',    symbol: '䷎', description: '謙遜處世，以退為進。仰高就下之象', explanation: '強調謙遜的美德。內心有實力，外在卻很低調。保持謙卑的姿態，反而更能贏得他人的尊敬與幫助。' },
+    { number: 16, name: '雷地豫',    symbol: '䷏', description: '喜樂和順，居安思危。萬物發生之象', explanation: '代表著喜悅與準備。事情順心如意，但不可沉溺於安樂。應當居安思危，為未來早做準備，方能長久。' },
+    { number: 17, name: '澤雷隨',    symbol: '䷐', description: '隨順時勢，靈活應變。如水推車之象', explanation: '意味著要懂得順應時勢。不要固執己見，應靈活調整策略，跟隨正確的潮流或領導者，才能省力又成功。' },
+    { number: 18, name: '山風蠱',    symbol: '䷑', description: '整頓腐敗，革故鼎新。以惡害義之象', explanation: '暗示內部積弊已深，需要大刀闊斧地改革。這是一個撥亂反正的時機，應勇於面對問題，清除腐敗，重新出發。' },
+    { number: 19, name: '地澤臨',    symbol: '䷒', description: '君子臨下，教化眾人。以上臨下之象', explanation: '代表著上位者親臨下方，帶來監管或教化。這是一個展現領導力，關懷下屬或群眾的好時機，能得人心。' },
+    { number: 20, name: '風地觀',    symbol: '䷓', description: '觀察省思，以德感人。春花競發之象', explanation: '意味著需要靜下心來觀察與反思。不要急於行動，應先仔細評估局勢，以自身的德行風範來影響他人。' },
+    { number: 21, name: '火雷噬嗑',  symbol: '䷔', description: '以剛破險，懲惡揚善。順中有物之象', explanation: '象徵著需要用強硬手段來解決眼前的障礙。如同用力咬斷硬物，必須果斷決策，才能掃除阻礙，伸張正義。' },
+    { number: 22, name: '山火賁',    symbol: '䷕', description: '文飾外表，內守真實。光明通泰之象', explanation: '代表著裝飾與美化。適度的修飾是必要的，但不可華而不實。應注重內在的真實品德，才能表裡如一。' },
+    { number: 23, name: '山地剝',    symbol: '䷖', description: '否極泰來，萬物剝落。去舊生新之象', explanation: '象徵著剝落與侵蝕。目前運勢較弱，應順應時勢，暫停前進，以保存實力。黑暗即將過去，黎明就在眼前。' },
+    { number: 24, name: '地雷復',    symbol: '䷗', description: '失而復得，循環更新。反復往來之象', explanation: '代表著陽氣回復，萬象更新。這是一個重新開始、撥亂反正的好時機。過去的錯誤可以修正，事物正向好的方向循環。' },
+    { number: 25, name: '天雷无妄',  symbol: '䷘', description: '順應自然，真誠無妄。守舊安常之象', explanation: '提醒要順應天道，不可妄為。只要動機純正，行為正當，順其自然地發展，就能獲得意想不到的好結果。' },
+    { number: 26, name: '山天大畜',  symbol: '䷙', description: '積蓄能量，以待時機。積小成大之象', explanation: '意味著大量的積蓄與蘊養。現在是厚植實力、充實內涵的時期，應多加學習，等待未來大展拳腳的機會。' },
+    { number: 27, name: '山雷頤',    symbol: '䷚', description: '養生之道，修身養性。遷善遠惡之象', explanation: '強調言語和飲食的謹慎。要注意自己的言行，並攝取有益身心的養分。這是一個修身養性、頤養天年的時期。' },
+    { number: 28, name: '澤風大過',  symbol: '䷛', description: '陰陽失衡，承重過大。本末俱弱之象', explanation: '象徵著超出常規，負擔過重。如同房樑彎曲，已到承受極限。需要採取非常手段來匡正，否則有傾覆的危險。' },
+    { number: 29, name: '坎為水',    symbol: '䷜', description: '重險之境，反覆考驗。外虛中實之象', explanation: '代表著重重險難。如同陷入深淵，挑戰接踵而來。此時必須保持內心的誠信與冷靜，在艱險中學習成長。' },
+    { number: 30, name: '離為火',    symbol: '䷝', description: '光明照耀，文明進取。大明當天之象', explanation: '象徵著光明與附麗。如同火焰依附薪柴而燃燒，人也需依附正道才能持續發光。這是一個文化、文明進展的時期。' },
+    { number: 31, name: '澤山咸',    symbol: '䷞', description: '以感化人，兩情相悅。至誠感神之象', explanation: '代表著心靈的感應與交流。特別指少男少女間純真的情感。強調以虛心和誠意去感應對方，而非強力追求。' },
+    { number: 32, name: '雷風恆',    symbol: '䷟', description: '恆久不變，堅守正道。四時不沒之象', explanation: '意味著恆心與持久。成功的關鍵在於堅守正道，持之以恆。夫妻之道、事業經營都應尋求長久穩定的發展。' },
+    { number: 33, name: '天山遯',    symbol: '䷠', description: '避險退隱，明哲保身。守道去惡之象', explanation: '代表著退避與隱遁。當小人勢力高漲時，君子應暫時退讓，遠離是非之地，以保全自身，等待時機。' },
+    { number: 34, name: '雷天大壯',  symbol: '䷡', description: '剛健壯盛，須防妄動。先曲後順之象', explanation: '象徵著力量的強盛壯大。陽氣旺盛，氣勢如虹，但必須警惕不可因過於強盛而變得魯莽衝動，要遵守禮儀。' },
+    { number: 35, name: '火地晉',    symbol: '䷢', description: '進取向上，光明前途。以臣遇君之象', explanation: '代表著晉升與發展。如同太陽升出地面，前途一片光明。應把握良機，積極向上，展現自己的才華與能力。' },
+    { number: 36, name: '地火明夷',  symbol: '䷣', description: '智者避世，光明受傷。出明入暗之象', explanation: '象徵著光明受到傷害。在昏暗的時局中，有才華的人應懂得收斂鋒芒，內心保持光明，外在假裝糊塗以避禍。' },
+    { number: 37, name: '風火家人',  symbol: '䷤', description: '齊家之道，內外有序。開花結子之象', explanation: '強調家庭內部的倫理與秩序。每個成員各司其職，言行有度，家庭才能和諧興旺。治家是事業成功的基礎。' },
+    { number: 38, name: '火澤睽',    symbol: '䷥', description: '分歧矛盾，異中求同。猛虎陷阱之象', explanation: '代表著對立與分歧。目標與方向產生了背離，人際關係出現矛盾。此時應在小事上求同存異，尋找合作的可能。' },
+    { number: 39, name: '水山蹇',    symbol: '䷦', description: '艱難困阻，謹慎前行。背明向暗之象', explanation: '象徵著前進的道路充滿艱險。如同跋山涉水，困難重重。此時應當停止前進，反省自身，尋求貴人幫助。' },
+    { number: 40, name: '雷水解',    symbol: '䷧', description: '困境化解，解難得助。患難解散之象', explanation: '代表著困難的解除與釋放。如同春雷化雨，冰雪消融。應把握時機，迅速解決問題，寬恕待人，重新出發。' },
+    { number: 41, name: '山澤損',    symbol: '䷨', description: '減損有益，損中有得。鑿石見玉之象', explanation: '意味著先減損下方，來增益上方。必要的犧牲或付出，長遠來看是有益的。應抑制慾望，真誠待人。' },
+    { number: 42, name: '風雷益',    symbol: '䷩', description: '損上益下，積善得福。河水溢出之象', explanation: '意味著增益與幫助。上位者應減損自己來幫助下位者。這是遷善改過，勇於行動的好時機，將獲得極大益處。' },
+    { number: 43, name: '澤天夬',    symbol: '䷪', description: '果決斷行，剛健能和。先損後益之象', explanation: '代表著果斷的抉擇與清除。必須下定決心，公開地清除小人或積弊。但行動需符合正道，不可濫用強力。' },
+    { number: 44, name: '天風姤',    symbol: '䷫', description: '陽遇陰，偶然相逢。或聚或散之象', explanation: '象徵著不期而遇。一陰始生，需警惕小人勢力的悄然滋長。對於突如其來的遭遇，應謹慎處理，防微杜漸。' },
+    { number: 45, name: '澤地萃',    symbol: '䷬', description: '萃聚人心，群體團結。魚龍會聚之象', explanation: '代表著聚合與精英薈萃。人才、物資向中心聚集，是成就大事業的時機。領導者應以誠信團結眾人。' },
+    { number: 46, name: '地風升',    symbol: '䷭', description: '節節高升，漸進發展。積小成大之象', explanation: '象徵著順勢上升。如同樹木由小長大，應順應時機，循序漸進地發展。積極求進，將得到貴人提攜。' },
+    { number: 47, name: '澤水困',    symbol: '䷮', description: '陷入困境，內心堅忍。守己待時之象', explanation: '代表著窮困與受阻。如同水在澤下，才能無法施展。此時應堅守正道，保持樂觀，言語謹慎，等待轉機。' },
+    { number: 48, name: '水風井',    symbol: '䷯', description: '取之不竭，資源共享。守靜安常之象', explanation: '象徵著養育與共享。如同水井，默默奉獻，利益共享。應修養德行，鞏固基礎，服務社會而不求改變。' },
+    { number: 49, name: '澤火革',    symbol: '䷰', description: '革新變革，順應時代。改舊從新之象', explanation: '代表著徹底的變革與革新。舊有的制度或方法已不合時宜，必須順應天時人心，進行大刀闊斧的改變。' },
+    { number: 50, name: '火風鼎',    symbol: '䷱', description: '鼎新立業，革故鼎新。去故取新之象', explanation: '象徵著穩定與新生。在革新之後，建立新的秩序與權威。如同鼎器烹飪食物，有養賢育才，鼎新事業之意。' },
+    { number: 51, name: '震為雷',    symbol: '䷲', description: '動盪驚雷，警醒人心。震驚百里之象', explanation: '代表著震動與警醒。突如其來的巨大變化讓人驚懼，但也促使人反省修身。處變不驚，保持冷靜是應對之道。' },
+    { number: 52, name: '艮為山',    symbol: '䷳', description: '靜止止步，內心安定。積小成高之象', explanation: '象徵著靜止與安分。在適當的時候停止，在適當的位置安分，是一種智慧。應當心無旁騖，專注於當下。' },
+    { number: 53, name: '風山漸',    symbol: '䷴', description: '漸進之道，循序漸進。積小成大之象', explanation: '代表著循序漸進。如同女子出嫁，一切按部就班。事物正向好的方向緩慢發展，不可急躁，耐心方能成功。' },
+    { number: 54, name: '雷澤歸妹',  symbol: '䷵', description: '婚姻成家，社會秩序。陰陽不交之象', explanation: '代表著不合正道的結合。少女配長男，關係基礎不穩，難以長久。提醒人們行為需符合常理與秩序。' },
+    { number: 55, name: '雷火豐',    symbol: '䷶', description: '豐盛繁榮，需防盈滿。藏暗向明之象', explanation: '代表著豐盛與盛大。如同日正當中，光明無比。但盛極必衰，應思考如何守成，並在繁榮中保持謙遜。' },
+    { number: 56, name: '火山旅',    symbol: '䷷', description: '遊歷漂泊，異地發展。歡極哀生之象', explanation: '象徵著旅行與漂泊。如同旅人在外，根基不穩，應當謹慎自處，柔順待人，才能獲得平安與他人的幫助。' },
+    { number: 57, name: '巽為風',    symbol: '䷸', description: '謙遜入微，柔順滲透。上行下放之象', explanation: '代表著順從與深入。如同風無孔不入，應以謙遜柔順的態度去影響他人。跟隨有能力者，反覆申明自己的主張。' },
+    { number: 58, name: '兌為澤',    symbol: '䷹', description: '喜悅交流，柔中帶剛。天峰雨澤之象', explanation: '代表著喜悅與言說。朋友之間相互交流，共同學習，是件快樂的事。應以和悅的態度待人，並堅守正道。' },
+    { number: 59, name: '風水渙',    symbol: '䷺', description: '分散化解，團結一心。大風吹物之象', explanation: '象徵著渙散與離散。自私之心導致人心渙散，應以公正無私的態度，重新凝聚人心，化解危機，團結力量。' },
+    { number: 60, name: '水澤節',    symbol: '䷻', description: '節制有度，分寸得宜。寒暑有節之象', explanation: '強調節制的重要性。如同竹節，恰到好處的制約才能讓事物順利成長。無論是資源還是慾望，都應適度節制。' },
+    { number: 61, name: '風澤中孚',  symbol: '䷼', description: '誠信中正，內外相應。事有定期之象', explanation: '代表著內心的誠信。以最大的誠意去影響他人，如同孵蛋一般，信譽能感化萬物。言行一致是成功的關鍵。' },
+    { number: 62, name: '雷山小過',  symbol: '䷽', description: '謹慎行事，小心謙遜。上逆下順之象', explanation: '意味著在小事上可以稍有超越，但大事上必須謹慎。如同飛鳥，向上飛不如向下飛安全。應保持謙遜，力求平穩。' },
+    { number: 63, name: '水火既濟',  symbol: '䷾', description: '事事圓滿，盛極須防。陰陽配合之象', explanation: '代表著成功與圓滿。如同渡河成功，一切都已完成。但完美也意味著開始走向衰敗，必須居安思危，防範未然。' },
+    { number: 64, name: '火水未濟',  symbol: '䷿', description: '未竟之業，臨終待成。憂中望喜之象', explanation: '象徵著事情尚未完成。如同渡河失敗，充滿混亂與挑戰。但這也意味著未來充滿無限可能，謹慎分辨，仍有希望。' }
     ];
 
     // ▼▼▼ 易經六十四卦數位化資料庫 爻的順序由下到上 (初爻 -> 上爻)，1為陽爻，0為陰爻 ▼▼▼// 
@@ -3567,24 +3567,36 @@ function renderFortuneChart(ageLabels, scoreData) {
     prompt += `- 「行年流年」宮位：${annualPalaceFullName}\n`;
     prompt += `- 「限例太乙」能量分數：${currentGreatLimitScore.toFixed(0)}\n`;
     if (annualHexagram) {
-        prompt += `- 流年卦：${annualHexagram.number} ${annualHexagram.name} (${annualHexagram.description})\n`;
+        prompt += `- 流年卦：${annualHexagram.number} ${annualHexagram.name} (${annualHexagram.description}) (白話解釋：${annualHexagram.explanation})\n`;
     }
     if (changingHexagram) {
-        prompt += `- 流年變卦：${changingHexagram.number} ${changingHexagram.name} (${changingHexagram.description})\n`;
+        prompt += `- 流年變卦：${changingHexagram.number} ${changingHexagram.name} (${changingHexagram.description}) (白話解釋：${changingHexagram.explanation})\n`;
     }
 
     
-    // --- 模擬 AI 回應 (已轉為繁體中文) ---
+    // --- 模擬 AI 回應 (已轉為繁體中文並整合白話解釋) ---
     let aiResponse = `<h4>${currentYear}年 (${age}歲) 能量總結與建議</h4>`;
     aiResponse += `您好，綜合您今年的太乙星盤資訊來看，可以獲得以下的資訊：\n\n`;
     aiResponse += `您今年的十年運勢由「${currentGreatLimitName}」所主導，而流年運勢則落在了「${annualPalaceFullName}」。這代表您今年的重要功課，將會圍繞著與「${annualPalaceFullName.replace('宮','')}」相關的人事物上。您在此十年大限的能量分數為「${currentGreatLimitScore.toFixed(0)}」分，這是一個相對穩健的能量水平，代表您有足夠的基礎去應對挑戰。\n\n`;
-    aiResponse += `今年的流年卦走到了「${annualHexagram?.name}」，它象徵著「${annualHexagram?.description}」。流年變卦「${changingHexagram?.name}」，它象徵著下半年會轉變為「${changingHexagram?.description}」。綜合來看，這預示著您今年的核心課題在於順應時勢，並在變動中尋找新的穩定。結合您的「${annualPalaceFullName}」課題，建議您在相關領域可以更靈活一些，當外部環境變化時，勇敢地調整自己的步伐，而不是固守原地。這份變動，正是您今年成長的契機。流年月卦也是一個非常好的每月運勢參考指標，注意這裡指的是農曆唷。\n\n`;
+    let hexagramSummary = ""; // 先建立一個空字串來組合卦象解釋
+    if (annualHexagram) {
+        hexagramSummary += `今年的流年卦象為「${annualHexagram?.name}」，它的白話意涵是：「${annualHexagram?.explanation}」`;
+    }
+    if (changingHexagram) {
+        if (hexagramSummary) { hexagramSummary += " "; } // 如果前面有流年卦，加個空格
+        hexagramSummary += `到了下半年，運勢將轉變為「${changingHexagram?.name}」，意涵為：「${changingHexagram?.explanation}」`;
+    }
+    if (hexagramSummary) {
+         aiResponse += hexagramSummary + "。\n\n"; // 如果有內容，才把整段加進去
+    }
+
+    aiResponse += `綜合來看，這預示著您今年的核心課題在於順應時勢，並在變動中尋找新的穩定。結合您的「${annualPalaceFullName}」課題，建議您在相關領域可以更靈活一些，當外部環境變化時，勇敢地調整自己的步伐，而不是固守原地。這份變動，正是您今年成長的契機。流年月卦也是一個非常好的每月運勢參考指標，注意這裡指的是農曆唷。\n\n`;
     aiResponse += `您可以好好把握未來30天的吉日，完成自己想做的一些重要決策。`;
     aiResponse += `挑選有「妻財」或是「天元祿主」的日子拓展訂單開拓財源；找有「偏祿」的日子，買張彩券碰碰運氣。也記得在「忌星」與「鬼星」的日子保守謹慎。\n`;
     aiResponse += `<small style="color:#888;">（改變命運的第一步，從現在開始。）</small>\n\n\n`;
     
     return aiResponse;
-    }
+}
     
     // ▼▼▼ 每次增加星都要更新的函式 ▼▼▼
     function generateMainChartData(lookupResult, deitiesResult, suanStarsResult, shiWuFuResult, xiaoYouResult, junJiResult, chenJiResult, minJiResult, tianYiResult, diYiResult, siShenResult, feiFuResult, daYouResult, yueJiangData, guiRenData, xingNianData, huangEnResult) {

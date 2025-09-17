@@ -769,6 +769,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // ▼▼▼ 論命分析中需要排除的星曜列表 ▼▼▼
     const EXCLUDED_STARS_FROM_ANALYSIS = ['太乙', '定目', '定大', '定參', '大遊', '太歲', '合神'];
 
+    // ▼▼▼ 分數計算規則 (全域共用) ▼▼▼
+    const SCORE_RULES = {
+    luckScores: { '吉星': 20, '凶星': -10 },
+    strengthBonus: 50,
+    huaYaoScore: 30,
+    specialHuaYaoMultiplier: 1.5,
+    huangEnMultiplier: 1.5,
+    patternMultiplier: 0.8
+    };
+
     // ▼▼▼ 中宮寄宮規則資料庫 ▼▼▼
     const CENTER_PALACE_JI_GONG_RULES = {
     '主算': {
@@ -2910,119 +2920,17 @@ function renderFortuneChart(ageLabels, scoreData) {
     
     return htmlParts.join('') || '此盤無核心星曜論斷資訊。';
     }
-    // ▼▼▼ 計算十二宮運勢分數的函式 (已補上三合借宮邏輯) ▼▼▼
+    // ▼▼▼ 計算十二宮運勢分數的函式 ▼▼▼
     function calculateFortuneScores(chartModel, arrangedLifePalaces, ageLimitData, hourPillar, lookupResult) {
     const scores = [];
     
-    // --- 規則分數設定 (不變) ---
-    const luckScores = { '吉星': 20, '凶星': -10 };
-    const strengthBonus = 50;
-    const huaYaoScore = 30;
-    const specialHuaYaoMultiplier = 1.5;
-    const huangEnMultiplier = 1.5;
-    const patternMultiplier = 0.8;
-
-    // --- 內部輔助函式：專門用來計算任何一個宮位的「基礎分數」---
-    const getBaseScoreForPalace = (palaceId) => {
-        const palaceData = chartModel[palaceId];
-        if (!palaceData) return 0;
-        
-        let score = 0;
-        const palaceBranch = PALACE_ID_TO_BRANCH[palaceId];
-        
-        let allStarsInPalace = [...Object.values(palaceData.stars)];
-        const guestPalaceId = Object.keys(JI_GONG_MAP).find(key => JI_GONG_MAP[key] === palaceId);
-        if (guestPalaceId && chartModel[guestPalaceId]) {
-            allStarsInPalace.push(...Object.values(chartModel[guestPalaceId].stars));
-        }
-
-        if (lookupResult && chartModel['pCenter']?.stars) {
-            const zhuSuan = lookupResult.主算;
-            const keSuan = lookupResult.客算;
-            const centerStars = Object.values(chartModel['pCenter'].stars);
-            centerStars.forEach(star => {
-                let hostBranch = null;
-                if (['主大', '主參'].includes(star.name) && zhuSuan && CENTER_PALACE_JI_GONG_RULES['主算'][zhuSuan]) {
-                    hostBranch = CENTER_PALACE_JI_GONG_RULES['主算'][zhuSuan][star.name];
-                } else if (['客大', '客參'].includes(star.name) && keSuan && CENTER_PALACE_JI_GONG_RULES['客算'][keSuan]) {
-                    hostBranch = CENTER_PALACE_JI_GONG_RULES['客算'][keSuan][star.name];
-                }
-                if (hostBranch && BRANCH_TO_PALACE_ID[hostBranch] === palaceId) {
-                    allStarsInPalace.push(star);
-                }
-            });
-        }
-        
-        let coreStars = allStarsInPalace.filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name));
-
-        // 規則 8: 空宮借對宮
-        if (coreStars.length === 0) {
-            const oppositePalaceId = OPPOSITE_PALACE_MAP[palaceId];
-            if (oppositePalaceId && chartModel[oppositePalaceId]) {
-                let borrowedStars = [...Object.values(chartModel[oppositePalaceId].stars)];
-                const oppositeGuestPalaceId = Object.keys(JI_GONG_MAP).find(key => JI_GONG_MAP[key] === oppositePalaceId);
-                if (oppositeGuestPalaceId && chartModel[oppositeGuestPalaceId]) {
-                    borrowedStars.push(...Object.values(chartModel[oppositeGuestPalaceId].stars));
-                }
-                coreStars = borrowedStars.filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name));
-            }
-        }
-        
-        // ▼▼▼ 唯一的修改點：補上「三合宮位借星」的判斷邏輯 ▼▼▼
-        if (coreStars.length === 0) {
-            const trinePartners = SAN_HE_MAP[palaceBranch];
-            if (trinePartners) {
-                let trineStars = [];
-                trinePartners.forEach(partnerBranch => {
-                    const partnerPalaceId = BRANCH_TO_PALACE_ID[partnerBranch];
-                    if (partnerPalaceId && chartModel[partnerPalaceId]) {
-                        trineStars.push(...Object.values(chartModel[partnerPalaceId].stars));
-                        const partnerGuestPalaceId = Object.keys(JI_GONG_MAP).find(key => JI_GONG_MAP[key] === partnerPalaceId);
-                        if (partnerGuestPalaceId && chartModel[partnerGuestPalaceId]) {
-                            trineStars.push(...Object.values(chartModel[partnerGuestPalaceId].stars));
-                        }
-                    }
-                });
-                coreStars = trineStars.filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name));
-            }
-        }
-
-        coreStars.forEach(star => {
-            let starBaseScore = 0;
-            const starName = star.name;
-            const starBranchForRating = PALACE_ID_TO_BRANCH[guestPalaceId] || palaceBranch;
-            if (STAR_PROPERTIES[starName]) { starBaseScore += (luckScores[STAR_PROPERTIES[starName].luck] || 0); }
-            if (STAR_RATING_DATA[starName] && STAR_RATING_DATA[starName][starBranchForRating]) { starBaseScore += (RATING_SCORES[STAR_RATING_DATA[starName][starBranchForRating]] || 0); }
-            if (star.strength) { starBaseScore += strengthBonus; }
-            if (star.huaYao && star.huaYao.some(role => ['天元祿主', '天元官星', '地元福星'].includes(role))) {
-                starBaseScore *= specialHuaYaoMultiplier;
-            }
-            score += starBaseScore;
-            if (star.huaYao && star.huaYao.length > 0) {
-                star.huaYao.forEach(yaoName => {
-                    if (yaoName === '忌星' || yaoName === '鬼星') {
-                        score -= 30;
-                    } else if (!['天元祿主', '天元官星', '地元福星'].includes(yaoName)) {
-                        score += 30;
-                    }
-                });
-            }
-        });
-
-        if (coreStars.some(star => star.name === '皇恩星')) { score *= huangEnMultiplier; }
-        if (palaceData.patterns.length > 0) { score *= patternMultiplier; }
-        return score;
-    };
-
-    
-    
-    const hourBranch = hourPillar.charAt(1);
-    const timePalaceId = BRANCH_TO_PALACE_ID[hourBranch];
-    const timePalaceScore = timePalaceId ? getBaseScoreForPalace(timePalaceId) : 0;
+    const timePalaceId = BRANCH_TO_PALACE_ID[hourPillar.charAt(1)];
+    // 注意：這裡我們直接呼叫 getBaseScoreForPalace，它已經會使用全域的 SCORE_RULES
+    const timePalaceScore = timePalaceId ? getBaseScoreForPalace(timePalaceId, chartModel, lookupResult) : 0;
 
     for (let i = 0; i < arrangedLifePalaces.length; i++) {
         const palaceId = VALID_PALACES_CLOCKWISE[i];
-        let finalPalaceScore = getBaseScoreForPalace(palaceId);
+        let finalPalaceScore = getBaseScoreForPalace(palaceId, chartModel, lookupResult);
         const ageRange = ageLimitData[i];
         if (ageRange) {
             const startAge = parseFloat(ageRange.split('-')[0]);
@@ -4074,8 +3982,7 @@ function renderFortuneChart(ageLabels, scoreData) {
         if (luMaResults.twoWay.length > 0) {
             html += `<br>雙合（祿+馬）：${luMaResults.twoWay.join('歲、')}歲`;
             found = true;
-        }
-        
+        }   
         if (!found) {
             html += ' 此盤無';
         }
@@ -4140,11 +4047,8 @@ function renderFortuneChart(ageLabels, scoreData) {
 
             if (currentGreatLimit) {
                 const greatLimitScore = greatLimitScoreMap[currentGreatLimit.palaceId] || 0;
-                const annualPalaceId = ageToAnnualPalaceMap[age];
-                const annualScore = annualPalaceId ? getSimpleScoreForPalace(annualPalaceId) : 0;
-                
-                // 應用您的公式：大限分數 + (流年分數 * 70%)
-                const finalScore = greatLimitScore + (annualScore * 0.7);
+                const annualScoreWithWeight = calculateAnnualScore(age, currentChartData.chartModel, currentChartData);
+                const finalScore = greatLimitScore + annualScoreWithWeight;
                 
                 finalLabels.push(age);
                 finalScores.push(finalScore);
@@ -4331,7 +4235,7 @@ setTimeout(() => {
     calculateBtn.click();
 }, 10);
     
-// ▼▼▼ 新增：為圖表切換按鈕綁定事件 ▼▼▼
+// ▼▼▼ 為圖表切換按鈕綁定事件 ▼▼▼
 document.querySelectorAll('input[name="chart-mode"]').forEach(radio => {
     radio.addEventListener('change', updateChart);
 });

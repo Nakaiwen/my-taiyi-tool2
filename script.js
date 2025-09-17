@@ -3605,6 +3605,9 @@ function renderFortuneChart(ageLabels, scoreData) {
     const changingHexagram = data.annualChangingHexagramResult;
     const currentYear = new Date().getFullYear();
 
+    // --- ▼▼▼ 修改點 1: 新增計算「行年宮位」本身的分數 ▼▼▼ ---
+    const annualPalaceScore = annualPalaceId ? getBaseScoreForPalace(annualPalaceId, data.chartModel, data.lookupResult) : 0;
+
     // 2. 組合出您設計的、更詳細的指令 (Prompt)
     let prompt = `你是一位命理分析師。你根據使用者今年的歲數，來判定使用者今年對應的「限例太乙」宮位是十二宮的哪個宮位？以及行年流年宮位是十二宮的哪個宮位？來給出他的今年重要功課是在哪個人生領域。再從他的「限例太乙」人生能量趨勢圖在此階段的分數，以及結合今年流年卦與流年變卦的卦象，來給出今年的人生建議。請綜合這些資訊，為他撰寫一段約300字的年度能量總結與建議，你的責任是提醒他機會點與鼓舞人心，並且語氣溫和。\n\n`;
     prompt += `分析依據如下：\n`;
@@ -3613,6 +3616,8 @@ function renderFortuneChart(ageLabels, scoreData) {
     prompt += `- 「限例太乙」宮位：${currentGreatLimitName}\n`;
     prompt += `- 「行年流年」宮位：${annualPalaceFullName}\n`;
     prompt += `- 「限例太乙」能量分數：${currentGreatLimitScore.toFixed(0)}\n`;
+    prompt += `- 「行年流年」能量分數：${annualPalaceScore.toFixed(0)}\n`;
+
     if (annualHexagram) {
         prompt += `- 流年卦：${annualHexagram.number} ${annualHexagram.name} (${annualHexagram.description}) (白話解釋：${annualHexagram.explanation})\n`;
     }
@@ -3624,7 +3629,7 @@ function renderFortuneChart(ageLabels, scoreData) {
     // --- 模擬 AI 回應 (已轉為繁體中文並整合白話解釋) ---
     let aiResponse = `<h4>${currentYear}年 (${age}歲) 能量總結與建議</h4>`;
     aiResponse += `您好，綜合您今年的太乙星盤資訊來看，可以獲得以下的資訊：\n\n`;
-    aiResponse += `您今年的十年運勢由「${currentGreatLimitName}」所主導，而流年運勢則落在了「${annualPalaceFullName}」。這代表您今年的重要功課，將會圍繞著與「${annualPalaceFullName.replace('宮','')}」相關的人事物上。您在此十年大限的能量分數為「${currentGreatLimitScore.toFixed(0)}」分，這是一個相對穩健的能量水平，代表您有足夠的基礎去應對挑戰。\n\n`;
+    aiResponse += `您今年的十年運勢由「${currentGreatLimitName}」所主導，此十年大限的能量分數為「${currentGreatLimitScore.toFixed(0)}」。而今年的流年運勢則落在了「${annualPalaceFullName}」，流年的能量分數為${annualPalaceScore.toFixed(0)}分。這代表您今年的重要功課，將會圍繞著與「${annualPalaceFullName.replace('宮','')}」相關的人事物上。\n\n`;
     let hexagramSummary = ""; // 先建立一個空字串來組合卦象解釋
     if (annualHexagram) {
         hexagramSummary += `今年的流年卦象為「${annualHexagram?.name}」，它的白話意涵是：「${annualHexagram?.explanation}」`;

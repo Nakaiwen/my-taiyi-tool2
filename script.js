@@ -3429,6 +3429,145 @@ function renderFortuneChart(ageLabels, scoreData) {
     
     return html;
     }
+    // ▼▼▼ 分析「科甲年份」(祿主+飛祿/飛馬) 的引擎函式 (v4-修正寄宮查找順序) ▼▼▼
+    function findKeJiaYears(data) {
+        const results = {
+            allThree: [],
+            luZhuAndFeiLu: [],
+            luZhuAndFeiMa: []
+        };
+        if (!data || !data.chartModel || !data.dayPillar || !data.hourPillar || !data.lookupResult) return results;
+
+        // --- 步驟 A: 找出「天元祿主」星曜的名稱 ---
+        const dayStem = data.dayPillar.charAt(0);
+        const luZhuStarName = RI_GAN_HUA_YAO[dayStem]?.luZhu[0];
+        if (!luZhuStarName) return results;
+
+        // --- 步驟 B (全新修正): 依照你指定的優先序，找出「天元祿主」的最終宮位 ---
+        let luZhuPalaceId = null;
+
+        // 1. 先查「天元祿主」是否在乾艮巽坤四個宮位 (四隅寄宮)
+        const cornerPalaceIds = ['pQian', 'pGen', 'pXun', 'pKun'];
+        for (const cornerId of cornerPalaceIds) {
+            if (data.chartModel[cornerId]?.stars[luZhuStarName]) {
+                luZhuPalaceId = JI_GONG_MAP[cornerId]; // 找到後，直接取用它寄宿的地支宮位
+                break; // 找到就立刻跳出迴圈
+            }
+        }
+
+        // 2. 如果上面沒找到，再查「天元祿主」是否在中宮 (中宮寄宮)
+        if (!luZhuPalaceId && data.suanStarsResult.centerStars.includes(luZhuStarName)) {
+            const zhuSuan = data.lookupResult.主算;
+            const hostBranch = CENTER_PALACE_JI_GONG_RULES['主算']?.[zhuSuan]?.[luZhuStarName];
+            if (hostBranch) {
+                luZhuPalaceId = BRANCH_TO_PALACE_ID[hostBranch];
+            }
+        }
+
+        // 3. 如果上面都沒找到，最後才查十二地支宮位
+        if (!luZhuPalaceId) {
+            for (const branchPalaceId of VALID_PALACES_CLOCKWISE) {
+                 if (data.chartModel[branchPalaceId]?.stars[luZhuStarName]) {
+                    luZhuPalaceId = branchPalaceId;
+                    break;
+                }
+            }
+        }
+
+        // 如果經過三輪查找，最終還是找不到祿主宮位，就提前結束
+        if (!luZhuPalaceId) return results;
+
+        // --- 步驟 C & D (維持不變): 建立飛祿、飛馬地圖，並找出交會年份 ---
+        const feiLuMap = {};
+        const feiMaMap = {};
+
+        // (建立飛祿地圖的邏輯...)
+        const feiLuRule = FEI_LU_ANNUAL_RULES[data.yearPillar.charAt(0)];
+        if (feiLuRule) {
+            const yangStems = ['甲', '丙', '戊', '庚', '壬'];
+            const isDayStemYang = yangStems.includes(dayStem);
+            const feiLuDirection = ((isDayStemYang && data.gender === '男') || (!isDayStemYang && data.gender === '女')) ? 1 : -1;
+            const feiLuStartPalaceIndex = EARTHLY_BRANCHES.indexOf(feiLuRule.startBranch);
+            const guanLuPalaceIndex = data.arrangedLifePalaces.indexOf('官');
+            let currentAge = feiLuRule.startAge;
+            let currentPalaceIndex = feiLuStartPalaceIndex;
+            for (let i = 0; i < 150 && currentAge <= 120; ) {
+                const palaceId = VALID_PALACES_CLOCKWISE[currentPalaceIndex];
+                feiLuMap[currentAge] = palaceId;
+                if (currentPalaceIndex === guanLuPalaceIndex) {
+                    feiLuMap[currentAge + 1] = palaceId;
+                    feiLuMap[currentAge + 2] = palaceId;
+                    currentAge += 3;
+                } else {
+                    currentAge += 1;
+                }
+                currentPalaceIndex = (currentPalaceIndex + feiLuDirection + 12) % 12;
+            }
+        }
+
+        // (建立飛馬地圖的邏輯...)
+        const feiMaRule = FEI_MA_ANNUAL_RULES[data.hourPillar.charAt(0)];
+        if (feiMaRule) {
+            const yangStems = ['甲', '丙', '戊', '庚', '壬'];
+            const isDayStemYang = yangStems.includes(dayStem);
+            const feiMaDirection = ((isDayStemYang && data.gender === '男') || (!isDayStemYang && data.gender === '女')) ? -1 : 1;
+            const feiMaStartPalaceIndex = EARTHLY_BRANCHES.indexOf(feiMaRule.startBranch);
+            const jiEPalaceIndex = data.arrangedLifePalaces.indexOf('疾');
+            let currentAge = feiMaRule.startAge;
+            let currentPalaceIndex = feiMaStartPalaceIndex;
+            for (let i = 0; i < 150 && currentAge <= 120; ) {
+                const palaceId = VALID_PALACES_CLOCKWISE[currentPalaceIndex];
+                feiMaMap[currentAge] = palaceId;
+                if (currentPalaceIndex === jiEPalaceIndex) {
+                    feiMaMap[currentAge + 1] = palaceId;
+                    feiMaMap[currentAge + 2] = palaceId;
+                    currentAge += 3;
+                } else {
+                    currentAge += 1;
+                }
+                currentPalaceIndex = (currentPalaceIndex + feiMaDirection + 12) % 12;
+            }
+        }
+
+        for (let age = 1; age <= 106; age++) {
+            const feiLuPalace = feiLuMap[age];
+            const feiMaPalace = feiMaMap[age];
+            const meetsFeiLu = feiLuPalace && feiLuPalace === luZhuPalaceId;
+            const meetsFeiMa = feiMaPalace && feiMaPalace === luZhuPalaceId;
+
+            if (meetsFeiLu && meetsFeiMa) {
+                results.allThree.push(age);
+            } else if (meetsFeiLu) {
+                results.luZhuAndFeiLu.push(age);
+            } else if (meetsFeiMa) {
+                results.luZhuAndFeiMa.push(age);
+            }
+        }
+        
+        return results;
+    }
+    
+    // ▼▼▼ 格式化「科甲年份」顯示文字的函式 (v2-分類版) ▼▼▼
+    function formatKeJiaYearsInfo(keJiaYearsData) {
+        if (!keJiaYearsData || (keJiaYearsData.allThree.length === 0 && keJiaYearsData.luZhuAndFeiLu.length === 0 && keJiaYearsData.luZhuAndFeiMa.length === 0)) {
+            return '<strong>科甲年份：</strong><br>此盤無「祿主祿馬匯集」的年份。';
+        }
+
+        let html = '<strong>科甲年份：</strong>';
+        
+        if (keJiaYearsData.allThree.length > 0) {
+            html += `<br><span class="strength-good">三合 (祿主+祿+馬)：</span>${keJiaYearsData.allThree.join('歲、')}歲，能量最強，應重點把握。`;
+        }
+        if (keJiaYearsData.luZhuAndFeiLu.length > 0) {
+            html += `<br><span class="strength-good">雙合 (祿主+飛祿)：</span>${keJiaYearsData.luZhuAndFeiLu.join('歲、')}歲，利於事業與財富累積。`;
+        }
+        if (keJiaYearsData.luZhuAndFeiMa.length > 0) {
+            html += `<br><span class="strength-good">雙合 (祿主+飛馬)：</span>${keJiaYearsData.luZhuAndFeiMa.join('歲、')}歲，利於開拓、升遷與變動。`;
+        }
+        
+        return html;
+    }
+
     // ▼▼▼ 產生 AI 年度能量總結的函式 (已轉為繁體中文) ▼▼▼
     function generateAISummary(data) {
     // 1. 收集所有 AI 分析需要的關鍵數據
@@ -3990,7 +4129,14 @@ function renderFortuneChart(ageLabels, scoreData) {
         luMaInfoDiv.innerHTML = html;
         }
 
+        // 科甲年份：呼叫格式化函式並顯示結果
+        const kejiaYearsInfoDiv = document.getElementById('kejia-years-info');
+        if (kejiaYearsInfoDiv) {
+            kejiaYearsInfoDiv.innerHTML = formatKeJiaYearsInfo(dataForCalculation.keJiaYears);
+        }
+
     }
+
 
 
     // ▼▼▼ 更新能量趨勢圖的專屬函式 (最終穩定版) ▼▼▼
@@ -4223,6 +4369,7 @@ function renderFortuneChart(ageLabels, scoreData) {
     dataForCalculation.chartModel = buildChartModel(dataForCalculation);
     dataForCalculation.remedySuggestions = analyzeRemedySuggestions(dataForCalculation.chartModel, dataForCalculation.arrangedLifePalaces);
     dataForCalculation.strengthSuggestions = analyzeStrengthSuggestions(dataForCalculation.chartModel);
+    dataForCalculation.keJiaYears = findKeJiaYears(dataForCalculation);
     currentChartData = dataForCalculation; // 將所有計算結果存到全域變數
 
     runCalculation(dataForCalculation, hour, xingNianData); 

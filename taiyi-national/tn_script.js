@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         angleOffset: 6,
         bottomPalaceRadiusOffset: 20, // 控制巳午未宮位文字要再離圓心多遠
         radii: {
-            lineLeft:   { fieldA: 120, fieldB: 165, fieldG: 205 },
+            lineLeft:   { fieldA: 120, fieldB: 175, fieldG: 220 },
             lineCenter: { fieldC: 120, fieldD: 150, fieldC2: 180, fieldD2: 210 },
             lineRight:  { fieldE: 120, fieldF: 150, fieldE2: 180, fieldF2: 210 }
         },
@@ -496,8 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '0': { Da: '乾', Can: '艮' }
     };
     
-    const SHI_WU_FU_ORDER = ['亥', '子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌'];
-    const XIAO_YOU_ORDER = ['亥', '午', '寅', '卯', '酉', '申', '子', '巳'];
+    const XIAO_YOU_ORDER = ['乾', '午', '艮', '卯', '酉', '坤', '子', '巽'];
     const JUN_CHEN_JI_ORDER = ['午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰', '巳'];
     const MIN_JI_ORDER = ['戌', '亥', '子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉'];
     const TIAN_YI_ORDER = ['酉', '申', '子', '巳', '戌', '未', '丑', '亥', '午', '寅', '卯', '辰'];
@@ -505,6 +504,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const SI_SHEN_ORDER = ['亥', '午', '寅', '卯', '辰', '酉', '申', '子', '巳', '戌', '未', '丑'];
     const FEI_FU_ORDER = ['辰', '酉', '申', '子', '巳', '戌', '未', '丑', '亥', '午', '寅', '卯'];
     const DA_YOU_ORDER = ['坤', '子', '巽', '乾', '午', '艮', '卯', '酉'];
+
+    // 在 tn_script.js 的 SECTION 1 加入
+    const WU_FU_ORDER = ['乾', '艮', '巽', '坤', '中'];
 
     // ▼▼▼ 月將十二神的規則資料 ▼▼▼
     const MONTHLY_GENERALS_MAPPING = [
@@ -937,6 +939,9 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
             const angleRight = centerAngle + RADIAL_LAYOUT.angleOffset;
             if (pData.lineLeft) {
                 const getLineLeftClass = (starName) => {
+                    if (typeof starName === 'string' && starName.includes('五福')) {
+                    return 'wu-fu-style';
+                    }
                     if (starName === '定目') return 'ding-mu-style';
                     return 'main-info-style';
                 };
@@ -1082,31 +1087,6 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     }
     return result;
     }
-    function calculateShiWuFu(hourJishu) {
-    if (!hourJishu) {
-        return null; // 如果沒有時積數，就直接返回
-    }
-
-    // 1. 將時積數除以 228，取餘數
-    let remainder = Number(hourJishu) % 228;
-
-    // 2. 處理餘數為 0 的特殊情況
-    // 根據您的規則，餘數為 0 代表剛好走完一圈，應視為在最後一格 (228)
-    if (remainder === 0) {
-        remainder = 228;
-    }
-
-    // 3. 根據餘數，計算出宮位的索引 (0-11)
-    // 使用 (餘數 - 1) 是為了讓 1-19 都對應到索引 0，20-38 對應到索引 1，以此類推
-    const palaceIndex = Math.floor((remainder - 1) / 19);
-
-    // 4. 從專屬的宮位順序中，找到對應的地支
-    if (palaceIndex < SHI_WU_FU_ORDER.length) {
-        return SHI_WU_FU_ORDER[palaceIndex];
-    }
-
-    return null; // 如果計算出錯，返回 null
-    }
     function calculateXiaoYou(hourJishu) {
         if (!hourJishu) {
             return null;
@@ -1210,6 +1190,51 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         }
         return null;
     }
+
+    /**
+ * 通用的五福星計算函式 (最小更動版)
+ * @param {number|object} jishuInput - 根據類型傳入 年份、物件{year, month}、或 積數
+ * @param {string} namePrefix - 星曜名稱前綴 (年五福, 月五福...)
+ * @returns {object|null}
+ */
+    function calculateWuFu(jishuInput, namePrefix) {
+    if (jishuInput === null || jishuInput === undefined) return null;
+
+    const WU_FU_BASE_JISHU = 423007;
+    const CYCLE = 225;
+    const UNITS_PER_PALACE = 45;
+    let finalJishu;
+
+    // 根據星曜名稱決定積數的算法
+    switch (namePrefix) {
+        case '年五福':
+            finalJishu = WU_FU_BASE_JISHU + jishuInput; // jishuInput 此時是 'year'
+            break;
+        case '月五福':
+            finalJishu = (WU_FU_BASE_JISHU + jishuInput.year) * 12;
+            break;
+        default:
+            finalJishu = jishuInput; // 日、時五福直接使用傳入的積數
+            break;
+    }
+
+    let remainder = Number(finalJishu) % CYCLE;
+    if (remainder === 0) remainder = CYCLE;
+
+    const palaceIndex = Math.floor((remainder - 1) / UNITS_PER_PALACE);
+    const subNumber = (remainder - 1) % UNITS_PER_PALACE + 1;
+
+    if (palaceIndex < WU_FU_ORDER.length) {
+        const palaceName = WU_FU_ORDER[palaceIndex];
+        return {
+            palace: palaceName,
+            text: `${namePrefix}${subNumber}`
+        };
+    }
+    return null;
+    }
+
+
     function calculateYueJiang(solarDate, hourBranch) {
 
         // --- 步驟 1: 根據「節氣期間」找出正確的起始月將 ---
@@ -1632,7 +1657,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     }
    
     // ▼▼▼ 每次增加星都要更新的函式 ▼▼▼
-    function generateMainChartData(lookupResult, deitiesResult, suanStarsResult, shiWuFuResult, xiaoYouResult, junJiResult, chenJiResult, minJiResult, tianYiResult, diYiResult, siShenResult, feiFuResult, daYouResult, yueJiangData, guiRenData) {
+    function generateMainChartData(lookupResult, deitiesResult, suanStarsResult, shiWuFuResult, xiaoYouResult, junJiResult, chenJiResult, minJiResult, tianYiResult, diYiResult, siShenResult, feiFuResult, daYouResult, yueJiangData, guiRenData, starsToDisplay = []) {
     const chartData = {};
     const allPalaceKeys = Object.keys(RADIAL_LAYOUT.angles);
     allPalaceKeys.forEach(key => {
@@ -1692,6 +1717,22 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
             }
         }
     }
+
+    // ▼▼▼ 處理所有需要顯示的五福星 ▼▼▼
+    starsToDisplay.forEach(star => {
+    if (star.palace === '中') {
+        // 中宮的星曜在這裡先不處理，交給 runCalculation
+    } else {
+        const palaceId = BRANCH_TO_PALACE_ID[star.palace];
+        if (palaceId && chartData[palaceId]) {
+            const lineLeft = chartData[palaceId].lineLeft;
+            // 尋找 lineLeft 中第一個空的欄位來放入
+            if (!lineLeft.fieldA) lineLeft.fieldA = star.text;
+            else if (!lineLeft.fieldB) lineLeft.fieldB = star.text;
+            else if (!lineLeft.fieldG) lineLeft.fieldG = star.text;
+        }
+    }
+    });
     
     // 處理 太歲、合神、計神
     if (deitiesResult) {
@@ -1856,8 +1897,8 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     // 將貴人資料附加到 chartData 物件上 ▼▼▼
     chartData.guiRenData = guiRenData;
 
-        
-    return chartData;
+    const wuFuCenterStars = starsToDisplay.filter(s => s.palace === '中').map(s => s.text);
+    return { chartData, centerStars: wuFuCenterStars };
     }
     
     // =================================================================
@@ -1902,7 +1943,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         document.getElementById('birth-hour').value = now.getHours();
     }
 
-    function runCalculation(dataForCalculation, hour) { 
+    function runCalculation(dataForCalculation, hour, chartType) { 
         const bureauResult = dataForCalculation.bureauResult;
         const lookupResult = dataForCalculation.lookupResult;
         const newLifePalacesData = dataForCalculation.arrangedLifePalaces;
@@ -1911,13 +1952,27 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         const yueJiangData = calculateYueJiang(solarLunar.solar2lunar(parseInt(dataForCalculation.birthDate.split('/')[0]), parseInt(dataForCalculation.birthDate.split('/')[1]), parseInt(dataForCalculation.birthDate.split('/')[2]), hour), dataForCalculation.hourPillar.charAt(1));
         const outerRingData = calculateOuterRingData(bureauResult, dataForCalculation.hourJishu, lookupResult);
         const guiRenData = calculateGuiRen(dataForCalculation.dayPillar.charAt(0), dataForCalculation.hourPillar.charAt(1), yueJiangData);
+        const starsToDisplay = [];
+        const wuFu = dataForCalculation.wuFuResults;
 
-        const newMainChartData = generateMainChartData(
+        if (wuFu.year) starsToDisplay.push(wuFu.year); // 年五福總是顯示
+
+        if (chartType === 'month' || chartType === 'day' || chartType === 'hour') {
+        if (wuFu.month) starsToDisplay.push(wuFu.month);
+        }
+        if (chartType === 'day' || chartType === 'hour') {
+        if (wuFu.day) starsToDisplay.push(wuFu.day);
+        }
+        if (chartType === 'hour') {
+        if (wuFu.hour) starsToDisplay.push(wuFu.hour);
+        }
+
+        const { chartData: newMainChartData, centerStars: wuFuCenterStars } = generateMainChartData(
             lookupResult, dataForCalculation.deitiesResult, dataForCalculation.suanStarsResult,
             dataForCalculation.shiWuFuResult, dataForCalculation.xiaoYouResult,
             dataForCalculation.junJiResult, dataForCalculation.chenJiResult, dataForCalculation.minJiResult,
             dataForCalculation.tianYiResult, dataForCalculation.diYiResult, dataForCalculation.siShenResult, dataForCalculation.feiFuResult,
-            dataForCalculation.daYouResult, yueJiangData, guiRenData
+            dataForCalculation.daYouResult, yueJiangData, guiRenData, starsToDisplay
         );
 
         const centerData = {
@@ -1926,6 +1981,14 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
              field3: dataForCalculation.suanStarsResult.centerStars[2] || '',
              field4: dataForCalculation.suanStarsResult.centerStars[3] || ''
         };
+
+        // 將落入中宮的五福星填入空位
+        wuFuCenterStars.forEach(starText => {
+        if (!centerData.field1) centerData.field1 = starText;
+        else if (!centerData.field2) centerData.field2 = starText;
+        else if (!centerData.field3) centerData.field3 = starText;
+        else if (!centerData.field4) centerData.field4 = starText;
+        });
 
         renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData); 
 
@@ -1963,29 +2026,33 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         // --- ▼▼▼ 核心修改點：根據盤面類型，決定使用哪個「積數」和「局數」▼▼▼ ---
         let bureauResult;
         let dayJishuForDisplay, hourJishuForDisplay;
-        let jishuForStarCalc = {};
+        let jishuForStarCalc = { day: null, hour: null, year: year, month: month };
 
         const precisionResult = calculateJishuAndBureau(birthDateObject);
         if (precisionResult) {
         dayJishuForDisplay = precisionResult.dayJishu;
         hourJishuForDisplay = precisionResult.hourJishu;
+        jishuForStarCalc.day = precisionResult.dayJishu;
+        jishuForStarCalc.hour = precisionResult.hourJishu;
         }
 
-        switch (chartType) {
-        case 'year':
+        const nationalJishu = calculateNationalJishu(year);
+
+        switch (chartType) { // 根據你選擇的盤面類型進行判斷
+        case 'year':// 如果是年盤，就把「年積數」放進去
             const nationalJishuYear = calculateNationalJishu(year);
             bureauResult = nationalJishuYear.annualBureau;
             jishuForStarCalc.hourJishu = nationalJishuYear.annualJishu; // 用年積數安星
             break;
-        case 'month':
+        case 'month':// 如果是月盤，就把「月積數」放進去
             const nationalJishuMonth = calculateNationalJishu(year);
             bureauResult = nationalJishuMonth.monthlyBureau;
             jishuForStarCalc.hourJishu = nationalJishuMonth.monthlyJishu; // 用月積數安星
             break;
-        case 'day':
+        case 'day':// 如果是日盤，就把「日積數 * 12」放進去
             if (precisionResult) {
                 bureauResult = `陽${((precisionResult.dayJishu % 72 === 0) ? 72 : precisionResult.dayJishu % 72)}局`;
-                jishuForStarCalc.hourJishu = precisionResult.dayJishu * 12; // 用日積數*12安星
+                jishuForStarCalc.hourJishu = precisionResult.dayJishu; // 用日積數安星
             }
             break;
         default: // 'hour' (時盤)
@@ -2039,7 +2106,6 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         dataForCalculation.lookupResult = lookupResult;
         dataForCalculation.deitiesResult = calculateDeities(dataForCalculation.bureauResult, dataForCalculation.hourPillar.charAt(1));
         dataForCalculation.suanStarsResult = calculateSuanStars(lookupResult);
-        dataForCalculation.shiWuFuResult = calculateShiWuFu(dataForCalculation.hourJishu);
         dataForCalculation.xiaoYouResult = calculateXiaoYou(dataForCalculation.hourJishu);
         dataForCalculation.junJiResult = calculateJunJi(dataForCalculation.hourJishu);
         dataForCalculation.chenJiResult = calculateChenJi(dataForCalculation.hourJishu);
@@ -2050,8 +2116,14 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         dataForCalculation.feiFuResult = calculateFeiFu(dataForCalculation.hourJishu);
         dataForCalculation.daYouResult = calculateDaYou(dataForCalculation.hourJishu);
         dataForCalculation.nationalJishuResult = calculateNationalJishu(year);
+        dataForCalculation.wuFuResults = {
+            year: calculateWuFu(year, '年五福'),
+            month: calculateWuFu({ year: year, month: month }, '月五福'),
+            day: precisionResult ? calculateWuFu(precisionResult.dayJishu, '日五福') : null,
+            hour: precisionResult ? calculateWuFu(jishuForStarCalc.hourJishu, '時五福') : null
+        };
         
-        runCalculation(dataForCalculation, hour); 
+        runCalculation(dataForCalculation, hour, chartType); 
     });
 
     // --- 按鈕與頁面初始化 ---

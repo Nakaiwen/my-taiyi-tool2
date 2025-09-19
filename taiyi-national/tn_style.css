@@ -80,6 +80,13 @@
         font-weight: bold;
     }
 
+    /* 新增：年月日時五福專屬樣式 */
+    .wu-fu-style {
+    font-size: 13px;      /* 【可調整】控制五福星的字體大小 */
+    fill: #ff0000;        /* 【可調整】控制五福星的字體顏色 (範例為綠色) */
+    font-weight: bold;
+    }
+
     /* 「定目」的專屬樣式 */
     .ding-mu-style {
     font-size: 14px;      /* 字體大小 */

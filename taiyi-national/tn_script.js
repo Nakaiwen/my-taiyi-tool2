@@ -546,6 +546,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const YANG_START_GATES = ['開', '生', '驚', '休'];
     const YIN_START_GATES = ['杜', '死', '傷', '景'];
 
+    // ▼▼▼ 年月日八門的安放宮位順序 ▼▼▼
+    const YMD_GATES_PALACE_ORDER = ['乾', '子', '艮', '卯', '巽', '午', '坤', '酉'];
+
     // ▼▼▼ 年干化曜規則資料庫 ▼▼▼
     const NIAN_GAN_HUA_YAO = {
         '甲': { tianYuan: ['小遊'], ganYuan: ['小遊'], fuMu: ['客大'] },
@@ -889,7 +892,7 @@ function addEncircledText(text, x, y, rotation, textClassName, circleClassName) 
     const circle = document.createElementNS(SVG_NS, 'circle');
     circle.setAttribute('cx', 0);
     circle.setAttribute('cy', 0);
-    circle.setAttribute('r', 9);
+    circle.setAttribute('r', 10);  //紅色圓圈的直徑設定
     circle.setAttribute('class', circleClassName);
     const textElement = document.createElementNS(SVG_NS, 'text');
     textElement.setAttribute('x', 0);
@@ -931,7 +934,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                     const angleRad = angle * (Math.PI / 180);
                     const x = RADIAL_LAYOUT.center.x + ringConfig.radius * Math.cos(angleRad);
                     const y = RADIAL_LAYOUT.center.y + ringConfig.radius * Math.sin(angleRad);
-                    addEncircledText(text, x, y, 0, 'main-info-style', 'highlight-circle');
+                    addEncircledText(text, x, y, 0, 'eight-gates-style', 'highlight-circle');
                 }
             }
         }
@@ -1523,6 +1526,47 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
 
     return finalGates;
     }
+    // ▼▼▼ 【新增】計算「年/月/日局」八門位置的函式▼▼▼
+    function calculateYmdOuterRingData(jishu, taiYiPalaceBranch) {
+    const finalGates = {};
+    if (!jishu || !taiYiPalaceBranch) {
+        return finalGates; // 如果缺少必要資訊，返回空物件
+    }
+
+    // --- 第一步：找出「值使門」---
+    const cycle = 240;
+    const unitsPerPalace = 30;
+    let remainder = Number(jishu) % cycle;
+    if (remainder === 0) {
+        remainder = cycle;
+    }
+
+    const leadingGateIndex = Math.floor((remainder - 1) / unitsPerPalace);
+    const leadingGate = EIGHT_GATES_ORDER[leadingGateIndex];
+
+    // --- 第二步：從「太乙」宮位開始，安放八門 ---
+    const startPalaceIndex = YMD_GATES_PALACE_ORDER.indexOf(taiYiPalaceBranch);
+    
+    if (startPalaceIndex === -1 || leadingGateIndex === -1) {
+        console.error("八門計算錯誤：找不到太乙宮位或值使門");
+        return finalGates; // 如果找不到起始點，也返回空物件
+    }
+
+    for (let i = 0; i < 8; i++) {
+        const currentPalaceIndex = (startPalaceIndex + i) % 8;
+        const currentGateIndex = (leadingGateIndex + i) % 8;
+
+        const palaceBranch = YMD_GATES_PALACE_ORDER[currentPalaceIndex];
+        const palaceId = BRANCH_TO_PALACE_ID[palaceBranch];
+        const gateName = EIGHT_GATES_ORDER[currentGateIndex];
+        
+        if (palaceId) {
+            finalGates[palaceId] = gateName;
+        }
+    }
+
+    return finalGates;
+    }
     // ▼▼▼ 計算「貴人十二神」位置的函式▼▼▼
     function calculateGuiRen(dayGan, hourBranch, yueJiangData) {
         const result = new Array(12).fill("");
@@ -1988,30 +2032,50 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         document.getElementById('birth-hour').value = now.getHours();
     }
 
-    function runCalculation(dataForCalculation, hour, chartType) { 
-        const bureauResult = dataForCalculation.bureauResult;
-        const lookupResult = dataForCalculation.lookupResult;
+    function runCalculation(dataForCalculation, hour, chartType) {
+        const { bureauResult, lookupResult, hourJishu, wuFuResults, yearPillar, monthPillar, dayPillar, hourPillar } = dataForCalculation;
+    
+        // --- 1. 決定要顯示哪些五福星 ---
+        const starsToDisplay = [];
+        if (wuFuResults.year) starsToDisplay.push(wuFuResults.year);
+        if (chartType === 'month' || chartType === 'day' || chartType === 'hour') {
+        if (wuFuResults.month) starsToDisplay.push(wuFuResults.month);
+        }
+        if (chartType === 'day' || chartType === 'hour') {
+        if (wuFuResults.day) starsToDisplay.push(wuFuResults.day);
+        }
+        if (chartType === 'hour') {
+        if (wuFuResults.hour) starsToDisplay.push(wuFuResults.hour);
+        }
+
+        // --- 2. 計算其他所有星曜 ---
+        const deitiesResult = calculateDeities(bureauResult, hourPillar.charAt(1));
+        const suanStarsResult = calculateSuanStars(lookupResult);
+        const xiaoYouResult = calculateXiaoYou(hourJishu);
+        const junJiResult = calculateJunJi(hourJishu);
+        const chenJiResult = calculateChenJi(hourJishu);
+        const minJiResult = calculateMinJi(hourJishu);
+        const tianYiResult = calculateTianYi(hourJishu);
+        const diYiResult = calculateDiYi(hourJishu);
+        const siShenResult = calculateSiShen(hourJishu);
+        const feiFuResult = calculateFeiFu(hourJishu);
+        const daYouResult = calculateDaYou(hourJishu);
+        const yueJiangData = calculateYueJiang(solarLunar.solar2lunar(parseInt(dataForCalculation.birthDate.split('/')[0]), parseInt(dataForCalculation.birthDate.split('/')[1]), parseInt(dataForCalculation.birthDate.split('/')[2]), hour), dataForCalculation.hourPillar.charAt(1));
+        const guiRenData = calculateGuiRen(dataForCalculation.dayPillar.charAt(0), dataForCalculation.hourPillar.charAt(1), yueJiangData);
         const newLifePalacesData = dataForCalculation.arrangedLifePalaces;
         const newSdrData = calculateSdrPalaces(dataForCalculation, dataForCalculation.direction);
         const newAgeLimitData = [];
-        const yueJiangData = calculateYueJiang(solarLunar.solar2lunar(parseInt(dataForCalculation.birthDate.split('/')[0]), parseInt(dataForCalculation.birthDate.split('/')[1]), parseInt(dataForCalculation.birthDate.split('/')[2]), hour), dataForCalculation.hourPillar.charAt(1));
-        const outerRingData = calculateOuterRingData(bureauResult, dataForCalculation.hourJishu, lookupResult);
-        const guiRenData = calculateGuiRen(dataForCalculation.dayPillar.charAt(0), dataForCalculation.hourPillar.charAt(1), yueJiangData);
-        const starsToDisplay = [];
-        const wuFu = dataForCalculation.wuFuResults;
-
-        if (wuFu.year) starsToDisplay.push(wuFu.year); // 年五福總是顯示
-
-        if (chartType === 'month' || chartType === 'day' || chartType === 'hour') {
-        if (wuFu.month) starsToDisplay.push(wuFu.month);
-        }
-        if (chartType === 'day' || chartType === 'hour') {
-        if (wuFu.day) starsToDisplay.push(wuFu.day);
-        }
-        if (chartType === 'hour') {
-        if (wuFu.hour) starsToDisplay.push(wuFu.hour);
-        }
-
+    
+        let outerRingData;
+    if (chartType === 'hour') {
+        // 如果是「時盤」，使用舊的規則
+        outerRingData = calculateOuterRingData(bureauResult, hourJishu, lookupResult);
+    } else {
+        // 如果是「年盤」、「月盤」或「日盤」，使用我們新增的規則
+        const taiYiPalace = lookupResult ? lookupResult.太乙 : null;
+        outerRingData = calculateYmdOuterRingData(hourJishu, taiYiPalace);
+    }
+        
         const { chartData: newMainChartData, centerStars: wuFuCenterStars } = generateMainChartData(
             lookupResult, dataForCalculation.deitiesResult, dataForCalculation.suanStarsResult,
             dataForCalculation.shiWuFuResult, dataForCalculation.xiaoYouResult,

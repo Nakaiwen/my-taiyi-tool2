@@ -67,12 +67,6 @@
     font-weight: bold;
     }
 
-    /* 身、日、時 的專屬樣式 */
-    .sdr-style {
-        font-size: 12px; 
-        fill: #ff0000;    
-        font-weight: bold; 
-    }
     /* 太乙、文昌、始擊 的專屬樣式 */
     .main-star-style {
         font-size: 14px;  
@@ -159,6 +153,13 @@
     stroke: #fe1500;      /* 圓圈邊框顏色 (您圖片中的橘紅色) */
     stroke-width: 1px;    /* 圓圈邊框粗細 */
     }
+
+    /* 新增：八門專屬樣式 */
+    .eight-gates-style {
+    font-size: 14px;
+    fill: #5c00b1; /* 範例為深紫色 */
+    font-weight: normal;
+    }
     
 /* ====================================================== */
 /* 左側資訊欄 (Controls Column) 相關樣式                */
@@ -219,6 +220,14 @@
     margin-right: 15px; /* 【新增】讓按鈕自動推到最右邊，更美觀 */
     padding: 6px 12px;
     white-space: nowrap; /* <-- 新增這一行，禁止文字換行 */
+}
+
+/* 「更新盤面資訊」按鈕的專屬醒目樣式 */
+#calculate-btn {
+    background-color: #dc6b02; /* 主要顏色 (範例為亮藍色) */
+    border-color: #007bff;
+    color: white;
+    font-weight: bold;
 }
 
 .input-row button:hover {

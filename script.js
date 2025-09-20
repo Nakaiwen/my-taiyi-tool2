@@ -1368,7 +1368,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
 
 // ▼▼▼ 繪製運勢趨勢圖的函式 (最終穩定版) ▼▼▼
 let fortuneChartInstance = null;
-function renderFortuneChart(ageLabels, scoreData) {
+function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     const ctx = document.getElementById('fortune-chart').getContext('2d');
 
     if (fortuneChartInstance) {
@@ -1395,7 +1395,9 @@ function renderFortuneChart(ageLabels, scoreData) {
                 borderColor: 'rgba(75, 192, 192, 1)',
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
                 tension: 0.1,
-                fill: true
+                fill: true,
+                // 我們將自訂數據儲存在這裡
+                customData: overlapFlags
             }]
         },
         options: {
@@ -1408,13 +1410,29 @@ function renderFortuneChart(ageLabels, scoreData) {
                         maxTicksLimit: 18 // 最多顯示約 15 個標籤
                     }
                 },
-                y: {
-                    beginAtZero: false // 允許 Y 軸從負數開始，以顯示完整的負分
+                y: {beginAtZero: false}
+            },
+        plugins: {
+                    tooltip: {
+                        callbacks: {
+                            // footer callback 會在 tooltip 的最下方增加額外文字
+                            footer: function(tooltipItems) {
+                                const tooltipItem = tooltipItems[0];
+                                if (!tooltipItem) return '';
+
+                                // 從 customData 中讀取我們儲存的標記
+                                const isOverlap = tooltipItem.dataset.customData[tooltipItem.dataIndex];
+                                if (isOverlap) {
+                                    return '\n⭐ 大遊星與大遊真限同宮！'; // 返回要顯示的特殊訊息
+                                }
+                                return '';
+                            }
+                        }
+                    }
                 }
             }
-        }
-    });
-}
+        });
+    }
     
 
     // =================================================================
@@ -2124,6 +2142,24 @@ function renderFortuneChart(ageLabels, scoreData) {
         ageTracker = ageEnd + 1;
     }
     return limits;
+    }
+    // ▼▼▼ 分析「大遊真限與大遊星同宮」的引擎函式 ▼▼▼
+    function findDaYouOverlap(daYouZhenXianResult, daYouStarResult) {
+        if (!daYouZhenXianResult || !daYouStarResult) {
+            return null; // 如果缺少資料，則返回 null
+        }
+
+        // 1. 找出大遊星所在的宮位 ID
+        const daYouStarPalaceId = BRANCH_TO_PALACE_ID[daYouStarResult];
+        if (!daYouStarPalaceId) {
+            return null;
+        }
+
+        // 2. 在大遊真限的列表中，尋找宮位ID相同的那個區間
+        const overlapLimit = daYouZhenXianResult.find(limit => limit.palaceId === daYouStarPalaceId);
+
+        // 3. 如果找到了，就回傳那個區間的資訊；否則返回 null
+        return overlapLimit || null;
     }
     // ▼▼▼ 計算「飛祿大限」(當前及未來兩個)的函式 ▼▼▼
     function calculateFeiLuDaXian(yearStem, currentUserAge) {
@@ -4147,6 +4183,7 @@ function renderFortuneChart(ageLabels, scoreData) {
     // ▼▼▼ 更新能量趨勢圖的專屬函式 (最終穩定版) ▼▼▼
     let currentChartData = {}; 
     function updateChart() {
+        let chartDataForSort = [];
         console.log("--- 進入 updateChart 函式 ---");
     const selectedMode = document.querySelector('input[name="chart-mode"]:checked').value;
         console.log("當前選擇的模式:", selectedMode);
@@ -4226,9 +4263,19 @@ function renderFortuneChart(ageLabels, scoreData) {
         labels = limitData.map(item => item.ageRange);
         // 根據選擇的模式，計算對應的分數
         if (selectedMode === 'mingGong') {
-            scores = calculateFortuneScores(currentChartData.chartModel, currentChartData.arrangedLifePalaces, labels, currentChartData.hourPillar, currentChartData.lookupResult);
+        scores = calculateFortuneScores(currentChartData.chartModel, currentChartData.arrangedLifePalaces, labels, currentChartData.hourPillar, currentChartData.lookupResult);
         } else {
-            scores = limitData.map(item => getSimpleScoreForPalace(item.palaceId));
+        scores = limitData.map(item => getSimpleScoreForPalace(item.palaceId));
+        // ▼▼▼ 核心修改點 1: 準備帶有特殊標記的資料 ▼▼▼
+        const overlapInfo = currentChartData.daYouOverlapResult;
+            chartDataForSort = limitData.map((item, index) => ({
+                ageRange: item.ageRange,
+                score: scores[index],
+                // 只有在大遊真限模式下，才檢查是否重疊
+                isOverlap: (selectedMode === 'daYou' && overlapInfo && item.palaceId === overlapInfo.palaceId)
+            }));
+
+
         }
     }
     
@@ -4249,7 +4296,8 @@ function renderFortuneChart(ageLabels, scoreData) {
     
     renderFortuneChart(
         chartDataToSort.map(item => String(item.ageRange)),
-        chartDataToSort.map(item => item.score)
+        chartDataToSort.map(item => item.score),
+        chartDataForSort.map(item => item.isOverlap) // 將標記傳遞給繪圖函式
     );
     }
     
@@ -4375,6 +4423,7 @@ function renderFortuneChart(ageLabels, scoreData) {
     dataForCalculation.remedySuggestions = analyzeRemedySuggestions(dataForCalculation.chartModel, dataForCalculation.arrangedLifePalaces);
     dataForCalculation.strengthSuggestions = analyzeStrengthSuggestions(dataForCalculation.chartModel);
     dataForCalculation.keJiaYears = findKeJiaYears(dataForCalculation);
+    dataForCalculation.daYouOverlapResult = findDaYouOverlap(dataForCalculation.daYouZhenXianResult, dataForCalculation.daYouResult);
     currentChartData = dataForCalculation; // 將所有計算結果存到全域變數
 
     runCalculation(dataForCalculation, hour, xingNianData); 

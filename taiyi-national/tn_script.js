@@ -722,6 +722,22 @@ document.addEventListener('DOMContentLoaded', () => {
     '客參':   { element: '陰木', luck: '吉星', description: '副將之星，旅星孤星' }
     };
 
+    // ▼▼▼ 十二宮位對沖關係資料庫 ▼▼▼
+    const PALACE_OPPOSITES = {
+    '子': '午', '丑': '未', '寅': '申', '卯': '酉', '辰': '戌', '巳': '亥',
+    '午': '子', '未': '丑', '申': '寅', '酉': '卯', '戌': '辰', '亥': '巳'
+    };
+
+    // ▼▼▼ 十二宮位三合、六合等關係資料庫 (包含相鄰) ▼▼▼
+    const PALACE_RELATIONSHIPS = {
+    '子': { next: '丑', prev: '亥' }, '丑': { next: '寅', prev: '子' },
+    '寅': { next: '卯', prev: '丑' }, '卯': { next: '辰', prev: '寅' },
+    '辰': { next: '巳', prev: '卯' }, '巳': { next: '午', prev: '辰' },
+    '午': { next: '未', prev: '巳' }, '未': { next: '申', prev: '午' },
+    '申': { next: '酉', prev: '未' }, '酉': { next: '戌', prev: '申' },
+    '戌': { next: '亥', prev: '酉' }, '亥': { next: '子', prev: '戌' }
+    }
+
 
 
 
@@ -1526,7 +1542,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
 
     return finalGates;
     }
-    // ▼▼▼ 【新增】計算「年/月/日局」八門位置的函式▼▼▼
+    // ▼▼▼ 計算「年/月/日局」八門位置的函式▼▼▼
     function calculateYmdOuterRingData(jishu, taiYiPalaceBranch) {
     const finalGates = {};
     if (!jishu || !taiYiPalaceBranch) {
@@ -1719,30 +1735,92 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     }
     return results;
     }
-    // ▼▼▼ 格式化「格局」資訊的專屬函式 (用於左側摘要區) ▼▼▼
-    function formatPatternInfo(palaceModel, arrangedLifePalaces) {
-    let outputLines = [];
-    const palaceFullNameMap = { '命':'命宮', '兄':'兄弟宮', '妻':'夫妻宮', '孫':'子孫宮', '財':'財帛宮', '田':'田宅宮', '官':'官祿宮', '奴':'奴僕宮', '疾':'疾厄宮', '福':'福德宮', '貌':'相貌宮', '父':'父母宮' };
+    
+    // ▼▼▼ 【V2 - 結構化輸出版】計算所有格局的函式 ▼▼▼
+    function calculatePatterns(lookupResult, suanStarsResult) {
+    const patterns = [];
+    if (!lookupResult) return patterns;
 
-    Object.keys(palaceModel).forEach(palaceId => {
-        const palaceData = palaceModel[palaceId];
-        if (palaceData.patterns.length > 0) {
-            const palaceIndex = VALID_PALACES_CLOCKWISE.indexOf(palaceId);
-            if (palaceIndex === -1) return;
-            
-            const palaceShortName = arrangedLifePalaces[palaceIndex];
-            const palaceFullName = palaceFullNameMap[palaceShortName] || palaceShortName;
+    const starLocations = {
+        '太乙': lookupResult.太乙,
+        '文昌': lookupResult.文昌,
+        '始擊': lookupResult.始擊,
+        ...suanStarsResult.chartStars
+    };
+    
+    const palaceToStars = {};
+    for (const star in starLocations) {
+        const palace = starLocations[star];
+        if (palace) {
+            if (!palaceToStars[palace]) {
+                palaceToStars[palace] = [];
+            }
+            palaceToStars[palace].push(star);
+        }
+    }
 
-            palaceData.patterns.forEach(p => {
-                outputLines.push(`${palaceFullName}：${p.secondary} <span class="pattern-style">${p.type}</span> ${p.primary}`);
-            });
+    const taiYiPalace = starLocations['太乙'];
+    const wenChangPalace = starLocations['文昌'];
+    const shiJiPalace = starLocations['始擊'];
+
+    if (!taiYiPalace) return patterns;
+
+    // 掩
+    if (taiYiPalace === shiJiPalace) {
+        patterns.push({ palace: `${taiYiPalace}宮`, text: `始擊 <span class="pattern-style">掩</span> 太乙` });
+    }
+
+    // 囚
+    const qiuStars = ['文昌', '主大', '主參', '客大', '客參'];
+    qiuStars.forEach(star => {
+        if (starLocations[star] === taiYiPalace) {
+            patterns.push({ palace: `${taiYiPalace}宮`, text: `${star} <span class="pattern-style">囚</span> 太乙` });
         }
     });
-
-    if (outputLines.length > 0) {
-        return `\n  格局 : ${outputLines.join('、 ')}`;
+    
+    // 迫
+    const neighbors = PALACE_RELATIONSHIPS[taiYiPalace];
+    if (neighbors && (wenChangPalace === neighbors.next || wenChangPalace === neighbors.prev)) {
+        patterns.push({ palace: `${taiYiPalace}宮`, text: `文昌 <span class="pattern-style">迫</span> 太乙` });
     }
-    return `\n  格局 : 無掩迫關囚擊格對`;
+
+    // 擊
+    if (neighbors && (shiJiPalace === neighbors.next || shiJiPalace === neighbors.prev)) {
+        patterns.push({ palace: `${taiYiPalace}宮`, text: `始擊 <span class="pattern-style">擊</span> 太乙` });
+    }
+    
+    // 格
+    const oppositePalace = PALACE_OPPOSITES[taiYiPalace];
+    if (oppositePalace && shiJiPalace === oppositePalace) {
+        patterns.push({ palace: `${taiYiPalace}宮`, text: `始擊 <span class="pattern-style">格</span> 太乙` });
+    }
+
+    // 對
+    if (oppositePalace && wenChangPalace === oppositePalace) {
+        patterns.push({ palace: `${taiYiPalace}宮`, text: `文昌 <span class="pattern-style">對</span> 太乙` });
+    }
+
+    // 關
+    for (const palace in palaceToStars) {
+        const starsInPalace = palaceToStars[palace];
+        if (starsInPalace.length < 2) continue;
+
+        if (starsInPalace.includes('文昌') && (starsInPalace.includes('客大') || starsInPalace.includes('客參'))) {
+            const otherStar = starsInPalace.includes('客大') ? '客大' : '客參';
+            patterns.push({ palace: `${palace}宮`, text: `文昌 ${otherStar} <span class="pattern-style">關</span>` });
+        }
+        if (starsInPalace.includes('始擊') && (starsInPalace.includes('主大') || starsInPalace.includes('主參'))) {
+            const otherStar = starsInPalace.includes('主大') ? '主大' : '主參';
+            patterns.push({ palace: `${palace}宮`, text: `始擊 ${otherStar} <span class="pattern-style">關</span>` });
+        }
+        const suanGroup = ['主大', '主參', '客大', '客參'];
+        const presentSuanStars = starsInPalace.filter(s => suanGroup.includes(s));
+        if (presentSuanStars.length >= 2) {
+            patterns.push({ palace: `${palace}宮`, text: `${presentSuanStars.join(' ')} <span class="pattern-style">關</span>` });
+        }
+    }
+
+    return patterns;
     }
    
     // ▼▼▼ 每次增加星都要更新的函式 ▼▼▼
@@ -2109,6 +2187,26 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         outputText += `\n  主算 : ${lookupResult.主算} <span class="suan-attribute-style">(${zhuSuanAttr})</span>`;
         outputText += `\n  客算 : ${lookupResult.客算} <span class="suan-attribute-style">(${keSuanAttr})</span>`;
         outputText += `\n  定算 : ${lookupResult.定算} <span class="suan-attribute-style">(${dingSuanAttr})</span>`;
+
+        // ▼▼▼ 【核心修正點】使用新的排版邏輯來組合格局文字 ▼▼▼
+        const patterns = calculatePatterns(lookupResult, suanStarsResult);
+        if (patterns.length > 0) {
+        let patternStrings = [];
+        let lastPalace = '';
+        patterns.forEach(p => {
+            if (p.palace === lastPalace) {
+                // 如果宮位和上一個相同，就省略宮位名稱
+                patternStrings.push(`（${p.text}）`);
+            } else {
+                // 如果是新的宮位，就顯示宮位名稱
+                patternStrings.push(`${p.palace}（${p.text}）`);
+                lastPalace = p.palace; // 記住這個宮位
+            }
+        });
+        outputText += `\n\n  格局 : ${patternStrings.join('、 ')}`;
+        } else {
+        outputText += `\n\n  格局 : 無`;
+        }
     }
     document.getElementById('calculation-summary').innerHTML = outputText;
 }
@@ -2118,14 +2216,27 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         const month = parseInt(document.getElementById('birth-month').value, 10);
         const day = parseInt(document.getElementById('birth-day').value, 10);
         const hour = parseInt(document.getElementById('birth-hour').value, 10);
-        const timezoneOffset = parseInt(document.getElementById('timezone-select').value, 10);
         const chartType = document.querySelector('input[name="chart-type"]:checked')?.value || 'hour';
         if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour)) {
         console.error("錯誤：日期或時間輸入無效。");
         return;
         }
 
-        const birthDateObject = new Date(year, month - 1, day, hour);
+        const timezoneOffset = parseFloat(document.getElementById('timezone-select').value);
+
+        // 【核心修正點】根據選擇的時區，建立一個包含正確時區資訊的 Date 物件
+// 1. 將時區偏移量格式化為 "+08:00" 或 "-05:30" 這樣的字串
+        const sign = timezoneOffset >= 0 ? '+' : '-';
+        const offsetAbs = Math.abs(timezoneOffset);
+        const offsetHours = Math.floor(offsetAbs);
+        const offsetMinutes = (offsetAbs % 1) * 60;
+        const timezoneString = `${sign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
+
+        // 2. 組合出完整的 ISO 8601 日期時間字串 (這是最精準的跨時區時間表示法)
+        const isoString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:00:00${timezoneString}`;
+
+        // 3. 根據這個包含精準時區的字串，建立 Date 物件
+        const birthDateObject = new Date(isoString);
         const lunarDate = solarLunar.solar2lunar(year, month, day, hour);
         const precisionResult = calculateJishuAndBureau(birthDateObject);
 

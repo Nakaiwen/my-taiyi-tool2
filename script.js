@@ -3648,17 +3648,22 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const annualPalaceId = ageToAnnualPalaceMap[age];
         const annualPalaceStars = Object.keys(data.chartModel[annualPalaceId]?.stars || {}).join('、') || '無主星';
         
-        // --- ▼▼▼ 修正點：重新使用你的 solar-lunar.js，並使用正確的變數名稱 ▼▼▼ ---
         const today = new Date();
-        // 你的函式庫是準確的，我們用它來獲取當前的「節氣月」
-        const lunarDate = solarLunar.solar2lunar(today.getFullYear(), today.getMonth() + 1, today.getDate());
+        const birthDateParts = data.birthDate.split('/');
+        const birthMonth = parseInt(birthDateParts[1], 10) - 1;
+        const birthDay = parseInt(birthDateParts[2], 10);
         
-        // 使用節氣月的數字 (lunarDate.month) 來精準獲取流月卦的索引
-        const currentMonthIndex = lunarDate.month - 1;
-        const currentMonthHexagram = data.monthlyHexagramsResult[currentMonthIndex];
-        
-        // 修正變數名稱以正確顯示農曆日期 (常見函式庫使用 monthCn 和 dayCn)
-        const currentLunarDateStr = (lunarDate.monthCn || '') + (lunarDate.dayCn || '');
+        let lastBirthday = new Date(today.getFullYear(), birthMonth, birthDay);
+        if (today < lastBirthday) {
+            lastBirthday.setFullYear(today.getFullYear() - 1);
+        }
+
+        const monthsSinceBirthday = today.getMonth() - lastBirthday.getMonth() + (12 * (today.getFullYear() - lastBirthday.getFullYear()));
+        const currentAstrologicalMonthIndex = monthsSinceBirthday % 12;
+
+        const currentMonthHexagram = data.monthlyHexagramsResult[currentAstrologicalMonthIndex];
+        const currentLunarDateStr = `第 ${currentAstrologicalMonthIndex + 1} 個月`;
+        const todayString = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
 
         // 準備要發送給 n8n 的資料 (payload)
         const payload = {
@@ -3677,7 +3682,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             currentYear: today.getFullYear(),
             todayDate: todayString, 
             monthlyHexagrams: data.monthlyHexagramsResult,
-            // --- ▼▼▼ 新增這一行 ▼▼▼ ---
             currentAstrologicalMonthIndex: currentAstrologicalMonthIndex
         };
 

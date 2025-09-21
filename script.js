@@ -842,6 +842,20 @@ document.addEventListener('DOMContentLoaded', () => {
     '客參':   { '命宮': '你的緣分在外地，容易發展異地戀情或遠嫁他鄉。' }
     };
 
+    // ▼▼▼ 日主五行資料庫 ▼▼▼
+    const DAY_MASTER_DATA = {
+    '甲': { yinYang: '陽', element: '木' },
+    '乙': { yinYang: '陰', element: '木' },
+    '丙': { yinYang: '陽', element: '火' },
+    '丁': { yinYang: '陰', element: '火' },
+    '戊': { yinYang: '陽', element: '土' },
+    '己': { yinYang: '陰', element: '土' },
+    '庚': { yinYang: '陽', element: '金' },
+    '辛': { yinYang: '陰', element: '金' },
+    '壬': { yinYang: '陽', element: '水' },
+    '癸': { yinYang: '陰', element: '水' }
+    };
+
 
 
 
@@ -1432,7 +1446,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
                 }
             }
         });
-    }
+}
     
 
     // =================================================================
@@ -3582,7 +3596,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         
         return results;
     }
-    
     // ▼▼▼ 格式化「科甲年份」顯示文字的函式 (v2-分類版) ▼▼▼
     function formatKeJiaYearsInfo(keJiaYearsData) {
         if (!keJiaYearsData || (keJiaYearsData.allThree.length === 0 && keJiaYearsData.luZhuAndFeiLu.length === 0 && keJiaYearsData.luZhuAndFeiMa.length === 0)) {
@@ -3602,6 +3615,15 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         }
         
         return html;
+    }
+    // ▼▼▼ 取得日主五行資訊的函式 ▼▼▼
+    function getDayMasterInfo(dayStem) {
+        if (!dayStem || !DAY_MASTER_DATA[dayStem]) {
+            return '無法判斷';
+        }
+        const data = DAY_MASTER_DATA[dayStem];
+        // 根據你的範例，格式為「天干+五行」，例如 "戊土"
+        return `日主五行：${dayStem}${data.element} (${data.yinYang}${data.element})`;
     }
 
     // ▼▼▼ 產生 AI 年度能量總結的函式 (v5-已加入當前流月卦) ▼▼▼
@@ -3642,6 +3664,8 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const payload = {
             bazi: { yearPillar: data.yearPillar, monthPillar: data.monthPillar, dayPillar: data.dayPillar, hourPillar: data.hourPillar },
             age: data.currentUserAge,
+            dayMaster: data.dayMasterInfo, 
+            bazi: { yearPillar: data.yearPillar, monthPillar: data.monthPillar, dayPillar: data.dayPillar, hourPillar: data.hourPillar },
             greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
             greatLimitScore: data.currentGreatLimitScore.toFixed(0),
             greatLimitStars: greatLimitStars,
@@ -3650,9 +3674,11 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             annualPalaceStars: annualPalaceStars,
             annualHexagram: data.annualHexagramResult,
             changingHexagram: data.annualChangingHexagramResult,
-            currentYear: new Date().getFullYear(),
-            currentMonthHexagram: currentMonthHexagram || null,
-            currentLunarDate: currentLunarDateStr
+            currentYear: today.getFullYear(),
+            todayDate: todayString, 
+            monthlyHexagrams: data.monthlyHexagramsResult,
+            // --- ▼▼▼ 新增這一行 ▼▼▼ ---
+            currentAstrologicalMonthIndex: currentAstrologicalMonthIndex
         };
 
         // --- ▼▼▼ 請在這裡新增下面這一行，來「攔截」資料 ▼▼▼ ---
@@ -4000,7 +4026,8 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
         renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData, xingNianData, yangJiuForDisplay, baiLiuForDisplay, dataForCalculation.baiLiuXiaoXianResult, daYouForDisplay, dataForCalculation.feiLuDaXianResult, dataForCalculation.feiMaDaXianResult, dataForCalculation.feiMaLiuNianResult, dataForCalculation.feiLuLiuNianResult, dataForCalculation.heiFuResult); 
 
-        
+        // ▼▼▼ 在這裡新增下面這一行 ▼▼▼
+        document.getElementById('day-master-info').innerHTML = dataForCalculation.dayMasterInfo;
 
         const shenPalaceId = Object.keys(newSdrData).find(k => newSdrData[k].includes('身'));
         const shenPalaceBranch = shenPalaceId ? PALACE_ID_TO_BRANCH[shenPalaceId] : '計算失敗';
@@ -4386,6 +4413,8 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     const bureauResult = precisionResult ? precisionResult.calculatedBureau : '計算失敗';
     const lookupResult = lookupBureauData(bureauResult);
+    // ▼▼▼ 在這裡新增下面這一行 ▼▼▼
+    dataForCalculation.dayMasterInfo = getDayMasterInfo(dataForCalculation.dayPillar.charAt(0));
     dataForCalculation.bureauResult = bureauResult;
     dataForCalculation.lookupResult = lookupResult;
     dataForCalculation.deitiesResult = calculateDeities(bureauResult, dataForCalculation.hourPillar.charAt(1));

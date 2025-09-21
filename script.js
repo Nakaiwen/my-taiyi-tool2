@@ -3647,12 +3647,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
         // 準備要發送給 n8n 的資料 (payload)
         const payload = {
-            bazi: {
-                yearPillar: data.yearPillar,
-                monthPillar: data.monthPillar,
-                dayPillar: data.dayPillar,
-                hourPillar: data.hourPillar
-            },
+            bazi: { yearPillar: data.yearPillar, monthPillar: data.monthPillar, dayPillar: data.dayPillar, hourPillar: data.hourPillar },
             age: data.currentUserAge,
             greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
             greatLimitScore: data.currentGreatLimitScore.toFixed(0),
@@ -3664,8 +3659,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             changingHexagram: data.annualChangingHexagramResult,
             currentYear: new Date().getFullYear(),
             currentMonthHexagram: currentMonthHexagram || null,
-            // --- ▼▼▼ 新增這一行 ▼▼▼ ---
-            currentLunarDate: lunarDate.lunarMonthName + lunarDate.lunarDayName // 例如 "八月初一"
+            currentLunarDate: currentLunarDateStr 
         };
 
         // --- ▼▼▼ 請在這裡新增下面這一行，來「攔截」資料 ▼▼▼ ---

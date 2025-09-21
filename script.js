@@ -3649,7 +3649,9 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             annualHexagram: data.annualHexagramResult,
             changingHexagram: data.annualChangingHexagramResult,
             currentYear: new Date().getFullYear(),
-            currentMonthHexagram: currentMonthHexagram || null // 如果找不到就傳 null
+            currentMonthHexagram: currentMonthHexagram || null,
+            // --- ▼▼▼ 新增這一行 ▼▼▼ ---
+            currentLunarDate: lunarDate.lunarMonthName + lunarDate.lunarDayName // 例如 "八月初一"
         };
 
         try {

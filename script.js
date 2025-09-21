@@ -3625,11 +3625,25 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
         const annualPalaceId = ageToAnnualPalaceMap[age];
         const annualPalaceStars = Object.keys(data.chartModel[annualPalaceId]?.stars || {}).join('、') || '無主星';
-        // --- ▼▼▼ 新增：找出當前流月卦 (v2-使用數字索引修正) ▼▼▼ ---
+        
+        // --- ▼▼▼ 全新的、更精準的月份計算邏輯 ▼▼▼ ---
         const today = new Date();
-        const lunarDate = solarLunar.solar2lunar(today.getFullYear(), today.getMonth() + 1, today.getDate());
-        // 直接使用月份數字作為索引來獲取，更精準可靠
-        const currentMonthHexagram = data.monthlyHexagramsResult[lunarDate.month - 1]; 
+        const birthDateParts = data.birthDate.split('/'); // 從 data 中取得原始生日
+        const birthMonth = parseInt(birthDateParts[1], 10) - 1; // 月份是 0-11
+        const birthDay = parseInt(birthDateParts[2], 10);
+        
+        let lastBirthday = new Date(today.getFullYear(), birthMonth, birthDay);
+        // 如果今年的生日還沒到，就把生日年份退回去年
+        if (today < lastBirthday) {
+            lastBirthday.setFullYear(today.getFullYear() - 1);
+        }
+
+        // 計算今天距離上一個生日過了幾個月 (0代表第一個月)
+        const monthsSinceBirthday = today.getMonth() - lastBirthday.getMonth() + (12 * (today.getFullYear() - lastBirthday.getFullYear()));
+        const currentAstrologicalMonthIndex = monthsSinceBirthday % 12; // 確保索引在 0-11 之間
+
+        const currentMonthHexagram = data.monthlyHexagramsResult[currentAstrologicalMonthIndex];
+        const currentLunarDateStr = `第 ${currentAstrologicalMonthIndex + 1} 個月`; // 用「第幾個月」來表示，避免曆法混淆
 
         // 準備要發送給 n8n 的資料 (payload)
         const payload = {

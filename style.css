@@ -431,6 +431,7 @@
     /* 然後只讓我們的主容器顯示出來 */
     .main-container {
         display: flex !important;
+        flex-direction: row !important;
         visibility: visible !important;
     }
     

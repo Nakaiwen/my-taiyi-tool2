@@ -738,6 +738,28 @@ document.addEventListener('DOMContentLoaded', () => {
     '戌': { next: '亥', prev: '酉' }, '亥': { next: '子', prev: '戌' }
     }
 
+    // ▼▼▼ 太乙入宮陰陽屬性資料庫 ▼▼▼
+    const TAIYI_PALACE_PROPERTIES = {
+    '子': { type: '陽宮', text: '（容易火災，熱旱）' },
+    '艮': { type: '陽宮', text: '（容易火災，熱旱）' },
+    '卯': { type: '陽宮', text: '（容易火災，熱旱）' },
+    '巽': { type: '陽宮', text: '（容易火災，熱旱）' },
+    '午': { type: '陰宮', text: '（容易大雨，洪水）' },
+    '坤': { type: '陰宮', text: '（容易大雨，洪水）' },
+    '酉': { type: '陰宮', text: '（容易大雨，洪水）' },
+    '乾': { type: '陰宮', text: '（容易大雨，洪水）' }
+    };
+
+    // ▼▼▼ 宮位與地理方位對照表 ▼▼▼
+    const PALACE_TO_DIRECTION = {
+    '子': '北方',   '丑': '北北東方', '艮': '東南方',
+    '寅': '東南東方', '卯': '東方',   '辰': '東南東方',
+    '巽': '東南方',   '巳': '南南東方', '午': '南方',
+    '未': '南南西方', '坤': '西南方',   '申': '西南西方',
+    '酉': '西方',   '戌': '西北西方', '乾': '西北方',
+    '亥': '北北西方'
+    };
+
 
 
 
@@ -1700,7 +1722,6 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     }
     return null;
     }
-
     // ▼▼▼ 計算「百六小限」(24年範圍)的函式 ▼▼▼
     function calculateBaiLiuXiaoXian(shouQiGong, gender, currentUserAge) {
     if (!shouQiGong || !shouQiGong.palace || currentUserAge === undefined) {
@@ -1735,7 +1756,91 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     }
     return results;
     }
-    
+    // ▼▼▼ 計算太乙陰陽宮位預測下雨火災的函式 ▼▼▼
+    function calculateTaiYiPalacePattern(lookupResult) {
+    if (!lookupResult || !lookupResult.太乙) {
+        return '';
+    }
+
+    const taiYiPalace = lookupResult.太乙;
+    const palaceInfo = TAIYI_PALACE_PROPERTIES[taiYiPalace];
+
+    if (!palaceInfo) {
+        return '';
+    }
+
+    const zhuSuan = lookupResult.主算;
+    const keSuan = lookupResult.客算;
+    const dingSuan = lookupResult.定算;
+
+    let output = `\n  太乙 : ${palaceInfo.type}`;
+
+    // --- 【核心修正點】 ---
+    // 輔助函式：檢查「單一」數字是否含有指定奇偶屬性的位數
+    function numberContainsDigitOfParity(suan, parityCheck) {
+        const s = String(suan);
+        const isOdd = (d) => parseInt(d, 10) % 2 !== 0;
+
+        for (const digit of s) {
+            const digitIsOdd = isOdd(digit);
+            if ((parityCheck === 'odd' && digitIsOdd) || (parityCheck === 'even' && !digitIsOdd)) {
+                return true; // 只要找到一個符合的位數，就回傳 true
+            }
+        }
+        return false; // 如果所有位數都不符合，回傳 false
+    }
+
+    // 判斷：主、客、定算是否「各自都」含有一個奇數
+    const allContainOdd = 
+        numberContainsDigitOfParity(zhuSuan, 'odd') &&
+        numberContainsDigitOfParity(keSuan, 'odd') &&
+        numberContainsDigitOfParity(dingSuan, 'odd');
+
+    // 判斷：主、客、定算是否「各自都」含有一個偶數
+    const allContainEven = 
+        numberContainsDigitOfParity(zhuSuan, 'even') &&
+        numberContainsDigitOfParity(keSuan, 'even') &&
+        numberContainsDigitOfParity(dingSuan, 'even');
+
+    // 根據新的判斷結果，決定是否要加上警語
+    if (palaceInfo.type === '陽宮' && allContainOdd) {
+        output += ` ${palaceInfo.text}`;
+    } else if (palaceInfo.type === '陰宮' && allContainEven) {
+        output += ` ${palaceInfo.text}`;
+    }
+
+    return output;
+    }
+    // ▼▼▼ 計算地震海嘯格局的函式 ▼▼▼
+    function calculateEarthquakePattern(lookupResult) {
+    // 缺少必要資料則返回空字串
+    if (!lookupResult || !lookupResult.主算 || !lookupResult.客算 || !lookupResult.始擊) {
+        return '';
+    }
+
+    const zhuSuan = lookupResult.主算;
+    const keSuan = lookupResult.客算;
+    const shiJiPalace = lookupResult.始擊;
+
+    // 輔助函式：檢查單一算數的屬性是否符合條件
+    function checkAttribute(suan) {
+        const attributes = SUAN_ATTRIBUTE_DATA[suan];
+        if (!attributes) return false;
+        return attributes.includes('無地之數') || attributes.includes('杜塞無門') || attributes.includes('無天之數');
+    }
+
+    // 判斷：主算和客算是否「都」符合條件
+    if (checkAttribute(zhuSuan) && checkAttribute(keSuan)) {
+        // 如果符合，就找出始擊宮位對應的方位
+        const direction = PALACE_TO_DIRECTION[shiJiPalace] || '未知方位';
+        // 組合出最終要顯示的文字
+        return `\n\n  ＊容易地震，海嘯。（地點：${direction}）`;
+    }
+
+    // 如果不符合條件，返回空字串
+    return '';
+    }
+
     // ▼▼▼ 【V2 - 結構化輸出版】計算所有格局的函式 ▼▼▼
     function calculatePatterns(lookupResult, suanStarsResult) {
     const patterns = [];
@@ -2188,6 +2293,9 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         outputText += `\n  客算 : ${lookupResult.客算} <span class="suan-attribute-style">(${keSuanAttr})</span>`;
         outputText += `\n  定算 : ${lookupResult.定算} <span class="suan-attribute-style">(${dingSuanAttr})</span>`;
 
+        // ▼▼▼ 【新增】呼叫地震格局計算，並插入到文字中 ▼▼▼
+        outputText += calculateEarthquakePattern(lookupResult);
+
         // ▼▼▼ 【核心修正點】使用新的排版邏輯來組合格局文字 ▼▼▼
         const patterns = calculatePatterns(lookupResult, suanStarsResult);
         if (patterns.length > 0) {
@@ -2207,8 +2315,10 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         } else {
         outputText += `\n\n  格局 : 無`;
         }
-    }
-    document.getElementById('calculation-summary').innerHTML = outputText;
+        // ▼▼▼ 【新增】呼叫新的太乙格局計算並附加到結果中 ▼▼▼
+        outputText += calculateTaiYiPalacePattern(lookupResult);
+        }
+        document.getElementById('calculation-summary').innerHTML = outputText;
 }
 
     calculateBtn.addEventListener('click', () => {
@@ -2222,21 +2332,8 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         return;
         }
 
-        const timezoneOffset = parseFloat(document.getElementById('timezone-select').value);
-
-        // 【核心修正點】根據選擇的時區，建立一個包含正確時區資訊的 Date 物件
-// 1. 將時區偏移量格式化為 "+08:00" 或 "-05:30" 這樣的字串
-        const sign = timezoneOffset >= 0 ? '+' : '-';
-        const offsetAbs = Math.abs(timezoneOffset);
-        const offsetHours = Math.floor(offsetAbs);
-        const offsetMinutes = (offsetAbs % 1) * 60;
-        const timezoneString = `${sign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
-
-        // 2. 組合出完整的 ISO 8601 日期時間字串 (這是最精準的跨時區時間表示法)
-        const isoString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:00:00${timezoneString}`;
-
-        // 3. 根據這個包含精準時區的字串，建立 Date 物件
-        const birthDateObject = new Date(isoString);
+        // 【修正點】移除所有時區相關計算，直接用輸入的數字建立日期物件
+        const birthDateObject = new Date(year, month - 1, day, hour);
         const lunarDate = solarLunar.solar2lunar(year, month, day, hour);
         const precisionResult = calculateJishuAndBureau(birthDateObject);
 

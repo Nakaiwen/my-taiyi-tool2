@@ -4305,6 +4305,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     // (這個calculateBtn.addEventListener 函式就是工廠老闆, runCalculation是老師傅)
     calculateBtn.addEventListener('click', () => {
+    aiSummaryOutput.style.display = 'none';
     const year = parseInt(document.getElementById('birth-year').value, 10);
     const month = parseInt(document.getElementById('birth-month').value, 10);
     const day = parseInt(document.getElementById('birth-day').value, 10);

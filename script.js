@@ -3626,24 +3626,17 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const annualPalaceId = ageToAnnualPalaceMap[age];
         const annualPalaceStars = Object.keys(data.chartModel[annualPalaceId]?.stars || {}).join('、') || '無主星';
         
-        // --- ▼▼▼ 全新的、更精準的月份計算邏輯 ▼▼▼ ---
+        // --- ▼▼▼ 修正點：重新使用你的 solar-lunar.js，並使用正確的變數名稱 ▼▼▼ ---
         const today = new Date();
-        const birthDateParts = data.birthDate.split('/'); // 從 data 中取得原始生日
-        const birthMonth = parseInt(birthDateParts[1], 10) - 1; // 月份是 0-11
-        const birthDay = parseInt(birthDateParts[2], 10);
+        // 你的函式庫是準確的，我們用它來獲取當前的「節氣月」
+        const lunarDate = solarLunar.solar2lunar(today.getFullYear(), today.getMonth() + 1, today.getDate());
         
-        let lastBirthday = new Date(today.getFullYear(), birthMonth, birthDay);
-        // 如果今年的生日還沒到，就把生日年份退回去年
-        if (today < lastBirthday) {
-            lastBirthday.setFullYear(today.getFullYear() - 1);
-        }
-
-        // 計算今天距離上一個生日過了幾個月 (0代表第一個月)
-        const monthsSinceBirthday = today.getMonth() - lastBirthday.getMonth() + (12 * (today.getFullYear() - lastBirthday.getFullYear()));
-        const currentAstrologicalMonthIndex = monthsSinceBirthday % 12; // 確保索引在 0-11 之間
-
-        const currentMonthHexagram = data.monthlyHexagramsResult[currentAstrologicalMonthIndex];
-        const currentLunarDateStr = `第 ${currentAstrologicalMonthIndex + 1} 個月`; // 用「第幾個月」來表示，避免曆法混淆
+        // 使用節氣月的數字 (lunarDate.month) 來精準獲取流月卦的索引
+        const currentMonthIndex = lunarDate.month - 1;
+        const currentMonthHexagram = data.monthlyHexagramsResult[currentMonthIndex];
+        
+        // 修正變數名稱以正確顯示農曆日期 (常見函式庫使用 monthCn 和 dayCn)
+        const currentLunarDateStr = (lunarDate.monthCn || '') + (lunarDate.dayCn || '');
 
         // 準備要發送給 n8n 的資料 (payload)
         const payload = {
@@ -3659,7 +3652,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             changingHexagram: data.annualChangingHexagramResult,
             currentYear: new Date().getFullYear(),
             currentMonthHexagram: currentMonthHexagram || null,
-            currentLunarDate: currentLunarDateStr 
+            currentLunarDate: currentLunarDateStr
         };
 
         // --- ▼▼▼ 請在這裡新增下面這一行，來「攔截」資料 ▼▼▼ ---

@@ -3631,12 +3631,10 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         // !!! 非常重要：請將下面的網址替換成你在 n8n 中複製的 URL !!!
         const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/363afd96-b5b8-4ef5-bba4-f06ebbb1e484'; // 建議使用 Production URL
 
-        // 準備要發送給 n8n 的資料 (v2 - 專業版)
-        const age = data.currentUserAge;
+        // --- 準備要發送給 n8n 的資料 ---
         const greatLimitPalaceId = VALID_PALACES_CLOCKWISE[data.currentGreatLimitIndex];
         const greatLimitStars = Object.keys(data.chartModel[greatLimitPalaceId]?.stars || {}).join('、') || '無主星';
         
-        // 為了找到行年宮位，我們需要先建立完整的「歲數 -> 宮位」對照表
         const ageToAnnualPalaceMap = {};
         const fullXingNianData = calculateXingNian(data.gender, 1, 120);
         Object.keys(fullXingNianData).forEach(palaceId => {
@@ -3644,33 +3642,18 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
                 ageToAnnualPalaceMap[age] = palaceId;
             });
         });
-
-        const annualPalaceId = ageToAnnualPalaceMap[age];
+        const annualPalaceId = ageToAnnualPalaceMap[data.currentUserAge];
         const annualPalaceStars = Object.keys(data.chartModel[annualPalaceId]?.stars || {}).join('、') || '無主星';
-        
-        const today = new Date();
-        const birthDateParts = data.birthDate.split('/');
-        const birthMonth = parseInt(birthDateParts[1], 10) - 1;
-        const birthDay = parseInt(birthDateParts[2], 10);
-        
-        let lastBirthday = new Date(today.getFullYear(), birthMonth, birthDay);
-        if (today < lastBirthday) {
-            lastBirthday.setFullYear(today.getFullYear() - 1);
-        }
 
-        const monthsSinceBirthday = today.getMonth() - lastBirthday.getMonth() + (12 * (today.getFullYear() - lastBirthday.getFullYear()));
-        const currentAstrologicalMonthIndex = monthsSinceBirthday % 12;
-
-        const currentMonthHexagram = data.monthlyHexagramsResult[currentAstrologicalMonthIndex];
-        const currentLunarDateStr = `第 ${currentAstrologicalMonthIndex + 1} 個月`;
-        const todayString = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
-
-        // 準備要發送給 n8n 的資料 (payload)
         const payload = {
-            bazi: { yearPillar: data.yearPillar, monthPillar: data.monthPillar, dayPillar: data.dayPillar, hourPillar: data.hourPillar },
+            bazi: {
+                yearPillar: data.yearPillar,
+                monthPillar: data.monthPillar,
+                dayPillar: data.dayPillar,
+                hourPillar: data.hourPillar
+            },
+            dayMaster: data.dayMasterInfo,
             age: data.currentUserAge,
-            dayMaster: data.dayMasterInfo, 
-            bazi: { yearPillar: data.yearPillar, monthPillar: data.monthPillar, dayPillar: data.dayPillar, hourPillar: data.hourPillar },
             greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
             greatLimitScore: data.currentGreatLimitScore.toFixed(0),
             greatLimitStars: greatLimitStars,
@@ -3679,10 +3662,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             annualPalaceStars: annualPalaceStars,
             annualHexagram: data.annualHexagramResult,
             changingHexagram: data.annualChangingHexagramResult,
-            currentYear: today.getFullYear(),
-            todayDate: todayString, 
-            monthlyHexagrams: data.monthlyHexagramsResult,
-            currentAstrologicalMonthIndex: currentAstrologicalMonthIndex
+            currentYear: new Date().getFullYear()
         };
 
         // --- ▼▼▼ 請在這裡新增下面這一行，來「攔截」資料 ▼▼▼ ---

@@ -3625,9 +3625,11 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
         const annualPalaceId = ageToAnnualPalaceMap[age];
         const annualPalaceStars = Object.keys(data.chartModel[annualPalaceId]?.stars || {}).join('、') || '無主星';
+        // --- ▼▼▼ 新增：找出當前流月卦 (v2-使用數字索引修正) ▼▼▼ ---
         const today = new Date();
         const lunarDate = solarLunar.solar2lunar(today.getFullYear(), today.getMonth() + 1, today.getDate());
-        const currentMonthHexagram = data.monthlyHexagramsResult.find(item => item.monthName === lunarDate.lunarMonthName);
+        // 直接使用月份數字作為索引來獲取，更精準可靠
+        const currentMonthHexagram = data.monthlyHexagramsResult[lunarDate.month - 1]; 
 
         // 準備要發送給 n8n 的資料 (payload)
         const payload = {

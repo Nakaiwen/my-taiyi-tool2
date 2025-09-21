@@ -3604,7 +3604,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return html;
     }
 
-    // ▼▼▼ 產生 AI 年度能量總結的函式 (v3-已整合 n8n Webhook) ▼▼▼
+    // ▼▼▼ 產生 AI 年度能量總結的函式 (v5-已加入當前流月卦) ▼▼▼
     async function generateAISummary(data) {
         // !!! 非常重要：請將下面的網址替換成你在 n8n 中複製的 URL !!!
         const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/363afd96-b5b8-4ef5-bba4-f06ebbb1e484'; // 建議使用 Production URL
@@ -3625,6 +3625,9 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
         const annualPalaceId = ageToAnnualPalaceMap[age];
         const annualPalaceStars = Object.keys(data.chartModel[annualPalaceId]?.stars || {}).join('、') || '無主星';
+        const today = new Date();
+        const lunarDate = solarLunar.solar2lunar(today.getFullYear(), today.getMonth() + 1, today.getDate());
+        const currentMonthHexagram = data.monthlyHexagramsResult.find(item => item.monthName === lunarDate.lunarMonthName);
 
         // 準備要發送給 n8n 的資料 (payload)
         const payload = {
@@ -3643,7 +3646,8 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             annualPalaceStars: annualPalaceStars,
             annualHexagram: data.annualHexagramResult,
             changingHexagram: data.annualChangingHexagramResult,
-            currentYear: new Date().getFullYear()
+            currentYear: new Date().getFullYear(),
+            currentMonthHexagram: currentMonthHexagram || null // 如果找不到就傳 null
         };
 
         try {

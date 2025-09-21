@@ -3666,7 +3666,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         // 根據你的範例，格式為「天干+五行」，例如 "戊土"
         return `日主五行：${dayStem}${data.element} (${data.yinYang}${data.element})`;
     }
-
     // ▼▼▼ 產生 AI 年度能量總結的函式 (v5-已加入當前流月卦) ▼▼▼
     async function generateAISummary(data) {
         // !!! 非常重要：請將下面的網址替換成你在 n8n 中複製的 URL !!!
@@ -4245,9 +4244,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     let currentChartData = {}; 
     function updateChart() {
         let chartDataForSort = [];
-        console.log("--- 進入 updateChart 函式 ---");
     const selectedMode = document.querySelector('input[name="chart-mode"]:checked').value;
-        console.log("當前選擇的模式:", selectedMode);
     
     let scores = [];
     let labels = [];
@@ -4340,20 +4337,12 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         }
     }
     
-    // ▼▼▼ 偵錯點：在繪製圖表前，印出最終的數據 ▼▼▼
-    console.log("準備傳入 renderFortuneChart 的 X 軸標籤 (labels):", labels);
-    console.log("準備傳入 renderFortuneChart 的 Y 軸分數 (scores):", scores);
-
-
     // --- 重新排序並繪製圖表 ---
     let chartDataToSort = labels.map((label, index) => ({ ageRange: label, score: scores[index] })).filter(item => item && item.ageRange !== undefined && item.score !== undefined);
     if (selectedMode !== 'annual') {
          chartDataToSort.sort((a, b) => parseFloat(a.ageRange.split('-')[0]) - parseFloat(b.ageRange.split('-')[0]));
     }
 
-    console.log("排序後，最終用於繪圖的 X 軸標籤:", chartDataToSort.map(item => String(item.ageRange)));
-    console.log("排序後，最終用於繪圖的 Y 軸分數:", chartDataToSort.map(item => item.score));
-    console.log("---------------------------------");
     
     renderFortuneChart(
         chartDataToSort.map(item => String(item.ageRange)),

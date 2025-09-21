@@ -3616,6 +3616,47 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         
         return html;
     }
+    // ▼▼▼ 根據24節氣精準判斷命理月份的函式 (最終版) ▼▼▼
+    function getSolarTermMonth(date) {
+        const year = date.getFullYear();
+        const time = date.getTime();
+
+        // 節氣索引對應的月份 (1=寅月, 2=卯月...)
+        const termToMonthMap = {
+            1: 12, // 小寒 -> 丑月(12)
+            3: 1,  // 立春 -> 寅月(1)
+            5: 2,  // 驚蟄 -> 卯月(2)
+            7: 3,  // 清明 -> 辰月(3)
+            9: 4,  // 立夏 -> 巳月(4)
+            11: 5, // 芒種 -> 午月(5)
+            13: 6, // 小暑 -> 未月(6)
+            15: 7, // 立秋 -> 申月(7)
+            17: 8, // 白露 -> 酉月(8)
+            19: 9, // 寒露 -> 戌月(9)
+            21: 10,// 立冬 -> 亥月(10)
+            23: 11 // 大雪 -> 子月(11)
+        };
+
+        // 從一年的最後一個節氣開始往前找
+        for (let i = 24; i >= 1; i--) {
+            const termTime = solarLunar.getTerm(year, i);
+            if (time >= termTime) {
+                // 如果找到了當前日期所在的節氣區間
+                // 我們需要找到這個區間的起始「節」
+                let startTermIndex = i;
+                if (startTermIndex % 2 === 0) { // 如果是「氣」，則退回到前一個「節」
+                    startTermIndex--;
+                }
+                return termToMonthMap[startTermIndex];
+            }
+        }
+        // 如果跨年了（例如在1月1日到小寒之間），則查找去年的大雪
+        const lastYearTermTime = solarLunar.getTerm(year - 1, 23); // 去年大雪
+        if (time >= lastYearTermTime) {
+            return 11; // 子月
+        }
+        return 12; // 預設為丑月
+    }
     // ▼▼▼ 取得日主五行資訊的函式 ▼▼▼
     function getDayMasterInfo(dayStem) {
         if (!dayStem || !DAY_MASTER_DATA[dayStem]) {
@@ -3631,7 +3672,8 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         // !!! 非常重要：請將下面的網址替換成你在 n8n 中複製的 URL !!!
         const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/363afd96-b5b8-4ef5-bba4-f06ebbb1e484'; // 建議使用 Production URL
 
-        // --- 準備要發送給 n8n 的資料 ---
+        // --- 準備收集基礎數據發送給 n8n 的資料 ---
+        const age = data.currentUserAge;
         const greatLimitPalaceId = VALID_PALACES_CLOCKWISE[data.currentGreatLimitIndex];
         const greatLimitStars = Object.keys(data.chartModel[greatLimitPalaceId]?.stars || {}).join('、') || '無主星';
         
@@ -3642,16 +3684,22 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
                 ageToAnnualPalaceMap[age] = palaceId;
             });
         });
-        const annualPalaceId = ageToAnnualPalaceMap[data.currentUserAge];
+        const annualPalaceId = ageToAnnualPalaceMap[age];
         const annualPalaceStars = Object.keys(data.chartModel[annualPalaceId]?.stars || {}).join('、') || '無主星';
 
+        // --- ▼▼▼ 核心修正點：呼叫我們自訂的節氣月函式 ▼▼▼ ---
+        const today = new Date();
+        const currentMonthNumber = getSolarTermMonth(today); // 獲取正確的節氣月份數字 (1-12)
+        const currentMonthIndex = currentMonthNumber - 1;    // 轉換為陣列索引 (0-11)
+
+        const currentMonthHexagram = data.monthlyHexagramsResult[currentMonthIndex];
+        // 為了讓 AI 更清楚，我們直接用中文名稱
+        const currentLunarDateStr = MONTH_NAMES_CHINESE[currentMonthIndex]; 
+        const todayString = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+
+
         const payload = {
-            bazi: {
-                yearPillar: data.yearPillar,
-                monthPillar: data.monthPillar,
-                dayPillar: data.dayPillar,
-                hourPillar: data.hourPillar
-            },
+            bazi: { yearPillar: data.yearPillar, monthPillar: data.monthPillar, dayPillar: data.dayPillar, hourPillar: data.hourPillar },
             dayMaster: data.dayMasterInfo,
             age: data.currentUserAge,
             greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
@@ -3662,11 +3710,13 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             annualPalaceStars: annualPalaceStars,
             annualHexagram: data.annualHexagramResult,
             changingHexagram: data.annualChangingHexagramResult,
-            currentYear: new Date().getFullYear()
+            currentYear: today.getFullYear(),
+            todayDate: todayString, 
+            currentAstrologicalMonthIndex: currentMonthIndex,
+            currentLunarDate: currentLunarDateStr, 
+            monthHexagramName: currentMonthHexagram?.hexagram?.name || '資料空缺',
+            monthHexagramExplanation: currentMonthHexagram?.hexagram?.explanation || '資料空缺'
         };
-
-        // --- ▼▼▼ 請在這裡新增下面這一行，來「攔截」資料 ▼▼▼ ---
-        console.log("準備發送到 n8n 的最終資料 (Payload):", JSON.stringify(payload, null, 2));
 
         try {
             const response = await fetch(n8nWebhookUrl, {

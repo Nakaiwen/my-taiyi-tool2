@@ -597,3 +597,44 @@
     margin-top: 0;
     color: #0056b3;
 }
+
+/* ====================================================== */
+/* 響應式設計：手機版專用樣式 (寬度 <= 850px)       */
+/* ====================================================== */
+@media (max-width: 850px) {
+
+    /* 將主容器改為垂直堆疊 */
+    .main-container {
+        flex-direction: column;
+        gap: 10px; /* 縮小欄位間距 */
+    }
+
+    /* 讓左右兩欄都變成100%寬度 */
+    .controls-column,
+    .plate-column {
+        flex: 1 1 100%; /* 讓欄位能自動填滿寬度 */
+        max-width: 100%;
+    }
+
+    /* 調整SVG命盤的大小，讓它能符合手機螢幕 */
+    #taiyi-plate {
+        width: 100%;      /* 讓圓盤寬度佔滿其容器的 98% */
+        min-width: unset;  /* 移除桌面版的最小寬度限制，讓它可以自由縮放 */
+        max-width: unset;  /* 同時也移除桌面版的最大寬度限制 */
+        margin: 0 auto;  /* 讓它在容器內水平置中 */
+    }
+
+    /* 適當縮小四柱的間距和字體，以容納更多資訊 */
+    #bazi-pillars-container {
+        gap: 15px; /* 縮小柱子之間的距離 */
+    }
+    .pillar-char {
+        font-size: 20px; /* 稍微縮小字體 */
+    }
+
+    /* 讓圖表控制按鈕可以換行，避免擠在一起 */
+    #chart-controls {
+        flex-wrap: wrap; /* 允許換行 */
+        gap: 10px; /* 調整按鈕間距 */
+    }
+}

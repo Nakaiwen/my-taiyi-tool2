@@ -3604,87 +3604,75 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return html;
     }
 
-    // ▼▼▼ 產生 AI 年度能量總結的函式 (已轉為繁體中文) ▼▼▼
-    function generateAISummary(data) {
-    // 1. 收集所有 AI 分析需要的關鍵數據
-    const age = data.currentUserAge;
-    
-    // 找出當前歲數所在的大限宮位和分數
-    const ageLimits = arrangeAgeLimits(data.arrangedLifePalaces);
-    const greatLimitScores = calculateFortuneScores(data.chartModel, data.arrangedLifePalaces, ageLimits, data.hourPillar, data.lookupResult);
-    let currentGreatLimitName = '未知';
-    let currentGreatLimitScore = 0;
-    const currentGreatLimitIndex = ageLimits.findIndex(range => {
-        if (!range) return false;
-        const [start, end] = range.split('-').map(Number);
-        return age >= start && age <= end;
-    });
-    if (currentGreatLimitIndex !== -1) {
-        const palaceShortName = data.arrangedLifePalaces[currentGreatLimitIndex];
-        currentGreatLimitName = PALACE_FULL_NAME_MAP[palaceShortName] || palaceShortName;
-        currentGreatLimitScore = greatLimitScores[currentGreatLimitIndex];
-    }
+    // ▼▼▼ 產生 AI 年度能量總結的函式 (v3-已整合 n8n Webhook) ▼▼▼
+    async function generateAISummary(data) {
+        // !!! 非常重要：請將下面的網址替換成你在 n8n 中複製的 URL !!!
+        const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/363afd96-b5b8-4ef5-bba4-f06ebbb1e484'; // 建議使用 Production URL
 
-    // 找出當前歲數所在的行年宮位
-    const ageToAnnualPalaceMap = {};
-    const fullXingNianData = calculateXingNian(data.gender, 1, 120);
-    Object.keys(fullXingNianData).forEach(palaceId => {
-        fullXingNianData[palaceId].ages.forEach(age => {
-            ageToAnnualPalaceMap[age] = palaceId;
+        // 準備要發送給 n8n 的資料 (v2 - 專業版)
+        const age = data.currentUserAge;
+        const greatLimitPalaceId = VALID_PALACES_CLOCKWISE[data.currentGreatLimitIndex];
+        const greatLimitStars = Object.keys(data.chartModel[greatLimitPalaceId]?.stars || {}).join('、') || '無主星';
+        
+        // 為了找到行年宮位，我們需要先建立完整的「歲數 -> 宮位」對照表
+        const ageToAnnualPalaceMap = {};
+        const fullXingNianData = calculateXingNian(data.gender, 1, 120);
+        Object.keys(fullXingNianData).forEach(palaceId => {
+            fullXingNianData[palaceId].ages.forEach(age => {
+                ageToAnnualPalaceMap[age] = palaceId;
+            });
         });
-    });
-    const annualPalaceId = ageToAnnualPalaceMap[age];
-    const annualPalaceShortName = annualPalaceId ? data.arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(annualPalaceId)] : '未知';
-    const annualPalaceFullName = PALACE_FULL_NAME_MAP[annualPalaceShortName] || annualPalaceShortName;
 
-    const annualHexagram = data.annualHexagramResult;
-    const changingHexagram = data.annualChangingHexagramResult;
-    const currentYear = new Date().getFullYear();
+        const annualPalaceId = ageToAnnualPalaceMap[age];
+        const annualPalaceStars = Object.keys(data.chartModel[annualPalaceId]?.stars || {}).join('、') || '無主星';
 
-    // --- ▼▼▼ 修改點 1: 新增計算「行年宮位」本身的分數 ▼▼▼ ---
-    const annualPalaceScore = annualPalaceId ? getBaseScoreForPalace(annualPalaceId, data.chartModel, data.lookupResult) : 0;
+        // 準備要發送給 n8n 的資料 (payload)
+        const payload = {
+            bazi: {
+                yearPillar: data.yearPillar,
+                monthPillar: data.monthPillar,
+                dayPillar: data.dayPillar,
+                hourPillar: data.hourPillar
+            },
+            age: data.currentUserAge,
+            greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
+            greatLimitScore: data.currentGreatLimitScore.toFixed(0),
+            greatLimitStars: greatLimitStars,
+            annualPalaceFullName: PALACE_FULL_NAME_MAP[data.annualPalaceShortName] || data.annualPalaceShortName,
+            annualPalaceScore: data.annualPalaceScore.toFixed(0),
+            annualPalaceStars: annualPalaceStars,
+            annualHexagram: data.annualHexagramResult,
+            changingHexagram: data.annualChangingHexagramResult,
+            currentYear: new Date().getFullYear()
+        };
 
-    // 2. 組合出您設計的、更詳細的指令 (Prompt)
-    let prompt = `你是一位命理分析師。你根據使用者今年的歲數，來判定使用者今年對應的「限例太乙」宮位是十二宮的哪個宮位？以及行年流年宮位是十二宮的哪個宮位？來給出他的今年重要功課是在哪個人生領域。再從他的「限例太乙」人生能量趨勢圖在此階段的分數，以及結合今年流年卦與流年變卦的卦象，來給出今年的人生建議。請綜合這些資訊，為他撰寫一段約300字的年度能量總結與建議，你的責任是提醒他機會點與鼓舞人心，並且語氣溫和。\n\n`;
-    prompt += `分析依據如下：\n`;
-    prompt += `- 當前年份：${currentYear}年\n`;
-    prompt += `- 當前歲數：${age}歲\n`;
-    prompt += `- 「限例太乙」宮位：${currentGreatLimitName}\n`;
-    prompt += `- 「行年流年」宮位：${annualPalaceFullName}\n`;
-    prompt += `- 「限例太乙」能量分數：${currentGreatLimitScore.toFixed(0)}\n`;
-    prompt += `- 「行年流年」能量分數：${annualPalaceScore.toFixed(0)}\n`;
+        try {
+            const response = await fetch(n8nWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-    if (annualHexagram) {
-        prompt += `- 流年卦：${annualHexagram.number} ${annualHexagram.name} (${annualHexagram.description}) (白話解釋：${annualHexagram.explanation})\n`;
+            if (!response.ok) {
+                throw new Error(`n8n 伺服器錯誤: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            
+            // --- ▼▼▼ 唯一的修改點在這裡 ▼▼▼ ---
+            // 從 result.choices[0].message.content 改為 result.message.content
+            const aiContent = result.message.content; 
+            
+            let aiResponse = `<h4>${new Date().getFullYear()}年 (${data.currentUserAge}歲) 能量總結與建議</h4>`;
+            aiResponse += `<div style="white-space: pre-wrap;">${aiContent}</div>`;
+            
+            return aiResponse;
+
+        } catch (error) {
+            console.error('呼叫 n8n 時發生錯誤:', error);
+            return '<h4>分析失敗</h4><p>無法連接到 AI 分析服務，請稍後再試或檢查 n8n 工作流是否正常運作。</p>';
+        }
     }
-    if (changingHexagram) {
-        prompt += `- 流年變卦：${changingHexagram.number} ${changingHexagram.name} (${changingHexagram.description}) (白話解釋：${changingHexagram.explanation})\n`;
-    }
-
-    
-    // --- 模擬 AI 回應 (已轉為繁體中文並整合白話解釋) ---
-    let aiResponse = `<h4>${currentYear}年 (${age}歲) 能量總結與建議</h4>`;
-    aiResponse += `您好，綜合您今年的太乙星盤資訊來看，可以獲得以下的資訊：\n\n`;
-    aiResponse += `您今年的十年運勢由「${currentGreatLimitName}」所主導，此十年大限的能量分數為「${currentGreatLimitScore.toFixed(0)}」。而今年的流年運勢則落在了「${annualPalaceFullName}」，流年的能量分數為${annualPalaceScore.toFixed(0)}分。這代表您今年的重要功課，將會圍繞著與「${annualPalaceFullName.replace('宮','')}」相關的人事物上。\n\n`;
-    let hexagramSummary = ""; // 先建立一個空字串來組合卦象解釋
-    if (annualHexagram) {
-        hexagramSummary += `今年的流年卦象為「${annualHexagram?.name}」，它的白話意涵是：「${annualHexagram?.explanation}」`;
-    }
-    if (changingHexagram) {
-        if (hexagramSummary) { hexagramSummary += " "; } // 如果前面有流年卦，加個空格
-        hexagramSummary += `到了下半年，運勢將轉變為「${changingHexagram?.name}」，意涵為：「${changingHexagram?.explanation}」`;
-    }
-    if (hexagramSummary) {
-         aiResponse += hexagramSummary + "。\n\n"; // 如果有內容，才把整段加進去
-    }
-
-    aiResponse += `綜合來看，這預示著您今年的核心課題在於順應時勢，並在變動中尋找新的穩定。結合您的「${annualPalaceFullName}」課題，建議您在相關領域可以更靈活一些，當外部環境變化時，勇敢地調整自己的步伐，而不是固守原地。這份變動，正是您今年成長的契機。流年月卦也是一個非常好的每月運勢參考指標，注意這裡指的是農曆唷。\n\n`;
-    aiResponse += `您可以好好把握未來30天的吉日，完成自己想做的一些重要決策。`;
-    aiResponse += `挑選有「妻財」或是「天元祿主」的日子拓展訂單開拓財源；找有「偏祿」的日子，買張彩券碰碰運氣。也記得在「忌星」與「鬼星」的日子保守謹慎。\n`;
-    aiResponse += `<small style="color:#888;">（改變命運的第一步，從現在開始。）</small>\n\n\n`;
-    
-    return aiResponse;
-}
     
     // ▼▼▼ 每次增加星都要更新的函式 ▼▼▼
     function generateMainChartData(lookupResult, deitiesResult, suanStarsResult, shiWuFuResult, xiaoYouResult, junJiResult, chenJiResult, minJiResult, tianYiResult, diYiResult, siShenResult, feiFuResult, daYouResult, yueJiangData, guiRenData, xingNianData, huangEnResult) {
@@ -4425,6 +4413,37 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     dataForCalculation.strengthSuggestions = analyzeStrengthSuggestions(dataForCalculation.chartModel);
     dataForCalculation.keJiaYears = findKeJiaYears(dataForCalculation);
     dataForCalculation.daYouOverlapResult = findDaYouOverlap(dataForCalculation.daYouZhenXianResult, dataForCalculation.daYouResult);
+    
+    // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+    //  請在這裡插入一整段新的「數據準備」程式碼
+    // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+    // 為了準備給 AI 的 prompt，提前計算出所有需要的宮位名稱和分數
+    const ageLimitsForAI = arrangeAgeLimits(arrangedLifePalaces);
+    const greatLimitScoresForAI = calculateFortuneScores(dataForCalculation.chartModel, arrangedLifePalaces, ageLimitsForAI, hourPillar, dataForCalculation.lookupResult);
+    
+    dataForCalculation.currentGreatLimitIndex = ageLimitsForAI.findIndex(range => {
+        if (!range) return false;
+        const [start, end] = range.split('-').map(Number);
+        return currentUserAge >= start && currentUserAge <= end;
+    });
+
+    if (dataForCalculation.currentGreatLimitIndex !== -1) {
+        dataForCalculation.currentGreatLimitScore = greatLimitScoresForAI[dataForCalculation.currentGreatLimitIndex];
+    } else {
+        dataForCalculation.currentGreatLimitScore = 0; // 如果找不到，給一個預設值
+    }
+
+    const ageToAnnualPalaceMapForAI = {};
+    const fullXingNianDataForAI = calculateXingNian(dataForCalculation.gender, 1, 120);
+    Object.keys(fullXingNianDataForAI).forEach(palaceId => {
+        fullXingNianDataForAI[palaceId].ages.forEach(age => { ageToAnnualPalaceMapForAI[age] = palaceId; });
+    });
+
+    const annualPalaceIdForAI = ageToAnnualPalaceMapForAI[currentUserAge];
+    dataForCalculation.annualPalaceScore = annualPalaceIdForAI ? getBaseScoreForPalace(annualPalaceIdForAI, dataForCalculation.chartModel, dataForCalculation.lookupResult) : 0;
+    dataForCalculation.annualPalaceShortName = annualPalaceIdForAI ? arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(annualPalaceIdForAI)] : '未知';
+    // ▲▲▲ 新增區塊結束 ▲▲▲
+    
     currentChartData = dataForCalculation; // 將所有計算結果存到全域變數
 
     runCalculation(dataForCalculation, hour, xingNianData); 
@@ -4461,98 +4480,22 @@ savePdfBtn.addEventListener('click', () => {
     const aiSummaryOutput = document.getElementById('ai-summary-output');
 
     if (generateAiSummaryBtn && aiSummaryOutput) {
-        generateAiSummaryBtn.addEventListener('click', () => {
-            // 檢查 currentChartData 是否有資料
+        // 將這裡的函式宣告為 async
+        generateAiSummaryBtn.addEventListener('click', async () => { 
             if (!currentChartData || !currentChartData.currentUserAge) {
                 alert('請先排盤，再產生分析結果。');
                 return;
             }
 
-            // 顯示「正在分析中...」的提示
             aiSummaryOutput.style.display = 'block';
-            aiSummaryOutput.innerHTML = '正在為您產生分析結果，請稍候...';
+            aiSummaryOutput.innerHTML = '正在連接 AI 分析中，請稍候...'; // 更新提示文字
 
-            // 模擬 AI 需要一點時間來思考
-            setTimeout(() => {
-                const summaryText = generateAISummary(currentChartData);
-                aiSummaryOutput.innerHTML = summaryText;
-            }, 500); // 延遲 0.5 秒，讓體驗更真實
+            // 使用 await 來等待 generateAISummary 完成，並移除 setTimeout
+            const summaryText = await generateAISummary(currentChartData); 
+            aiSummaryOutput.innerHTML = summaryText;
         });
     }
 
-// =================================================================
-    //  SECTION 5: n8n AI 解說測試專用區
-    // =================================================================
-
-    // --- 負責與 n8n 溝通的非同步函式 ---
-    async function getN8nAnalysis(data) {
-        // !!! 非常重要：請將下面的網址替換成你在 n8n 中複製的 Test URL 或 Production URL !!!
-        const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook-test/363afd96-b5b8-4ef5-bba4-f06ebbb1e484'; 
-
-        // 準備要發送給 n8n 的資料
-        const payload = {
-            age: data.currentUserAge,
-            greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
-            annualPalaceFullName: PALACE_FULL_NAME_MAP[data.annualPalaceShortName] || data.annualPalaceShortName,
-            greatLimitScore: data.currentGreatLimitScore,
-            annualPalaceScore: data.annualPalaceScore,
-            annualHexagram: data.annualHexagramResult,
-            changingHexagram: data.annualChangingHexagramResult,
-            currentYear: new Date().getFullYear()
-        };
-
-        // 使用 fetch API 發送網路請求
-        try {
-            const response = await fetch(n8nWebhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error(`n8n 伺服器錯誤: ${response.statusText}`);
-            }
-
-            const result = await response.json();
-            
-            // 從 AI 的回覆中提取需要的文字 (以 OpenAI 為例)
-            // 你可以根據 n8n 的實際輸出來調整這個路徑
-            const aiContent = result.choices[0].message.content; 
-            
-            // 組合最終的 HTML 並回傳
-            let aiResponse = `<h4>AI 解說 (n8n 測試版)</h4>`;
-            aiResponse += `<div style="white-space: pre-wrap;">${aiContent}</div>`;
-            
-            return aiResponse;
-
-        } catch (error) {
-            console.error('呼叫 n8n 時發生錯誤:', error);
-            return '<h4>分析失敗</h4><p>無法連接到 n8n 服務，請檢查：<br>1. n8n Webhook URL是否正確。<br>2. n8n 工作流是否已啟動並在監聽中。<br>3. 瀏覽器主控台(F12)是否有 CORS 相關錯誤。</p>';
-        }
-    }
-
-    // --- 為新的測試按鈕綁定事件監聽 ---
-    const testN8nAiBtn = document.getElementById('test-n8n-ai-btn');
-    const n8nAiOutput = document.getElementById('n8n-ai-output');
-
-    if (testN8nAiBtn && n8nAiOutput) {
-        testN8nAiBtn.addEventListener('click', async () => {
-            if (!currentChartData || !currentChartData.currentUserAge) {
-                alert('請先排盤，再產生分析結果。');
-                return;
-            }
-
-            // 在新的顯示區塊顯示提示文字
-            n8nAiOutput.style.display = 'block';
-            n8nAiOutput.innerHTML = '正在連接 n8n 並請求 AI 分析，請稍候...';
-
-            // 呼叫新的 n8n 函式
-            const summaryText = await getN8nAnalysis(currentChartData); 
-            
-            // 將結果顯示在新的區塊
-            n8nAiOutput.innerHTML = summaryText;
-        });
-    }
 
 
 });

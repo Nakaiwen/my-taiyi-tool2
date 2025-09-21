@@ -3729,9 +3729,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             }
 
             const result = await response.json();
-            
-            // --- ▼▼▼ 唯一的修改點在這裡 ▼▼▼ ---
-            // 從 result.choices[0].message.content 改為 result.message.content
             const aiContent = result.message.content; 
             
             let aiResponse = `<h4>${new Date().getFullYear()}年 (${data.currentUserAge}歲) 能量總結與建議</h4>`;

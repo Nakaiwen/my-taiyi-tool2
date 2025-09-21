@@ -3654,6 +3654,9 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             currentLunarDate: lunarDate.lunarMonthName + lunarDate.lunarDayName // 例如 "八月初一"
         };
 
+        // --- ▼▼▼ 請在這裡新增下面這一行，來「攔截」資料 ▼▼▼ ---
+        console.log("準備發送到 n8n 的最終資料 (Payload):", JSON.stringify(payload, null, 2));
+
         try {
             const response = await fetch(n8nWebhookUrl, {
                 method: 'POST',

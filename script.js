@@ -2689,20 +2689,30 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     return monthlyHexagrams;
     }
     // ▼▼▼ 格式化「流年十二月卦」顯示文字的函式 (已修正排版) ▼▼▼ 
-    function formatMonthlyHexagrams(monthlyHexagramsResult) {
+    function formatMonthlyHexagrams(monthlyHexagramsResult, targetYear) {
     if (!monthlyHexagramsResult || monthlyHexagramsResult.length === 0) return '';
 
-    const currentYear = new Date().getFullYear();
-    let text = '\n\n'; // 在前面加上兩個換行符，與上方內容隔開
+    let text = '\n\n'; 
 
     monthlyHexagramsResult.forEach(item => {
-        // 用 \n 換行符和空格縮排，來確保格式與流年卦一致
-        text += `  <strong>${currentYear}年${item.monthName}卦:</strong> `;
-        text += `${item.hexagram.number} ${item.hexagram.name} ${item.hexagram.symbol}\n`;
-        text += `  <span class="hexagram-description-style">↳ ${item.hexagram.description}</span>\n\n`;
+            // 3. 使用 targetYear
+            text += `  <strong>${targetYear}年${item.monthName}卦:</strong> `;
+            text += `${item.hexagram.number} ${item.hexagram.name} ${item.hexagram.symbol}\n`;
+            text += `  <span class="hexagram-description-style">↳ ${item.hexagram.description}</span>\n\n`;
     });
     return text;
     }
+    // ▼▼▼ 格式化「流年十二月卦」給 AI 使用的專屬函式 ▼▼▼
+    function formatMonthlyHexagramsForAI(monthlyHexagramsResult) {
+        if (!monthlyHexagramsResult || monthlyHexagramsResult.length === 0) {
+            return '資料空缺';
+        }
+        // 將 12 個月的卦象資料，組合成一個帶有換行符的純文字字串
+        return monthlyHexagramsResult.map(item => 
+            `- ${item.monthName}: ${item.hexagram.name} - ${item.hexagram.explanation}`
+        ).join('\n');
+    }
+
     // ▼▼▼ 建立圖表模型函式 (已整合「中宮寄宮」邏輯) ▼▼▼
     function buildChartModel(data) {
     let model = {};
@@ -3089,46 +3099,54 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     const finalIndex = (startIndex + offset + 100) % 10;
     return HEAVENLY_STEMS[finalIndex];
     }
-    // ▼▼▼ 計算「單一年份行年分數」的專屬函式 ▼▼▼
-    function calculateAnnualScore(age, chartModel, data) {
-    // 1. 找到該歲數的行年宮位
-    const ageToAnnualPalaceMap = {};
-    const fullXingNianData = calculateXingNian(data.gender, 1, 120);
-    Object.keys(fullXingNianData).forEach(palaceId => {
-        fullXingNianData[palaceId].ages.forEach(a => { ageToAnnualPalaceMap[a] = palaceId; });
-    });
-    const annualPalaceId = ageToAnnualPalaceMap[age];
-    if (!annualPalaceId) return 0;
-    
-    // 2. 取得行年宮位的基礎分數 (使用我們現有的輔助函式)
-    let annualScore = getBaseScoreForPalace(annualPalaceId, chartModel, data.lookupResult);
-    
-    // 3. 應用專屬於「行年」的特殊規則
-    // 規則 4: 處理特殊的「年干化曜」加權
-    const annualStem = findXingNianGanZhi(data.yearPillar.charAt(0), data.gender, age);
-    const annualHuaYaoRule = NIAN_GAN_HUA_YAO[annualStem];
-    if (annualHuaYaoRule) {
-        const starsInAnnualPalace = Object.keys(chartModel[annualPalaceId]?.stars || {});
-        if (Object.values(annualHuaYaoRule).some(starList => starList.some(star => starsInAnnualPalace.includes(star)))) {
-            annualScore *= 1.5;
-        }
-    }
-    
-    // 規則 5 & 6: 處理皇恩星/飛祿/飛馬/黑符的加減分
-    const hasBonusStar = ['皇恩星'].some(s => Object.keys(chartModel[annualPalaceId]?.stars || {}).includes(s)) || 
-                         data.feiLuLiuNianResult.some(item => item.palaceId === annualPalaceId && item.text.includes(age)) || 
-                         data.feiMaLiuNianResult.some(item => item.palaceId === annualPalaceId && item.text.includes(age));
 
-    if (hasBonusStar) {
-        annualScore += 50;
+    // ▼▼▼ 計算「單一年份行年宮位完整分數」的引擎函式 (v2) ▼▼▼
+    function calculateFullAnnualPalaceScore(age, chartModel, data) {
+        // 1. 建立歲數 -> 宮位 的完整地圖
+        const ageToAnnualPalaceMap = {};
+        const fullXingNianData = calculateXingNian(data.gender, 1, 120);
+        Object.keys(fullXingNianData).forEach(palaceId => {
+            fullXingNianData[palaceId].ages.forEach(a => { ageToAnnualPalaceMap[a] = palaceId; });
+        });
+        const annualPalaceId = ageToAnnualPalaceMap[age];
+        if (!annualPalaceId) return 0;
+        
+        // 2. 取得行年宮位的基礎分數
+        let annualScore = getBaseScoreForPalace(annualPalaceId, chartModel, data.lookupResult);
+        
+        // 3. 應用專屬於「行年」的特殊規則
+        // 規則：處理特殊的「年干化曜」加權
+        const annualStem = findXingNianGanZhi(data.yearPillar.charAt(0), data.gender, age);
+        const annualHuaYaoRule = NIAN_GAN_HUA_YAO[annualStem];
+        if (annualHuaYaoRule) {
+            const starsInAnnualPalace = Object.keys(chartModel[annualPalaceId]?.stars || {});
+            if (Object.values(annualHuaYaoRule).some(starList => starList.some(star => starsInAnnualPalace.includes(star)))) {
+                annualScore *= 1.5;
+            }
+        }
+        
+        // 規則：處理皇恩星/飛祿/飛馬/黑符的加減分
+        const hasBonusStar = ['皇恩星'].some(s => Object.keys(chartModel[annualPalaceId]?.stars || {}).includes(s)) || 
+                             data.feiLuLiuNianResult.some(item => item.palaceId === annualPalaceId && item.text.includes(String(age))) || 
+                             data.feiMaLiuNianResult.some(item => item.palaceId === annualPalaceId && item.text.includes(String(age)));
+
+        if (hasBonusStar) {
+            annualScore += 50;
+        }
+        if (data.heiFuResult[annualPalaceId]?.includes(age)) {
+            annualScore -= 50;
+        }
+        
+        return annualScore;
     }
-    if (data.heiFuResult[annualPalaceId]?.includes(age)) {
-        annualScore -= 50;
+    // ▼▼▼ 計算「單一年份行年趨勢圖分數」(含0.7加權)的函式 ▼▼▼
+    function calculateAnnualScore(age, chartModel, data) {
+        // 呼叫新的引擎，取得完整的行年分數
+        const fullAnnualScore = calculateFullAnnualPalaceScore(age, chartModel, data);
+        // 應用 0.7 的權重並回傳
+        return fullAnnualScore * 0.7;
     }
-    
-    // 規則 9: 將最終的行年分數乘以 0.7 倍
-    return annualScore * 0.7;
-    }
+
     // ▼▼▼ 查找「祿馬交馳」年份的函式 ▼▼▼
     function findLuMaJiaoChiYears(data) {
     const threeWayMatches = []; // 存放「行年 + 飛祿 + 飛馬」三者重合的年份
@@ -3690,32 +3708,37 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const today = new Date();
         const currentMonthNumber = getSolarTermMonth(today); // 獲取正確的節氣月份數字 (1-12)
         const currentMonthIndex = currentMonthNumber - 1;    // 轉換為陣列索引 (0-11)
-
-        const currentMonthHexagram = data.monthlyHexagramsResult[currentMonthIndex];
-        // 為了讓 AI 更清楚，我們直接用中文名稱
         const currentLunarDateStr = MONTH_NAMES_CHINESE[currentMonthIndex]; 
         const todayString = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+
+        // --- ▼▼▼ 核心修正點：在這裡呼叫我們的新函式 ▼▼▼ ---
+        const formattedMonthlyHexagrams = formatMonthlyHexagramsForAI(data.monthlyHexagramsResult);
 
 
         const payload = {
             bazi: { yearPillar: data.yearPillar, monthPillar: data.monthPillar, dayPillar: data.dayPillar, hourPillar: data.hourPillar },
             dayMaster: data.dayMasterInfo,
             age: data.currentUserAge,
+            annualTrendScore: data.annualTrendScore.toFixed(0),
             greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
-            greatLimitScore: data.currentGreatLimitScore.toFixed(0),
             greatLimitStars: greatLimitStars,
             annualPalaceFullName: PALACE_FULL_NAME_MAP[data.annualPalaceShortName] || data.annualPalaceShortName,
-            annualPalaceScore: data.annualPalaceScore.toFixed(0),
             annualPalaceStars: annualPalaceStars,
+
             annualHexagram: data.annualHexagramResult,
             changingHexagram: data.annualChangingHexagramResult,
-            currentYear: today.getFullYear(),
+            targetYear: data.targetYear, // << 修正：使用從 data 傳入的目標年份
             todayDate: todayString, 
             currentAstrologicalMonthIndex: currentMonthIndex,
             currentLunarDate: currentLunarDateStr, 
-            monthHexagramName: currentMonthHexagram?.hexagram?.name || '資料空缺',
-            monthHexagramExplanation: currentMonthHexagram?.hexagram?.explanation || '資料空缺'
+            annualHexagramName: data.annualHexagramResult?.name || '資料空缺',
+            annualHexagramExplanation: data.annualHexagramResult?.explanation || '資料空缺',
+            changingHexagramName: data.changingHexagramResult?.name || '資料空缺',
+            changingHexagramExplanation: data.changingHexagramResult?.explanation || '資料空缺',
+            formattedMonthlyHexagrams: formattedMonthlyHexagrams
         };
+
+        let prompt = `...`; // 這裡使用你最新的 Prompt 即可
 
         try {
             const response = await fetch(n8nWebhookUrl, {
@@ -3730,9 +3753,8 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
             const result = await response.json();
             const aiContent = result.message.content; 
-            
-            let aiResponse = `<h4>${new Date().getFullYear()}年 (${data.currentUserAge}歲) 能量總結與建議</h4>`;
-            aiResponse += `<div style="white-space: pre-wrap;">${aiContent}</div>`;
+            let aiResponse = `<h4>${data.targetYear}年 (${data.currentUserAge}歲) 能量總結與建議</h4>`;
+            aiResponse += marked.parse(aiContent);
             
             return aiResponse;
 
@@ -4105,9 +4127,9 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         outputText += `\n  立業卦 : ${liYeHexagramResult.number} ${liYeHexagramResult.name} ${liYeHexagramResult.symbol}${ageText}`;
         }
         if (annualHexagramResult) {
-        const currentYear = new Date().getFullYear();
-        outputText += `\n  流年卦 : ${annualHexagramResult.number} ${annualHexagramResult.name} ${annualHexagramResult.symbol} (${currentYear}年${dataForCalculation.currentUserAge}歲)`;
-        outputText += `\n  <span class="hexagram-description-style">↳ ${annualHexagramResult.description}</span>`;
+            const targetYear = dataForCalculation.targetYear; 
+            outputText += `\n  流年卦 : ${annualHexagramResult.number} ${annualHexagramResult.name} ${annualHexagramResult.symbol} (${targetYear}年${dataForCalculation.currentUserAge}歲)`;
+            outputText += `\n  <span class="hexagram-description-style">↳ ${annualHexagramResult.description}</span>`;
         } 
         const annualChangingHexagramResult = calculateAnnualChangingHexagram(dataForCalculation.annualHexagramResult, dataForCalculation.baiLiuResult, dataForCalculation.currentUserAge);
         if (annualChangingHexagramResult) {
@@ -4116,7 +4138,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         }
 
         // ▼▼▼ 月卦資訊 ▼▼▼
-        const monthlyHexagramsText = formatMonthlyHexagrams(dataForCalculation.monthlyHexagramsResult);
+        const monthlyHexagramsText = formatMonthlyHexagrams(dataForCalculation.monthlyHexagramsResult, dataForCalculation.targetYear);
         if (monthlyHexagramsText) {
         outputText += monthlyHexagramsText;
         }
@@ -4421,7 +4443,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     document.getElementById('hour-pillar-stem').textContent = hourPillar.charAt(0);
     document.getElementById('hour-pillar-branch').textContent = hourPillar.charAt(1);
     
-    const today = new Date();
     const startAge = currentUserAge - 20;
     const endAge = currentUserAge + 40;
     const yearStemForDirection = lunarDate.getYearInGanZhi().charAt(0);
@@ -4434,6 +4455,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     // (您把工具都放進了這個工具箱, 然後您把整個工具箱(dataForCalculation)交給了 runCalculation 工人)
     const dataForCalculation = {
         birthDate: `${year}/${month}/${day}`,
+        targetYear: targetYear, // <--- 確保這行存在
         gender: document.querySelector('input[name="gender"]:checked').value === 'male' ? '男' : '女',
         yearPillar: lunarDate.getYearInGanZhi(),
         monthPillar: lunarDate.getMonthInGanZhi(),
@@ -4514,11 +4536,14 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         fullXingNianDataForAI[palaceId].ages.forEach(age => { ageToAnnualPalaceMapForAI[age] = palaceId; });
     });
 
+    dataForCalculation.annualPalaceScore = calculateFullAnnualPalaceScore(currentUserAge, dataForCalculation.chartModel, dataForCalculation);
     const annualPalaceIdForAI = ageToAnnualPalaceMapForAI[currentUserAge];
-    dataForCalculation.annualPalaceScore = annualPalaceIdForAI ? getBaseScoreForPalace(annualPalaceIdForAI, dataForCalculation.chartModel, dataForCalculation.lookupResult) : 0;
     dataForCalculation.annualPalaceShortName = annualPalaceIdForAI ? arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(annualPalaceIdForAI)] : '未知';
-    // ▲▲▲ 新增區塊結束 ▲▲▲
-    
+
+    // ▼▼▼ 在這裡新增「年度綜合總分」的計算 ▼▼▼
+    const finalAnnualTrendScore = dataForCalculation.currentGreatLimitScore + (dataForCalculation.annualPalaceScore * 0.7);
+    dataForCalculation.annualTrendScore = finalAnnualTrendScore; // 將總分也存起來
+
     currentChartData = dataForCalculation; // 將所有計算結果存到全域變數
 
     runCalculation(dataForCalculation, hour, xingNianData); 

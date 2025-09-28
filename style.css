@@ -587,17 +587,6 @@
     align-items: center; 
 }
 
-/* AI 分析結果區塊的樣式 */
-#ai-summary-output {
-    white-space: pre-wrap; /* 讓 AI 結果可以正常換行 */
-    font-family: 'BiauKaiWeb', sans-serif; /* 使用標楷體，更有溫度 */
-    font-size: 15px;
-    line-height: 1.8;
-}
-#ai-summary-output h4 { /* AI 結果的小標題 */
-    margin-top: 0;
-    color: #0056b3;
-}
 
 /* ====================================================== */
 /* 響應式設計：手機版專用樣式 (寬度 <= 850px)       */
@@ -638,4 +627,63 @@
         flex-wrap: wrap; /* 允許換行 */
         gap: 10px; /* 調整按鈕間距 */
     }
+}
+
+/* ====================================================== */
+/* AI 輸出內容專屬排版樣式 (v2 - 緊湊版)                 */
+/* ====================================================== */
+
+/* 針對 AI 輸出區塊的整體微調 */
+#ai-summary-output,
+#n8n-ai-output {
+    line-height: 1.7; /* 【調整】稍微縮小行高，讓段落內文字更緊湊 */
+    font-family: 'BiauKaiWeb', sans-serif; /* 使用標楷體，更有溫度 */
+    font-size: 15px;
+}
+
+/* AI 產生的段落標題 (例如：### 一、整體運勢概述) */
+#ai-summary-output h3,
+#n8n-ai-output h3 {
+    font-family: 'BiauKaiWeb', sans-serif; /* 使用標楷體，更有溫度 */
+    font-size: 18px;
+    color: #0056b3;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 6px;   /* 【調整】縮小標題與底線的距離 */
+    margin-top: 25px;      /* 【調整】縮小與上一個段落的距離 */
+    margin-bottom: 10px;   /* 【調整】縮小標題與下方內文的距離 */
+}
+
+/* 讓第一個標題不需要和上方有額外距離 */
+#ai-summary-output h3:first-of-type,
+#n8n-ai-output h3:first-of-type {
+    margin-top: 0; 
+}
+
+/* AI 產生的段落內文，是主要調整目標 */
+#ai-summary-output p,
+#n8n-ai-output p {
+    font-size: 15px;
+    margin-top: 0;      /* 【新增】確保段落上方沒有額外間距 */
+    margin-bottom: 0.8em; /* 【調整】大幅縮小段落之間的距離 (em是相對單位，0.8em約12-13px) */
+}
+
+/* AI 產生的項目符號列表 */
+#ai-summary-output ul,
+#n8n-ai-output ul {
+    padding-left: 25px;
+    margin-top: 0; /* 【新增】確保列表上方沒有額外間距 */
+    margin-bottom: 1em;
+}
+
+/* AI 產生的列表項目 */
+#ai-summary-output li,
+#n8n-ai-output li {
+    padding-left: 5px;
+    margin-bottom: 8px;
+}
+
+/* AI 產生的粗體文字 */
+#ai-summary-output strong,
+#n8n-ai-output strong {
+    color: #c93e00;
 }

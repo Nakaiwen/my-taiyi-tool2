@@ -856,7 +856,35 @@ document.addEventListener('DOMContentLoaded', () => {
     '癸': { yinYang: '陰', element: '水' }
     };
 
+    // ▼▼▼ 天干關係資料庫 ▼▼▼
+    const STEM_INTERACTIONS = {
+    '甲': { combinesWith: '己', clashesWith: '庚' },
+    '乙': { combinesWith: '庚', clashesWith: '辛' },
+    '丙': { combinesWith: '辛', clashesWith: '壬' },
+    '丁': { combinesWith: '壬', clashesWith: '癸' },
+    '戊': { combinesWith: '癸', clashesWith: null }, // 戊己居中，無剋
+    '己': { combinesWith: '甲', clashesWith: null },
+    '庚': { combinesWith: '乙', clashesWith: '甲' },
+    '辛': { combinesWith: '丙', clashesWith: '乙' },
+    '壬': { combinesWith: '丁', clashesWith: '丙' },
+    '癸': { combinesWith: '戊', clashesWith: '丁' }
+    };
 
+    // ▼▼▼ 地支關係資料庫 ▼▼▼
+    const BRANCH_INTERACTIONS = {
+    '子': { combinesWith: '丑', clashesWith: '午' },
+    '丑': { combinesWith: '子', clashesWith: '未' },
+    '寅': { combinesWith: '亥', clashesWith: '申' },
+    '卯': { combinesWith: '戌', clashesWith: '酉' },
+    '辰': { combinesWith: '酉', clashesWith: '戌' },
+    '巳': { combinesWith: '申', clashesWith: '亥' },
+    '午': { combinesWith: '未', clashesWith: '子' },
+    '未': { combinesWith: '午', clashesWith: '丑' },
+    '申': { combinesWith: '巳', clashesWith: '寅' },
+    '酉': { combinesWith: '辰', clashesWith: '卯' },
+    '戌': { combinesWith: '卯', clashesWith: '辰' },
+    '亥': { combinesWith: '寅', clashesWith: '巳' }
+    };
 
 
 // =================================================================
@@ -3675,15 +3703,74 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         }
         return 12; // 預設為丑月
     }
-    // ▼▼▼ 取得日主五行資訊的函式 ▼▼▼
+
+    // ▼▼▼ 根據西元年查詢該年干支的函式 ▼▼▼
+    function getAnnualPillar(targetYear) {
+        // 我們取該年3月1日作為代表，確保已過立春，能抓到正確的干支
+        const representativeDate = solarLunar.solar2lunar(targetYear, 3, 1);
+        return representativeDate.getYearInGanZhi();
+    }
+
+    // ▼▼▼ (新) 取得日主五行資訊的函式 (v2 - 單一整合版) ▼▼▼
     function getDayMasterInfo(dayStem) {
         if (!dayStem || !DAY_MASTER_DATA[dayStem]) {
-            return '無法判斷';
+            return '日主五行：無法判斷';
         }
         const data = DAY_MASTER_DATA[dayStem];
-        // 根據你的範例，格式為「天干+五行」，例如 "戊土"
         return `日主五行：${dayStem}${data.element} (${data.yinYang}${data.element})`;
     }
+
+    // ▼▼▼ (新) 分析日主與流年干支的生剋關係引擎 ▼▼▼
+    function analyzeYearlyElementInteraction(dayPillar, annualPillar) {
+        if (!dayPillar || !annualPillar) {
+            return { stemAnalysis: '缺少分析資料', branchAnalysis: '', isMajorClash: false };
+        }
+
+        const dayStem = dayPillar.charAt(0);
+        const dayBranch = dayPillar.charAt(1);
+        const annualStem = annualPillar.charAt(0);
+        const annualBranch = annualPillar.charAt(1);
+
+        const stemRule = STEM_INTERACTIONS[dayStem];
+        const branchRule = BRANCH_INTERACTIONS[dayBranch];
+
+        let stemAnalysis = '天干無合剋';
+        let branchAnalysis = '地支無合衝';
+        let isMajorClash = false;
+
+        // 判斷天干關係
+        if (stemRule.combinesWith === annualStem) {
+            stemAnalysis = `天干${dayStem}${annualStem}相合`;
+        } else if (stemRule.clashesWith === annualStem) {
+            stemAnalysis = `天干${dayStem}${annualStem}相剋`;
+        }
+
+        // 判斷地支關係
+        if (branchRule.combinesWith === annualBranch) {
+            branchAnalysis = `地支${dayBranch}${annualBranch}相合`;
+        } else if (branchRule.clashesWith === annualBranch) {
+            branchAnalysis = `地支${dayBranch}${annualBranch}相衝`;
+        }
+
+        // 判斷是否為「天剋地衝」
+        if (stemRule.clashesWith === annualStem && branchRule.clashesWith === annualBranch) {
+            isMajorClash = true;
+        }
+
+        return { stemAnalysis, branchAnalysis, isMajorClash };
+    }
+
+    // ▼▼▼ (新) 格式化生剋關係顯示文字的函式 ▼▼▼
+    function formatElementInteractionInfo(interactionData) {
+        if (!interactionData) return '';
+        
+        let html = `<div>${interactionData.stemAnalysis}，${interactionData.branchAnalysis}</div>`;
+        if (interactionData.isMajorClash) {
+            html += `<div style="color: red; font-weight: bold;">注意：此年為天剋地衝，行事宜保守謹慎，並多注意健康。</div>`;
+        }
+        return html;
+    }
+
     // ▼▼▼ 產生 AI 年度能量總結的函式 (v5-已加入當前流月卦) ▼▼▼
     async function generateAISummary(data) {
         // !!! 非常重要：請將下面的網址替換成你在 n8n 中複製的 URL !!!
@@ -3718,6 +3805,8 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const payload = {
             bazi: { yearPillar: data.yearPillar, monthPillar: data.monthPillar, dayPillar: data.dayPillar, hourPillar: data.hourPillar },
             dayMaster: data.dayMasterInfo,
+            annualPillar: data.annualPillar,
+            elementInteraction: data.elementInteraction,
             age: data.currentUserAge,
             annualTrendScore: data.annualTrendScore.toFixed(0),
             greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
@@ -4082,6 +4171,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
         // ▼▼▼ 在這裡新增下面這一行 ▼▼▼
         document.getElementById('day-master-info').innerHTML = dataForCalculation.dayMasterInfo;
+        document.getElementById('element-interaction-info').innerHTML = formatElementInteractionInfo(dataForCalculation.elementInteraction);
 
         const shenPalaceId = Object.keys(newSdrData).find(k => newSdrData[k].includes('身'));
         const shenPalaceBranch = shenPalaceId ? PALACE_ID_TO_BRANCH[shenPalaceId] : '計算失敗';
@@ -4375,21 +4465,15 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     // (這個calculateBtn.addEventListener 函式就是工廠老闆, runCalculation是老師傅)
     calculateBtn.addEventListener('click', () => {
-    // --- ▼▼▼ 核心修改點：從讀取「今天」改成讀取「目標年份」▼▼▼ ---
         const year = parseInt(document.getElementById('birth-year').value, 10);
         const targetYearInput = document.getElementById('target-year');
         const targetYear = parseInt(targetYearInput.value, 10);
 
-        // 增加一個簡單的年份驗證
         if (!targetYear || targetYear < 1930 || targetYear > 2050) {
             alert('請輸入一個介於 1930 到 2050 之間的有效分析年份。');
             return;
         }
-        
-        // 用「目標年份」來計算歲數，而不是用「今年的年份」
         const currentUserAge = targetYear - year + 1; 
-        // --- ▲▲▲ 修改結束 ▲▲▲ ---
-
 
 
     aiSummaryOutput.style.display = 'none';
@@ -4466,6 +4550,11 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         currentUserAge: currentUserAge,
         arrangedLifePalaces: arrangedLifePalaces
     };
+
+    // ▼▼▼ 核心修正點：確保這裡只用新版的單一函式 ▼▼▼
+    dataForCalculation.dayMasterInfo = getDayMasterInfo(dataForCalculation.dayPillar.charAt(0));
+    dataForCalculation.annualPillar = getAnnualPillar(targetYear);
+    dataForCalculation.elementInteraction = analyzeYearlyElementInteraction(dataForCalculation.dayPillar, dataForCalculation.annualPillar);
 
     const bureauResult = precisionResult ? precisionResult.calculatedBureau : '計算失敗';
     const lookupResult = lookupBureauData(bureauResult);

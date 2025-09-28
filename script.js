@@ -3998,6 +3998,8 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         for (let i = 1; i <= 12; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; monthSelect.appendChild(option); }
         for (let i = 1; i <= 31; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; daySelect.appendChild(option); }
         for (let i = 0; i <= 23; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; hourSelect.appendChild(option); }
+        // ▼▼▼ 在函式結尾新增這一行 ▼▼▼
+        document.getElementById('target-year').value = new Date().getFullYear();
     }
 
     const dayJishuDisplay = document.getElementById('day-jishu-display');
@@ -4349,18 +4351,31 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     }
     
 
-
     // (這個calculateBtn.addEventListener 函式就是工廠老闆, runCalculation是老師傅)
     calculateBtn.addEventListener('click', () => {
+    // --- ▼▼▼ 核心修改點：從讀取「今天」改成讀取「目標年份」▼▼▼ ---
+        const year = parseInt(document.getElementById('birth-year').value, 10);
+        const targetYearInput = document.getElementById('target-year');
+        const targetYear = parseInt(targetYearInput.value, 10);
+
+        // 增加一個簡單的年份驗證
+        if (!targetYear || targetYear < 1930 || targetYear > 2050) {
+            alert('請輸入一個介於 1930 到 2050 之間的有效分析年份。');
+            return;
+        }
+        
+        // 用「目標年份」來計算歲數，而不是用「今年的年份」
+        const currentUserAge = targetYear - year + 1; 
+        // --- ▲▲▲ 修改結束 ▲▲▲ ---
+
+
+
     aiSummaryOutput.style.display = 'none';
-    const year = parseInt(document.getElementById('birth-year').value, 10);
     const month = parseInt(document.getElementById('birth-month').value, 10);
     const day = parseInt(document.getElementById('birth-day').value, 10);
     const hour = parseInt(document.getElementById('birth-hour').value, 10);
     const birthDateObject = new Date(year, month - 1, day, hour);
 
-    // ▼▼▼ 主要修改與新增的區塊 ▼▼▼
-    // 步驟 2A: 呼叫新的整合型函式，一次性取得所有精準數值
     const precisionResult = calculateJishuAndBureau(birthDateObject);
 
     // 步驟 2B: 自動「顯示」計算出的日積數與時積數
@@ -4407,7 +4422,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     document.getElementById('hour-pillar-branch').textContent = hourPillar.charAt(1);
     
     const today = new Date();
-    const currentUserAge = today.getFullYear() - year + 1;
     const startAge = currentUserAge - 20;
     const endAge = currentUserAge + 40;
     const yearStemForDirection = lunarDate.getYearInGanZhi().charAt(0);

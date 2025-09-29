@@ -886,6 +886,26 @@ document.addEventListener('DOMContentLoaded', () => {
     '亥': { combinesWith: '寅', clashesWith: '巳' }
     };
 
+    // ▼▼▼ 十神關係資料庫 ▼▼▼
+    const TEN_GODS_MAP = {
+    '甲': { '甲': '比肩', '乙': '劫財', '丙': '食神', '丁': '傷官', '戊': '偏財', '己': '正財', '庚': '七殺', '辛': '正官', '壬': '偏印', '癸': '正印' },
+    '乙': { '甲': '劫財', '乙': '比肩', '丙': '傷官', '丁': '食神', '戊': '正財', '己': '偏財', '庚': '正官', '辛': '七殺', '壬': '正印', '癸': '偏印' },
+    '丙': { '甲': '偏印', '乙': '正印', '丙': '比肩', '丁': '劫財', '戊': '食神', '己': '傷官', '庚': '偏財', '辛': '正財', '壬': '七殺', '癸': '正官' },
+    '丁': { '甲': '正印', '乙': '偏印', '丙': '劫財', '丁': '比肩', '戊': '傷官', '己': '食神', '庚': '正財', '辛': '偏財', '壬': '正官', '癸': '七殺' },
+    '戊': { '甲': '七殺', '乙': '正官', '丙': '偏印', '丁': '正印', '戊': '比肩', '己': '劫財', '庚': '食神', '辛': '傷官', '壬': '偏財', '癸': '正財' },
+    '己': { '甲': '正官', '乙': '七殺', '丙': '正印', '丁': '偏印', '戊': '劫財', '己': '比肩', '庚': '傷官', '辛': '食神', '壬': '正財', '癸': '偏財' },
+    '庚': { '甲': '偏財', '乙': '正財', '丙': '七殺', '丁': '正官', '戊': '偏印', '己': '正印', '庚': '比肩', '辛': '劫財', '壬': '食神', '癸': '傷官' },
+    '辛': { '甲': '正財', '乙': '偏財', '丙': '正官', '丁': '七殺', '戊': '正印', '己': '偏印', '庚': '劫財', '辛': '比肩', '壬': '傷官', '癸': '食神' },
+    '壬': { '甲': '食神', '乙': '傷官', '丙': '偏財', '丁': '正財', '戊': '七殺', '己': '正官', '庚': '偏印', '辛': '正印', '壬': '比肩', '癸': '劫財' },
+    '癸': { '甲': '傷官', '乙': '食神', '丙': '正財', '丁': '偏財', '戊': '正官', '己': '七殺', '庚': '正印', '辛': '偏印', '壬': '劫財', '癸': '比肩' }
+    };
+
+    // ▼▼▼ 十二地支藏干資料庫 (主氣) ▼▼▼
+    const BRANCH_HIDDEN_STEMS = {
+    '子': '癸', '丑': '己', '寅': '甲', '卯': '乙', '辰': '戊', '巳': '丙',
+    '午': '丁', '未': '己', '申': '庚', '酉': '辛', '戌': '戊', '亥': '壬'
+    };
+
 
 // =================================================================
 //  SECTION 2: SVG 圖盤繪製邏輯 (最終整理版)
@@ -3720,6 +3740,78 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return `日主五行：${dayStem}${data.element} (${data.yinYang}${data.element})`;
     }
 
+    // ▼▼▼ (已整合寄宮規則) 分析年干化曜所在宮位的函式 ▼▼▼
+    function analyzeAnnualHuaYaoPalaces(annualStem, chartModel, arrangedLifePalaces, lookupResult, suanStarsResult) {
+        if (!annualStem || !chartModel || !lookupResult) {
+            return '無法分析';
+        }
+
+        const huaYaoRule = NIAN_GAN_HUA_YAO[annualStem];
+        if (!huaYaoRule) {
+            return '該年天干無化曜';
+        }
+
+        const results = [];
+
+        // 這是我們新的、更聰明的星曜查找器
+        const findStarFinalPalaceId = (starName) => {
+            // 優先序 3: 先查十二地支宮
+            for (const palaceId of VALID_PALACES_CLOCKWISE) {
+                if (chartModel[palaceId]?.stars[starName]) {
+                    return palaceId;
+                }
+            }
+
+            // 優先序 1: 檢查四隅宮位
+            for (const cornerPalaceId in JI_GONG_MAP) {
+                if (chartModel[cornerPalaceId]?.stars[starName]) {
+                    return JI_GONG_MAP[cornerPalaceId]; // 返回寄宿的宮位ID
+                }
+            }
+            
+            // 優先序 2: 檢查中宮
+            if (suanStarsResult?.centerStars.includes(starName)) {
+                const zhuSuan = lookupResult.主算;
+                const keSuan = lookupResult.客算;
+                let hostBranch = null;
+
+                if (['主大', '主參'].includes(starName) && zhuSuan && CENTER_PALACE_JI_GONG_RULES['主算'][zhuSuan]) {
+                    hostBranch = CENTER_PALACE_JI_GONG_RULES['主算'][zhuSuan][starName];
+                } else if (['客大', '客參'].includes(starName) && keSuan && CENTER_PALACE_JI_GONG_RULES['客算'][keSuan]) {
+                    hostBranch = CENTER_PALACE_JI_GONG_RULES['客算'][keSuan][starName];
+                }
+                
+                if (hostBranch) {
+                    return BRANCH_TO_PALACE_ID[hostBranch]; // 返回寄宿的宮位ID
+                }
+            }
+
+            return null; // 如果都找不到，返回 null
+        };
+
+        // 遍歷該天干的所有化曜規則 (tianYuan, ganYuan, fuMu)
+        for (const role in huaYaoRule) {
+            const starNames = huaYaoRule[role];
+            starNames.forEach(starName => {
+                const finalPalaceId = findStarFinalPalaceId(starName); // 使用新的查找器
+                if (finalPalaceId) {
+                    const palaceIndex = VALID_PALACES_CLOCKWISE.indexOf(finalPalaceId);
+                    if (palaceIndex > -1) {
+                        const lifePalaceName = arrangedLifePalaces[palaceIndex];
+                        const chineseRoleName = HUA_YAO_ROLE_MAP[role];
+                        results.push(`${chineseRoleName}(${starName})在${lifePalaceName}宮`);
+                    }
+                }
+            });
+        }
+        
+        if (results.length === 0) {
+            return '無吉曜入十二宮';
+        }
+
+        return [...new Set(results)].join('、 ');
+    }
+
     // ▼▼▼ (新) 分析日主與流年干支的生剋關係引擎 ▼▼▼
     function analyzeYearlyElementInteraction(dayPillar, annualPillar) {
         if (!dayPillar || !annualPillar) {
@@ -3760,6 +3852,36 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return { stemAnalysis, branchAnalysis, isMajorClash };
     }
 
+    // ▼▼▼ (新) 分析日主與流年干支「十神」關係的引擎 ▼▼▼
+    function analyzeTenGods(dayMasterData, annualPillar) {
+        if (!dayMasterData || !annualPillar) {
+            return null;
+        }
+
+        const dayStem = dayMasterData.stem;
+        const annualStem = annualPillar.charAt(0);
+        const annualBranch = annualPillar.charAt(1);
+
+        // 1. 分析天干十神
+        const stemTenGod = TEN_GODS_MAP[dayStem]?.[annualStem] || '未知';
+
+        // 2. 分析地支藏干十神
+        const hiddenStem = BRANCH_HIDDEN_STEMS[annualBranch];
+        const branchTenGod = hiddenStem ? (TEN_GODS_MAP[dayStem]?.[hiddenStem] || '未知') : '無藏干';
+
+        return {
+            stemTenGod: { name: stemTenGod, text: `年干「${annualStem}」為日主之「${stemTenGod}」` },
+            branchTenGod: { name: branchTenGod, text: `年支「${annualBranch}」(藏${hiddenStem})為日主之「${branchTenGod}」` }
+        };
+    }
+
+    // ▼▼▼ (新) 格式化十神關係顯示文字的函式 ▼▼▼
+    function formatTenGodsInfo(tenGodsData) {
+        if (!tenGodsData) return '';
+        // 直接回傳組合好的兩行文字，用 <br> 換行
+        return `<div>${tenGodsData.stemTenGod.text}<br>${tenGodsData.branchTenGod.text}</div>`;
+    }
+
     // ▼▼▼ (新) 格式化生剋關係顯示文字的函式 ▼▼▼
     function formatElementInteractionInfo(interactionData) {
         if (!interactionData) return '';
@@ -3771,6 +3893,22 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return html;
     }
 
+    // ▼▼▼ (新) 格式化星曜資料給 AI 使用的專屬函式 ▼▼▼
+    function formatStarsForAI(starNames) {
+        if (!starNames || starNames.length === 0) {
+            return '宮內無主星';
+        }
+        return starNames.map(name => {
+            const props = STAR_PROPERTIES[name];
+            if (props) {
+                // 組合出 "星曜名稱 (吉凶屬性, 核心描述)" 的格式
+                return `${name} (${props.luck}, ${props.description})`;
+            }
+            return name; // 如果找不到屬性，就只回傳名字
+        }).join('、 ');
+    }
+    
+
     // ▼▼▼ 產生 AI 年度能量總結的函式 (v5-已加入當前流月卦) ▼▼▼
     async function generateAISummary(data) {
         // !!! 非常重要：請將下面的網址替換成你在 n8n 中複製的 URL !!!
@@ -3779,7 +3917,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         // --- 準備收集基礎數據發送給 n8n 的資料 ---
         const age = data.currentUserAge;
         const greatLimitPalaceId = VALID_PALACES_CLOCKWISE[data.currentGreatLimitIndex];
-        const greatLimitStars = Object.keys(data.chartModel[greatLimitPalaceId]?.stars || {}).join('、') || '無主星';
+        const greatLimitStars = formatStarsForAI(Object.keys(data.chartModel[greatLimitPalaceId]?.stars || {}));
         
         const ageToAnnualPalaceMap = {};
         const fullXingNianData = calculateXingNian(data.gender, 1, 120);
@@ -3789,7 +3927,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             });
         });
         const annualPalaceId = ageToAnnualPalaceMap[age];
-        const annualPalaceStars = Object.keys(data.chartModel[annualPalaceId]?.stars || {}).join('、') || '無主星';
+        const annualPalaceStars = formatStarsForAI(Object.keys(data.chartModel[annualPalaceId]?.stars || {}));
 
         // --- ▼▼▼ 核心修正點：呼叫我們自訂的節氣月函式 ▼▼▼ ---
         const today = new Date();
@@ -3807,12 +3945,14 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             dayMaster: data.dayMasterInfo,
             annualPillar: data.annualPillar,
             elementInteraction: data.elementInteraction,
+            annualHuaYaoInfo: data.annualHuaYaoInfo,
             age: data.currentUserAge,
             annualTrendScore: data.annualTrendScore.toFixed(0),
             greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
             greatLimitStars: greatLimitStars,
             annualPalaceFullName: PALACE_FULL_NAME_MAP[data.annualPalaceShortName] || data.annualPalaceShortName,
             annualPalaceStars: annualPalaceStars,
+            tenGodsAnalysis: data.tenGodsAnalysis,
 
             annualHexagram: data.annualHexagramResult,
             changingHexagram: data.annualChangingHexagramResult,
@@ -3852,7 +3992,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             return '<h4>分析失敗</h4><p>無法連接到 AI 分析服務，請稍後再試或檢查 n8n 工作流是否正常運作。</p>';
         }
     }
-    
+
     // ▼▼▼ 每次增加星都要更新的函式 ▼▼▼
     function generateMainChartData(lookupResult, deitiesResult, suanStarsResult, shiWuFuResult, xiaoYouResult, junJiResult, chenJiResult, minJiResult, tianYiResult, diYiResult, siShenResult, feiFuResult, daYouResult, yueJiangData, guiRenData, xingNianData, huangEnResult) {
     const chartData = {};
@@ -4172,6 +4312,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         // ▼▼▼ 在這裡新增下面這一行 ▼▼▼
         document.getElementById('day-master-info').innerHTML = dataForCalculation.dayMasterInfo;
         document.getElementById('element-interaction-info').innerHTML = formatElementInteractionInfo(dataForCalculation.elementInteraction);
+        document.getElementById('ten-gods-info').innerHTML = formatTenGodsInfo(dataForCalculation.tenGodsAnalysis);
 
         const shenPalaceId = Object.keys(newSdrData).find(k => newSdrData[k].includes('身'));
         const shenPalaceBranch = shenPalaceId ? PALACE_ID_TO_BRANCH[shenPalaceId] : '計算失敗';
@@ -4558,7 +4699,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     const bureauResult = precisionResult ? precisionResult.calculatedBureau : '計算失敗';
     const lookupResult = lookupBureauData(bureauResult);
-    // ▼▼▼ 在這裡新增下面這一行 ▼▼▼
     dataForCalculation.dayMasterInfo = getDayMasterInfo(dataForCalculation.dayPillar.charAt(0));
     dataForCalculation.bureauResult = bureauResult;
     dataForCalculation.lookupResult = lookupResult;
@@ -4590,8 +4730,11 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     dataForCalculation.baiLiuResult = calculateBaiLiuLimit(dataForCalculation.shouQiResult, dataForCalculation.gender);
     dataForCalculation.annualChangingHexagramResult = calculateAnnualChangingHexagram(dataForCalculation.annualHexagramResult, dataForCalculation.baiLiuResult, dataForCalculation.currentUserAge);
     dataForCalculation.monthlyHexagramsResult = calculateMonthlyHexagrams(dataForCalculation.annualHexagramResult?.number);
-    // ▼▼▼ 更新：一次性計算出所有大限的完整序列 ▼▼▼
-    
+
+    dataForCalculation.chartModel = buildChartModel(dataForCalculation);
+    dataForCalculation.annualHuaYaoInfo = analyzeAnnualHuaYaoPalaces(dataForCalculation.annualPillar.charAt(0), dataForCalculation.chartModel, arrangedLifePalaces, dataForCalculation.lookupResult, dataForCalculation.suanStarsResult);
+    dataForCalculation.tenGodsAnalysis = analyzeTenGods(dataForCalculation.dayMasterData, dataForCalculation.annualPillar);
+
     dataForCalculation.yangJiuResult = calculateYangJiu(dataForCalculation.monthPillar.charAt(0), dataForCalculation.gender);
     dataForCalculation.daYouZhenXianResult = calculateDaYouZhenXian(dataForCalculation.hourPillar.charAt(1));
     dataForCalculation.chartModel = buildChartModel(dataForCalculation);
@@ -4600,9 +4743,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     dataForCalculation.keJiaYears = findKeJiaYears(dataForCalculation);
     dataForCalculation.daYouOverlapResult = findDaYouOverlap(dataForCalculation.daYouZhenXianResult, dataForCalculation.daYouResult);
     
-    // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-    //  請在這裡插入一整段新的「數據準備」程式碼
-    // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
     // 為了準備給 AI 的 prompt，提前計算出所有需要的宮位名稱和分數
     const ageLimitsForAI = arrangeAgeLimits(arrangedLifePalaces);
     const greatLimitScoresForAI = calculateFortuneScores(dataForCalculation.chartModel, arrangedLifePalaces, ageLimitsForAI, hourPillar, dataForCalculation.lookupResult);
@@ -4616,7 +4757,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     if (dataForCalculation.currentGreatLimitIndex !== -1) {
         dataForCalculation.currentGreatLimitScore = greatLimitScoresForAI[dataForCalculation.currentGreatLimitIndex];
     } else {
-        dataForCalculation.currentGreatLimitScore = 0; // 如果找不到，給一個預設值
+        dataForCalculation.currentGreatLimitScore = 0;
     }
 
     const ageToAnnualPalaceMapForAI = {};
@@ -4631,7 +4772,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     // ▼▼▼ 在這裡新增「年度綜合總分」的計算 ▼▼▼
     const finalAnnualTrendScore = dataForCalculation.currentGreatLimitScore + (dataForCalculation.annualPalaceScore * 0.7);
-    dataForCalculation.annualTrendScore = finalAnnualTrendScore; // 將總分也存起來
+    dataForCalculation.annualTrendScore = finalAnnualTrendScore;
 
     currentChartData = dataForCalculation; // 將所有計算結果存到全域變數
 

@@ -4384,11 +4384,8 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     const dayJishuDisplay = document.getElementById('day-jishu-display');
     const hourJishuDisplay = document.getElementById('hour-jishu-display');
     const calculateBtn = document.getElementById('calculate-btn');
-    const downloadBtn = document.getElementById('download-pdf-btn');
     const switchToNationalBtn = document.getElementById('switch-to-national-btn'); // <--- 確保這行在這裡
-    const generateAiSummaryBtn = document.getElementById('generate-ai-summary-btn');
     const aiSummaryOutput = document.getElementById('ai-summary-output'); // <--- 確保這行在這裡
-    const n8nAiOutput = document.getElementById('n8n-ai-output');
 
     function populateDateSelectors() {
         // ▼▼▼ 最小更動：在函式內部最開頭，加上這幾行 ▼▼▼
@@ -4956,8 +4953,7 @@ if (switchToNationalBtn) {
 }
 
 // ▼▼▼ n8n 測試按鈕的事件監聽 (包含啟用下載PDF按鈕的邏輯) ▼▼▼
-    const testN8nAiBtn = document.getElementById('test-n8n-ai-btn'); // 我們在準備綁定事件時，才宣告這個變數
-    
+    const testN8nAiBtn = document.getElementById('test-n8n-ai-btn'); // 我們在準備綁定事件時，才宣告這個變數  
     // 我們先確認這個主要按鈕是否存在
     if (testN8nAiBtn) {
         testN8nAiBtn.addEventListener('click', async () => {
@@ -5009,7 +5005,6 @@ if (switchToNationalBtn) {
 
 // ▼▼▼ (新) 為「本月運勢解說」按鈕綁定事件監聽 ▼▼▼
     const getMonthlyAiBtn = document.getElementById('get-monthly-ai-btn');
-
     if (getMonthlyAiBtn && aiSummaryOutput) {
         getMonthlyAiBtn.addEventListener('click', async () => { 
             if (!currentChartData || !currentChartData.currentUserAge) {

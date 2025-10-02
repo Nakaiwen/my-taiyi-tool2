@@ -8,9 +8,10 @@
     <title>我的太乙人道命法排盤工具</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  
-
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-   
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 </head>
 <body>
 
@@ -19,6 +20,10 @@
         <div class="controls-column">
             
             <div class="input-container">
+              <div class="input-row">
+                        <label for="user-name">姓名：</label>
+                        <input type="text" id="user-name" placeholder="請輸入姓名" style="width: 150px; padding: 6px; font-size: 12px; border-radius: 4px; border: 1px solid #ccc;">
+                    </div>
                 <div class="input-row">
                     <label for="birth-year">西元生日：</label>
                     <select id="birth-year"></select> 年
@@ -42,7 +47,7 @@
                 </div>
                 <div class="input-row">
                 <button id="switch-to-national-btn" style="margin-left: 10px;">切換太乙國運</button>
-					      <button id="save-pdf-btn" style="margin-left: 20px;">儲存PDF</button>
+					      <button id="download-pdf-btn" style="margin-left: 20px;" disabled>下載PDF報告</button>
                 <button id="calculate-btn">更新盤面資訊</button>
                 </div>
                 <div id="output-area">
@@ -77,6 +82,7 @@
         </div>
         <div id="day-master-info" style="text-align: center; margin-top: 15px; font-size: 14px; font-weight: bold;"></div>
         <div id="ten-gods-info" style="text-align: center; margin-top: 5px; font-size: 14px;"></div>
+        <div id="tianke-dichong-info" style="text-align: center; margin-top: 10px; font-size: 14px;"></div>
         <div id="element-interaction-info" style="text-align: center; margin-top: 5px; font-size: 14px;"></div>
             <p id="calculation-summary"></p>
                 </div>
@@ -454,13 +460,12 @@
 <div id="fortune-chart-container" class="info-box">
 <canvas id="fortune-chart"></canvas></div>
 <div id="ai-summary-controls" class="info-box" style="text-align: center;">
-            <button id="generate-ai-summary-btn">本年能量總結 (AI解說)</button>
-
-
+            <button id="get-monthly-ai-btn">本月運勢解說 (AI)</button>
+            <button id="test-n8n-ai-btn" style="background-color: #28a745; border-color: #28a745;">特定年份的運勢解說</button>
         </div>
 
-        <div id="ai-summary-output" class="info-box" style="display: none;">
-            </div>
+        <div id="ai-summary-output" class="info-box" style="display: none;"></div>
+        <div id="n8n-ai-output" class="info-box" style="display: none; border-color: #28a745; margin-top: 10px;"></div>
 
 </div>
 

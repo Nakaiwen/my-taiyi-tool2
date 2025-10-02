@@ -900,6 +900,20 @@ document.addEventListener('DOMContentLoaded', () => {
     '癸': { '甲': '傷官', '乙': '食神', '丙': '正財', '丁': '偏財', '戊': '正官', '己': '七殺', '庚': '正印', '辛': '偏印', '壬': '劫財', '癸': '比肩' }
     };
 
+    // ▼▼▼ (新) 十神意象資料庫 ▼▼▼
+    const TEN_GODS_EXPLANATIONS = {
+    '比肩': '代表合夥以及同性的合作。',
+    '劫財': '代表財物消耗、競爭與人脈。',
+    '食神': '代表機遇、享受與口福，也象徵創造力和表現力。',
+    '傷官': '代表創造、情感與能量付出，也可能帶來口舌是非。',
+    '偏財': '代表不在預期內的大筆收入機會或異性緣。',
+    '正財': '代表穩定的收入與工作，大環境有利於賺錢。',
+    '七殺': '代表非職場的管束壓力與挑戰（女性也代表非典型的異性緣）。',
+    '正官': '代表職場的管束與責任（女性也代表穩定的異性緣或婚姻）。',
+    '偏印': '代表非傳統、技藝類的學習與喜好。',
+    '正印': '代表學習、貴人、文書與庇蔭。'
+    };
+
     // ▼▼▼ 十二地支藏干資料庫 (主氣) ▼▼▼
     const BRANCH_HIDDEN_STEMS = {
     '子': '癸', '丑': '己', '寅': '甲', '卯': '乙', '辰': '戊', '巳': '丙',
@@ -3731,13 +3745,25 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return representativeDate.getYearInGanZhi();
     }
 
-    // ▼▼▼ (新) 取得日主五行資訊的函式 (v2 - 單一整合版) ▼▼▼
-    function getDayMasterInfo(dayStem) {
+    // ▼▼▼ (新) 取得日主五行「資料」的函式 ▼▼▼
+    function getDayMasterData(dayStem) {
         if (!dayStem || !DAY_MASTER_DATA[dayStem]) {
-            return '日主五行：無法判斷';
+            return null;
         }
         const data = DAY_MASTER_DATA[dayStem];
-        return `日主五行：${dayStem}${data.element} (${data.yinYang}${data.element})`;
+        return {
+            stem: dayStem,
+            element: data.element,
+            yinYang: data.yinYang
+        };
+    }
+
+    // ▼▼▼ 取得日主五行資訊的函式 (v2 - 單一整合版) ▼▼▼
+    function getDayMasterInfo(dayMasterData) {
+        if (!dayMasterData) {
+            return '日主五行：無法判斷';
+        }
+        return `日主五行：${dayMasterData.stem}${dayMasterData.element} (${dayMasterData.yinYang}${dayMasterData.element})`;
     }
 
     // ▼▼▼ (已整合寄宮規則) 分析年干化曜所在宮位的函式 ▼▼▼
@@ -3812,7 +3838,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return [...new Set(results)].join('、 ');
     }
 
-    // ▼▼▼ (新) 分析日主與流年干支的生剋關係引擎 ▼▼▼
+    // ▼▼▼ 分析日主與流年干支的生剋關係引擎 ▼▼▼
     function analyzeYearlyElementInteraction(dayPillar, annualPillar) {
         if (!dayPillar || !annualPillar) {
             return { stemAnalysis: '缺少分析資料', branchAnalysis: '', isMajorClash: false };
@@ -3852,7 +3878,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return { stemAnalysis, branchAnalysis, isMajorClash };
     }
 
-    // ▼▼▼ (新) 分析日主與流年干支「十神」關係的引擎 ▼▼▼
+    // ▼▼▼ (v2 - 已整合解釋) 分析日主與流年干支「十神」關係的引擎 ▼▼▼
     function analyzeTenGods(dayMasterData, annualPillar) {
         if (!dayMasterData || !annualPillar) {
             return null;
@@ -3862,27 +3888,34 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const annualStem = annualPillar.charAt(0);
         const annualBranch = annualPillar.charAt(1);
 
-        // 1. 分析天干十神
-        const stemTenGod = TEN_GODS_MAP[dayStem]?.[annualStem] || '未知';
+        const stemTenGodName = TEN_GODS_MAP[dayStem]?.[annualStem] || '未知';
+        const stemTenGodExplanation = TEN_GODS_EXPLANATIONS[stemTenGodName] || '';
 
-        // 2. 分析地支藏干十神
         const hiddenStem = BRANCH_HIDDEN_STEMS[annualBranch];
-        const branchTenGod = hiddenStem ? (TEN_GODS_MAP[dayStem]?.[hiddenStem] || '未知') : '無藏干';
+        let branchTenGodName = '無藏干';
+        let branchTenGodExplanation = '';
+        if (hiddenStem) {
+            branchTenGodName = TEN_GODS_MAP[dayStem]?.[hiddenStem] || '未知';
+            branchTenGodExplanation = TEN_GODS_EXPLANATIONS[branchTenGodName] || '';
+        }
 
         return {
-            stemTenGod: { name: stemTenGod, text: `年干「${annualStem}」為日主之「${stemTenGod}」` },
-            branchTenGod: { name: branchTenGod, text: `年支「${annualBranch}」(藏${hiddenStem})為日主之「${branchTenGod}」` }
+            stem: { name: stemTenGodName, explanation: stemTenGodExplanation, character: annualStem },
+            branch: { name: branchTenGodName, explanation: branchTenGodExplanation, character: annualBranch, hiddenStem: hiddenStem }
         };
     }
 
-    // ▼▼▼ (新) 格式化十神關係顯示文字的函式 ▼▼▼
+    // ▼▼▼ (v2 - 已修正欄位名稱) 格式化十神關係顯示文字的函式 ▼▼▼
     function formatTenGodsInfo(tenGodsData) {
-        if (!tenGodsData) return '';
-        // 直接回傳組合好的兩行文字，用 <br> 換行
-        return `<div>${tenGodsData.stemTenGod.text}<br>${tenGodsData.branchTenGod.text}</div>`;
+        if (!tenGodsData || !tenGodsData.stem || !tenGodsData.branch) return '';
+
+        const stemText = `年干「${tenGodsData.stem.character}」為日主之「${tenGodsData.stem.name}」`;
+        const branchText = `年支「${tenGodsData.branch.character}」(藏${tenGodsData.branch.hiddenStem})為日主之「${tenGodsData.branch.name}」`;
+        
+        return `<div>${stemText}<br>${branchText}</div>`;
     }
 
-    // ▼▼▼ (新) 格式化生剋關係顯示文字的函式 ▼▼▼
+    // ▼▼▼ 格式化生剋關係顯示文字的函式 ▼▼▼
     function formatElementInteractionInfo(interactionData) {
         if (!interactionData) return '';
         
@@ -3893,7 +3926,47 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return html;
     }
 
-    // ▼▼▼ (新) 格式化星曜資料給 AI 使用的專屬函式 ▼▼▼
+    // ▼▼▼ 查找天剋地衝年份的引擎函式 ▼▼▼
+    function findTianKeDiChongYears(dayPillar, startYear, endYear) {
+        const clashYears = [];
+        if (!dayPillar) return clashYears;
+
+        const dayStem = dayPillar.charAt(0);
+        const dayBranch = dayPillar.charAt(1);
+
+        // 從資料庫中找出日柱干支的相剋與相衝對象
+        const clashingStem = STEM_INTERACTIONS[dayStem]?.clashesWith;
+        const clashingBranch = BRANCH_INTERACTIONS[dayBranch]?.clashesWith;
+
+        // 如果日主沒有天干相剋（例如戊、己土），或沒有地支相衝，則直接返回
+        if (!clashingStem || !clashingBranch) {
+            return clashYears;
+        }
+
+        // 遍歷從今年到 2050 年的每一年
+        for (let year = startYear; year <= endYear; year++) {
+            const annualPillar = getAnnualPillar(year);
+            const annualStem = annualPillar.charAt(0);
+            const annualBranch = annualPillar.charAt(1);
+
+            // 檢查當年干支是否同時滿足天剋與地衝
+            if (annualStem === clashingStem && annualBranch === clashingBranch) {
+                clashYears.push(year);
+            }
+        }
+        return clashYears;
+    }
+
+    // ▼▼▼ 格式化天剋地衝年份顯示文字的函式 ▼▼▼
+    function formatTianKeDiChongInfo(yearsArray) {
+        if (!yearsArray || yearsArray.length === 0) {
+            return '<div>未來至2050年，無與日柱天剋地衝之年份。</div>';
+        }
+        const yearsString = yearsArray.join('年、');
+        return `<div style="color: red; font-weight: bold;">注意！未來天剋地衝年份：${yearsString}年。</div>`;
+    }
+
+    // ▼▼▼ 格式化星曜資料給 AI 使用的專屬函式 ▼▼▼
     function formatStarsForAI(starNames) {
         if (!starNames || starNames.length === 0) {
             return '宮內無主星';
@@ -3907,67 +3980,25 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             return name; // 如果找不到屬性，就只回傳名字
         }).join('、 ');
     }
-    
 
-    // ▼▼▼ 產生 AI 年度能量總結的函式 (v5-已加入當前流月卦) ▼▼▼
-    async function generateAISummary(data) {
-        // !!! 非常重要：請將下面的網址替換成你在 n8n 中複製的 URL !!!
-        const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/363afd96-b5b8-4ef5-bba4-f06ebbb1e484'; // 建議使用 Production URL
+    // ▼▼▼ (新) 獲取「當月運勢」深度分析的專屬函式 ▼▼▼
+    async function getMonthlyAnalysis(data) {
+        const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/71e49418-c32c-4731-b574-57e1c9ae105c';
 
-        // --- 準備收集基礎數據發送給 n8n 的資料 ---
-        const age = data.currentUserAge;
-        const greatLimitPalaceId = VALID_PALACES_CLOCKWISE[data.currentGreatLimitIndex];
-        const greatLimitStars = formatStarsForAI(Object.keys(data.chartModel[greatLimitPalaceId]?.stars || {}));
-        
-        const ageToAnnualPalaceMap = {};
-        const fullXingNianData = calculateXingNian(data.gender, 1, 120);
-        Object.keys(fullXingNianData).forEach(palaceId => {
-            fullXingNianData[palaceId].ages.forEach(age => {
-                ageToAnnualPalaceMap[age] = palaceId;
-            });
-        });
-        const annualPalaceId = ageToAnnualPalaceMap[age];
-        const annualPalaceStars = formatStarsForAI(Object.keys(data.chartModel[annualPalaceId]?.stars || {}));
-
-        // --- ▼▼▼ 核心修正點：呼叫我們自訂的節氣月函式 ▼▼▼ ---
+        // --- 準備月運分析需要的核心數據 ---
         const today = new Date();
-        const currentMonthNumber = getSolarTermMonth(today); // 獲取正確的節氣月份數字 (1-12)
-        const currentMonthIndex = currentMonthNumber - 1;    // 轉換為陣列索引 (0-11)
-        const currentLunarDateStr = MONTH_NAMES_CHINESE[currentMonthIndex]; 
-        const todayString = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
-
-        // --- ▼▼▼ 核心修正點：在這裡呼叫我們的新函式 ▼▼▼ ---
-        const formattedMonthlyHexagrams = formatMonthlyHexagramsForAI(data.monthlyHexagramsResult);
-
+        const currentMonthNumber = getSolarTermMonth(today);
+        const currentMonthIndex = currentMonthNumber - 1;
+        const currentMonthHexagram = data.monthlyHexagramsResult[currentMonthIndex];
+        const currentLunarDateStr = MONTH_NAMES_CHINESE[currentMonthIndex];
 
         const payload = {
-            bazi: { yearPillar: data.yearPillar, monthPillar: data.monthPillar, dayPillar: data.dayPillar, hourPillar: data.hourPillar },
             dayMaster: data.dayMasterInfo,
-            annualPillar: data.annualPillar,
-            elementInteraction: data.elementInteraction,
-            annualHuaYaoInfo: data.annualHuaYaoInfo,
-            age: data.currentUserAge,
-            annualTrendScore: data.annualTrendScore.toFixed(0),
-            greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
-            greatLimitStars: greatLimitStars,
-            annualPalaceFullName: PALACE_FULL_NAME_MAP[data.annualPalaceShortName] || data.annualPalaceShortName,
-            annualPalaceStars: annualPalaceStars,
-            tenGodsAnalysis: data.tenGodsAnalysis,
-
-            annualHexagram: data.annualHexagramResult,
-            changingHexagram: data.annualChangingHexagramResult,
-            targetYear: data.targetYear, // << 修正：使用從 data 傳入的目標年份
-            todayDate: todayString, 
-            currentAstrologicalMonthIndex: currentMonthIndex,
-            currentLunarDate: currentLunarDateStr, 
-            annualHexagramName: data.annualHexagramResult?.name || '資料空缺',
-            annualHexagramExplanation: data.annualHexagramResult?.explanation || '資料空缺',
-            changingHexagramName: data.changingHexagramResult?.name || '資料空缺',
-            changingHexagramExplanation: data.changingHexagramResult?.explanation || '資料空缺',
-            formattedMonthlyHexagrams: formattedMonthlyHexagrams
+            targetYear: data.targetYear,
+            currentLunarDate: currentLunarDateStr,
+            monthHexagramName: currentMonthHexagram?.hexagram?.name || '資料空缺',
+            monthHexagramExplanation: currentMonthHexagram?.hexagram?.explanation || '資料空缺'
         };
-
-        let prompt = `...`; // 這裡使用你最新的 Prompt 即可
 
         try {
             const response = await fetch(n8nWebhookUrl, {
@@ -3975,18 +4006,127 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
-            if (!response.ok) {
-                throw new Error(`n8n 伺服器錯誤: ${response.statusText}`);
-            }
-
+            if (!response.ok) { throw new Error(`n8n 伺服器錯誤: ${response.statusText}`); }
             const result = await response.json();
-            const aiContent = result.message.content; 
-            let aiResponse = `<h4>${data.targetYear}年 (${data.currentUserAge}歲) 能量總結與建議</h4>`;
-            aiResponse += marked.parse(aiContent);
-            
-            return aiResponse;
+            return result.message.content; 
+        } catch (error) {
+            console.error('呼叫 n8n 月運分析時發生錯誤:', error);
+            return '<h4>月運分析失敗</h4><p>無法連接到 AI 服務，請稍後再試。</p>';
+        }
+    }
 
+    // ▼▼▼ PDF 報告生成引擎 (v8 - 最終 jsPDF.html() 版) ▼▼▼
+    async function generatePdfReport(data) {
+        const reportElement = document.getElementById('n8n-ai-output');
+        const downloadBtn = document.getElementById('download-pdf-btn');
+        if (!reportElement || !downloadBtn) return;
+
+        const originalBtnText = downloadBtn.textContent;
+        downloadBtn.textContent = '報告生成中...';
+        downloadBtn.disabled = true;
+
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            // 核心步驟 1: 告訴 jsPDF 我們的自訂字體在哪裡
+            // 它會自動去讀取 fonts/biaukai.ttf 這個檔案
+            doc.addFont('fonts/biaukai.ttf', 'BiauKaiWeb', 'normal');
+            doc.setFont('BiauKaiWeb');
+
+            // 核心步驟 2: 使用 .html() 方法來渲染，並設定邊距和自動分頁
+            await doc.html(reportElement, {
+                callback: function (doc) {
+                    const userName = document.getElementById('user-name').value || '未提供';
+                    // 在 callback 中儲存檔案，確保所有內容都已渲染完畢
+                    doc.save(`小六太乙-${userName}-${data.targetYear}年運勢報告.pdf`);
+                },
+                margin: [15, 15, 15, 15], // 上、右、下、左 的邊距 (單位 mm)
+                autoPaging: 'text', // 啟用基於文字的智慧分頁
+                width: 180, // 內容寬度 (A4 寬度 210mm - 左右邊距 15*2)
+                windowWidth: 650, // 給定一個渲染時參考的寬度
+                fontFaces: [{ // 再次聲明字體，確保渲染引擎能正確捕捉
+                    family: 'BiauKaiWeb',
+                    style: 'normal',
+                    weight: 'normal',
+                    src: [{ url: 'fonts/biaukai.ttf', format: 'truetype' }]
+                }]
+            });
+
+        } catch (error) {
+            console.error("產生PDF時發生錯誤:", error);
+            alert("產生PDF報告時發生錯誤，請檢查主控台。");
+        } finally {
+            // 無論成功或失敗，都恢復按鈕狀態
+            downloadBtn.textContent = originalBtnText;
+            downloadBtn.disabled = false;
+        }
+    }
+
+    // ▼▼▼ 從 n8n 獲取 AI 分析結果的專屬函式 ▼▼▼
+    async function getN8nAnalysis(data) {
+        const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/363afd96-b5b8-4ef5-bba4-f06ebbb1e484';
+
+        // --- ▼▼▼ 核心修正點：所有資料都直接從傳入的 data 物件中獲取 ▼▼▼ ---
+        const today = new Date();
+        const currentMonthNumber = getSolarTermMonth(today);
+        const currentMonthIndex = currentMonthNumber - 1;
+        const currentMonthHexagram = data.monthlyHexagramsResult[currentMonthIndex];
+        const currentLunarDateStr = MONTH_NAMES_CHINESE[currentMonthIndex];
+        const todayString = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+        const formattedMonthlyHexagrams = formatMonthlyHexagramsForAI(data.monthlyHexagramsResult);
+
+        
+        // 我們直接使用從 data 傳過來的 annualPalaceId 來找星曜
+        const annualPalaceStars = formatStarsForAI(Object.keys(data.chartModel[data.annualPalaceId]?.stars || {}));
+
+        const payload = {
+            bazi: { yearPillar: data.yearPillar, monthPillar: data.monthPillar, dayPillar: data.dayPillar, hourPillar: data.hourPillar },
+            dayMaster: data.dayMasterInfo,
+            age: data.currentUserAge,
+            annualTrendScore: data.annualTrendScore.toFixed(0),
+            greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
+            greatLimitStars: formatStarsForAI(Object.keys(data.chartModel[VALID_PALACES_CLOCKWISE[data.currentGreatLimitIndex]]?.stars || {})),
+            greatLimitAgeRange: data.greatLimitAgeRange,
+            annualPalaceFullName: PALACE_FULL_NAME_MAP[data.annualPalaceShortName] || '未知',
+            annualPalaceStars: formatStarsForAI(Object.keys(data.chartModel[data.annualPalaceId]?.stars || {})),
+            targetYear: data.targetYear,
+           
+            annualHexagram: data.annualHexagramResult,
+            changingHexagram: data.annualChangingHexagramResult,
+        
+            todayDate: todayString,
+            currentLunarDate: currentLunarDateStr,
+            annualPillar: data.annualPillar,
+            elementInteraction: data.elementInteraction,
+            annualHuaYaoInfo: data.annualHuaYaoInfo,
+            tenGodsAnalysis: data.tenGodsAnalysis,
+
+            annualHexagramName: data.annualHexagramResult?.name || '資料空缺',
+            annualHexagramExplanation: data.annualHexagramResult?.explanation || '資料空缺',
+            changingHexagramName: data.changingHexagramResult?.name || '資料空缺',
+            changingHexagramExplanation: data.changingHexagramResult?.explanation || '資料空缺',
+            monthHexagramName: currentMonthHexagram?.hexagram?.name || '資料空缺',
+            monthHexagramExplanation: currentMonthHexagram?.hexagram?.explanation || '資料空缺',
+            formattedMonthlyHexagrams: formattedMonthlyHexagrams
+        };
+
+        // ▼▼▼ 在 payload 物件的正下方，再次加入我們的「攔截」指令 ▼▼▼
+        console.log("準備發送到 n8n 的最終資料 (Payload):", JSON.stringify(payload, null, 2));
+        
+        try {
+            const response = await fetch(n8nWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) { throw new Error(`n8n 伺服器錯誤: ${response.statusText}`); }
+            const result = await response.json();
+            return result.message.content; 
         } catch (error) {
             console.error('呼叫 n8n 時發生錯誤:', error);
             return '<h4>分析失敗</h4><p>無法連接到 AI 分析服務，請稍後再試或檢查 n8n 工作流是否正常運作。</p>';
@@ -4240,24 +4380,31 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     // =================================================================
     //  SECTION 4: UI 互動與主流程 (最終整理版)
     // =================================================================
-    function populateDateSelectors() {
-        const yearSelect = document.getElementById('birth-year');
-        const monthSelect = document.getElementById('birth-month');
-        const daySelect = document.getElementById('birth-day');
-        const hourSelect = document.getElementById('birth-hour');
-        for (let i = 2050; i >= 1930; i--) { const option = document.createElement('option'); option.value = i; option.textContent = i; yearSelect.appendChild(option); }
-        for (let i = 1; i <= 12; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; monthSelect.appendChild(option); }
-        for (let i = 1; i <= 31; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; daySelect.appendChild(option); }
-        for (let i = 0; i <= 23; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; hourSelect.appendChild(option); }
-        // ▼▼▼ 在函式結尾新增這一行 ▼▼▼
-        document.getElementById('target-year').value = new Date().getFullYear();
-    }
 
     const dayJishuDisplay = document.getElementById('day-jishu-display');
     const hourJishuDisplay = document.getElementById('hour-jishu-display');
     const calculateBtn = document.getElementById('calculate-btn');
-    const savePdfBtn = document.getElementById('save-pdf-btn'); 
+    const downloadBtn = document.getElementById('download-pdf-btn');
+    const switchToNationalBtn = document.getElementById('switch-to-national-btn'); // <--- 確保這行在這裡
+    const generateAiSummaryBtn = document.getElementById('generate-ai-summary-btn');
+    const aiSummaryOutput = document.getElementById('ai-summary-output'); // <--- 確保這行在這裡
+    const n8nAiOutput = document.getElementById('n8n-ai-output');
 
+    function populateDateSelectors() {
+        // ▼▼▼ 最小更動：在函式內部最開頭，加上這幾行 ▼▼▼
+        const yearSelect = document.getElementById('birth-year');
+        const monthSelect = document.getElementById('birth-month');
+        const daySelect = document.getElementById('birth-day');
+        const hourSelect = document.getElementById('birth-hour');
+        
+        // --- 原本的 for 迴圈內容完全不變 ---
+        for (let i = 2050; i >= 1930; i--) { const option = document.createElement('option'); option.value = i; option.textContent = i; yearSelect.appendChild(option); }
+        for (let i = 1; i <= 12; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; monthSelect.appendChild(option); }
+        for (let i = 1; i <= 31; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; daySelect.appendChild(option); }
+        for (let i = 0; i <= 23; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; hourSelect.appendChild(option); }
+        document.getElementById('target-year').value = new Date().getFullYear();
+    }
+    
     function prefillTestData() {
         document.getElementById('birth-year').value = '1988';
         document.getElementById('birth-month').value = '8';
@@ -4283,8 +4430,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const outerRingData = calculateOuterRingData(bureauResult, dataForCalculation.hourJishu, lookupResult);
         const guiRenData = calculateGuiRen(dataForCalculation.dayPillar.charAt(0), dataForCalculation.hourPillar.charAt(1), yueJiangData);
         huangEnResult = calculateHuangEn(dataForCalculation.dayPillar.charAt(1));
-
-         // ▼▼▼ 核心修改點：呼叫新的專用函式，為圓盤準備正確格式的資料 ▼▼▼
         const yangJiuForDisplay = findCurrentYangJiuForDisplay(dataForCalculation.yangJiuResult, dataForCalculation.currentUserAge);
         const baiLiuForDisplay = findCurrentBaiLiuForDisplay(dataForCalculation.baiLiuResult, dataForCalculation.currentUserAge);
         const daYouForDisplay = findCurrentAndNextDaYouForDisplay(dataForCalculation.daYouZhenXianResult, dataForCalculation.currentUserAge);
@@ -4313,6 +4458,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         document.getElementById('day-master-info').innerHTML = dataForCalculation.dayMasterInfo;
         document.getElementById('element-interaction-info').innerHTML = formatElementInteractionInfo(dataForCalculation.elementInteraction);
         document.getElementById('ten-gods-info').innerHTML = formatTenGodsInfo(dataForCalculation.tenGodsAnalysis);
+        document.getElementById('tianke-dichong-info').innerHTML = formatTianKeDiChongInfo(dataForCalculation.tianKeDiChongYears);
 
         const shenPalaceId = Object.keys(newSdrData).find(k => newSdrData[k].includes('身'));
         const shenPalaceBranch = shenPalaceId ? PALACE_ID_TO_BRANCH[shenPalaceId] : '計算失敗';
@@ -4606,6 +4752,14 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     // (這個calculateBtn.addEventListener 函式就是工廠老闆, runCalculation是老師傅)
     calculateBtn.addEventListener('click', () => {
+        // ▼▼▼ 新增：在這裡清空並隱藏 AI 輸出區塊，並禁用下載按鈕 ▼▼▼
+        document.getElementById('ai-summary-output').style.display = 'none';
+        document.getElementById('ai-summary-output').innerHTML = '';
+        document.getElementById('n8n-ai-output').style.display = 'none';
+        document.getElementById('n8n-ai-output').innerHTML = '';
+        document.getElementById('download-pdf-btn').disabled = true;
+        // ▲▲▲ 新增結束 ▲▲▲
+
         const year = parseInt(document.getElementById('birth-year').value, 10);
         const targetYearInput = document.getElementById('target-year');
         const targetYear = parseInt(targetYearInput.value, 10);
@@ -4696,10 +4850,11 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     dataForCalculation.dayMasterInfo = getDayMasterInfo(dataForCalculation.dayPillar.charAt(0));
     dataForCalculation.annualPillar = getAnnualPillar(targetYear);
     dataForCalculation.elementInteraction = analyzeYearlyElementInteraction(dataForCalculation.dayPillar, dataForCalculation.annualPillar);
-
     const bureauResult = precisionResult ? precisionResult.calculatedBureau : '計算失敗';
     const lookupResult = lookupBureauData(bureauResult);
-    dataForCalculation.dayMasterInfo = getDayMasterInfo(dataForCalculation.dayPillar.charAt(0));
+
+    dataForCalculation.dayMasterData = getDayMasterData(dataForCalculation.dayPillar.charAt(0));
+    dataForCalculation.dayMasterInfo = getDayMasterInfo(dataForCalculation.dayMasterData);
     dataForCalculation.bureauResult = bureauResult;
     dataForCalculation.lookupResult = lookupResult;
     dataForCalculation.deitiesResult = calculateDeities(bureauResult, dataForCalculation.hourPillar.charAt(1));
@@ -4730,11 +4885,10 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     dataForCalculation.baiLiuResult = calculateBaiLiuLimit(dataForCalculation.shouQiResult, dataForCalculation.gender);
     dataForCalculation.annualChangingHexagramResult = calculateAnnualChangingHexagram(dataForCalculation.annualHexagramResult, dataForCalculation.baiLiuResult, dataForCalculation.currentUserAge);
     dataForCalculation.monthlyHexagramsResult = calculateMonthlyHexagrams(dataForCalculation.annualHexagramResult?.number);
-
     dataForCalculation.chartModel = buildChartModel(dataForCalculation);
     dataForCalculation.annualHuaYaoInfo = analyzeAnnualHuaYaoPalaces(dataForCalculation.annualPillar.charAt(0), dataForCalculation.chartModel, arrangedLifePalaces, dataForCalculation.lookupResult, dataForCalculation.suanStarsResult);
     dataForCalculation.tenGodsAnalysis = analyzeTenGods(dataForCalculation.dayMasterData, dataForCalculation.annualPillar);
-
+    dataForCalculation.tianKeDiChongYears = findTianKeDiChongYears(dataForCalculation.dayPillar, new Date().getFullYear(), 2050);
     dataForCalculation.yangJiuResult = calculateYangJiu(dataForCalculation.monthPillar.charAt(0), dataForCalculation.gender);
     dataForCalculation.daYouZhenXianResult = calculateDaYouZhenXian(dataForCalculation.hourPillar.charAt(1));
     dataForCalculation.chartModel = buildChartModel(dataForCalculation);
@@ -4756,8 +4910,10 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     if (dataForCalculation.currentGreatLimitIndex !== -1) {
         dataForCalculation.currentGreatLimitScore = greatLimitScoresForAI[dataForCalculation.currentGreatLimitIndex];
+        dataForCalculation.greatLimitAgeRange = ageLimitsForAI[dataForCalculation.currentGreatLimitIndex];
     } else {
         dataForCalculation.currentGreatLimitScore = 0;
+        dataForCalculation.greatLimitAgeRange = '未知'; // 也新增一個預設值
     }
 
     const ageToAnnualPalaceMapForAI = {};
@@ -4768,6 +4924,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     dataForCalculation.annualPalaceScore = calculateFullAnnualPalaceScore(currentUserAge, dataForCalculation.chartModel, dataForCalculation);
     const annualPalaceIdForAI = ageToAnnualPalaceMapForAI[currentUserAge];
+    dataForCalculation.annualPalaceId = annualPalaceIdForAI; 
     dataForCalculation.annualPalaceShortName = annualPalaceIdForAI ? arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(annualPalaceIdForAI)] : '未知';
 
     // ▼▼▼ 在這裡新增「年度綜合總分」的計算 ▼▼▼
@@ -4777,7 +4934,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     currentChartData = dataForCalculation; // 將所有計算結果存到全域變數
 
     runCalculation(dataForCalculation, hour, xingNianData); 
-});
+    });
 
     // --- 頁面初始化 ---
 populateDateSelectors();
@@ -4792,40 +4949,102 @@ document.querySelectorAll('input[name="chart-mode"]').forEach(radio => {
 });
 
 // ▼▼▼ 切換至「太乙國運」工具的按鈕邏輯 ▼▼▼
-const switchToNationalBtn = document.getElementById('switch-to-national-btn');
 if (switchToNationalBtn) {
     switchToNationalBtn.addEventListener('click', () => {
-        // 跳轉到國運工具的 tn_index.html
         window.location.href = 'taiyi-national/tn_index.html';
     });
 }
 
-// ▼▼▼ 新增：PDF 儲存功能 (使用列印模式) ▼▼▼
-savePdfBtn.addEventListener('click', () => {
-    window.print();
-});
+// ▼▼▼ n8n 測試按鈕的事件監聽 (包含啟用下載PDF按鈕的邏輯) ▼▼▼
+    const testN8nAiBtn = document.getElementById('test-n8n-ai-btn'); // 我們在準備綁定事件時，才宣告這個變數
+    
+    // 我們先確認這個主要按鈕是否存在
+    if (testN8nAiBtn) {
+        testN8nAiBtn.addEventListener('click', async () => {
+            // 然後，在「點擊後」，才去尋找它需要操作的其他元素
+            const n8nAiOutput = document.getElementById('n8n-ai-output');
+            const downloadBtn = document.getElementById('download-pdf-btn');
 
-// ▼▼▼ AI 能量總結按鈕的事件監聽 ▼▼▼
-    const generateAiSummaryBtn = document.getElementById('generate-ai-summary-btn');
-    const aiSummaryOutput = document.getElementById('ai-summary-output');
+            // 再次確認，確保萬無一失
+            if (!n8nAiOutput || !downloadBtn) {
+                 console.error("錯誤：找不到 n8n 輸出區域或下載按鈕！");
+                 return;
+            }
 
-    if (generateAiSummaryBtn && aiSummaryOutput) {
-        // 將這裡的函式宣告為 async
-        generateAiSummaryBtn.addEventListener('click', async () => { 
+            if (!currentChartData) {
+                alert('請先排盤，再產生分析結果。');
+                return;
+            }
+
+            // ▼▼▼ 新增：點擊「年度」時，清空「本月」的結果 ▼▼▼
+            const monthlyOutput = document.getElementById('ai-summary-output');
+            if (monthlyOutput) {
+                monthlyOutput.innerHTML = '';
+                monthlyOutput.style.display = 'none';
+            }
+            // ▲▲▲ 新增結束 ▲▲▲
+
+            downloadBtn.disabled = true;
+            n8nAiOutput.style.display = 'block';
+            n8nAiOutput.innerHTML = '正在連接 n8n 並請求 AI 分析，請稍候...';
+            
+            const aiMarkdownContent = await getN8nAnalysis(currentChartData); 
+            
+            if (aiMarkdownContent.startsWith('<h4>分析失敗')) {
+                n8nAiOutput.innerHTML = aiMarkdownContent;
+            } else {
+                n8nAiOutput.innerHTML = `<h4>${currentChartData.targetYear}年 (${currentChartData.currentUserAge}歲) 能量總結與建議</h4>` + marked.parse(aiMarkdownContent);
+
+                downloadBtn.disabled = false; 
+                
+                downloadBtn.onclick = function() {
+                    generatePdfReport(currentChartData);
+                };
+            }
+        });
+    } else {
+        // 如果一開始就找不到主按鈕，就在主控台報錯
+        console.error("致命錯誤：在 HTML 中找不到 id 為 'test-n8n-ai-btn' 的主按鈕！");
+    }
+
+// ▼▼▼ (新) 為「本月運勢解說」按鈕綁定事件監聽 ▼▼▼
+    const getMonthlyAiBtn = document.getElementById('get-monthly-ai-btn');
+
+    if (getMonthlyAiBtn && aiSummaryOutput) {
+        getMonthlyAiBtn.addEventListener('click', async () => { 
             if (!currentChartData || !currentChartData.currentUserAge) {
                 alert('請先排盤，再產生分析結果。');
                 return;
             }
 
+            // ▼▼▼ 新增：點擊「本月」時，清空「年度」的結果並禁用PDF下載 ▼▼▼
+            const annualOutput = document.getElementById('n8n-ai-output');
+            const downloadBtn = document.getElementById('download-pdf-btn');
+            if (annualOutput) {
+                annualOutput.innerHTML = '';
+                annualOutput.style.display = 'none';
+            }
+            if (downloadBtn) {
+                downloadBtn.disabled = true;
+            }
+            // ▲▲▲ 新增結束 ▲▲▲
+
             aiSummaryOutput.style.display = 'block';
-            aiSummaryOutput.innerHTML = '正在連接 AI 分析中，請稍候...'; // 更新提示文字
+            aiSummaryOutput.innerHTML = '正在產生本月運勢深度分析，請稍候...';
 
-            // 使用 await 來等待 generateAISummary 完成，並移除 setTimeout
-            const summaryText = await generateAISummary(currentChartData); 
-            aiSummaryOutput.innerHTML = summaryText;
+            // 呼叫我們新的月運專用函式
+            const summaryText = await getMonthlyAnalysis(currentChartData);
+            
+            // ▼▼▼ 最小更動：在這裡即時計算當前月份名稱 ▼▼▼
+            const today = new Date();
+            const currentMonthNumber = getSolarTermMonth(today); // 這是您已有的函式
+            const currentMonthIndex = currentMonthNumber - 1;
+            const currentLunarDateStr = MONTH_NAMES_CHINESE[currentMonthIndex];
+            // ▲▲▲ 修改結束 ▲▲▲
+            
+            // 將結果顯示在舊的輸出區塊
+            aiSummaryOutput.innerHTML = `<h4>本月（${currentLunarDateStr}）運勢深度解析</h4>` + marked.parse(summaryText);
         });
-    }
+}
 
-
-
-});
+}); 

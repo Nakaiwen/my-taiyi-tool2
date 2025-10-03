@@ -630,16 +630,16 @@
 }
 
 /* ====================================================== */
-/* AI 輸出內容專屬排版樣式 (v3 - 最終整理版)             */
+/* AI 輸出內容專屬排版樣式 (v4 - 優化版)                 */
 /* ====================================================== */
 
 /* --- 1. AI 輸出區塊的「容器」統一樣式 --- */
 #ai-summary-output,
 #n8n-ai-output {
-    font-family: 'BiauKaiWeb', sans-serif; /* 統一設定標楷體 */
-    font-size: 16px;                     /* 統一設定基礎字體大小 */
-    line-height: 1.7;                    /* 統一設定行高 */
-    padding-bottom: 20px;                /* 確保底部有足夠的留白 */
+    font-family: 'BiauKaiWeb', sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    padding-bottom: 20px;
 }
 
 /* --- 2. 內容排版：標題 (h3) --- */
@@ -653,28 +653,27 @@
     margin-bottom: 16px;
 }
 
-/* 第一個標題不需要和上方有額外距離 */
 #ai-summary-output h3:first-of-type,
 #n8n-ai-output h3:first-of-type {
-    margin-top: 0; 
+    margin-top: 0;
 }
 
 /* --- 3. 內容排版：段落 (p) --- */
 #ai-summary-output p,
 #n8n-ai-output p {
     margin-top: 0;
-    margin-bottom: 0.8em; /* 段落之間的距離 */
+    margin-bottom: 0.8em;
 }
 
-/* AI 產生的項目符號列表 (ul, ol) - 修正 PDF 數字外跑問題 */
+/* --- 4. 內容排版：列表 (ul, ol, li) --- */
 #ai-summary-output ul,
 #n8n-ai-output ul,
-#ai-summary-output ol, /* 新增對 <ol> 的規則 */
+#ai-summary-output ol,
 #n8n-ai-output ol {
     padding-left: 25px;
     margin-top: 0;
     margin-bottom: 1em;
-    list-style-position: inside; /* ▼▼▼ 核心修正點：讓數字/點點在文字框內 ▼▼▼ */
+    list-style-position: inside;
 }
 
 #ai-summary-output li,
@@ -684,16 +683,22 @@
 }
 
 /* --- 5. 內容排版：特殊元件 (strong, h6) --- */
-
-/* AI 產生的粗體文字 (strong) - 修正 PDF 換行問題 */
 #ai-summary-output strong,
 #n8n-ai-output strong {
     color: #c93e00;
-    display: inline-block; /* 從 inline 改為 inline-block */
-    vertical-align: baseline; /* 確保與文字基準線對齊 */
+    display: inline-block;
+    vertical-align: baseline;
 }
 
-/* 品牌署名行 (h6) */
+/* ▼▼▼ 新增：對齊 AI 內容中的「標籤式」粗體文字 ▼▼▼ */
+#ai-summary-output p > strong:first-child,
+#n8n-ai-output p > strong:first-child {
+    display: inline-block;
+    width: 90px;           /* 【可調整】設定一個固定的寬度 */
+    text-align: right;     /* 讓標籤文字靠右對齊 */
+    margin-right: 8px;     /* 在冒號和內容間加一點距離 */
+}
+
 #ai-summary-output h6,
 #n8n-ai-output h6 {
     text-align: center;
@@ -705,8 +710,33 @@
     margin-bottom: 20px;
 }
 
-/* 品牌署名行中的粗體品牌名 (h6 > strong) */
-#ai-summary-output h6 strong,
-#n8n-ai-output h6 strong {
-    color: #c93e00;
+/* (此處已移除重複的 h6 strong 規則) */
+
+/* --- 6. PDF 報告頁首的專屬樣式 --- */
+.report-header {
+    margin-bottom: 25px;
+    font-family: 'BiauKaiWeb', sans-serif;
+}
+.report-header h2 {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 20px;
+    color: #333;
+}
+.report-header p {
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 5px 0;
+}
+
+.report-header .info-label {
+    display: inline-block;
+    width: 75px;
+    text-align: right;
+    margin-right: 8px;
+}
+.report-header hr {
+    border: 0;
+    border-top: 1px solid #ccc;
+    margin: 15px 0;
 }

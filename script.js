@@ -2774,7 +2774,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             `- ${item.monthName}: ${item.hexagram.name} - ${item.hexagram.explanation}`
         ).join('\n');
     }
-
     // ▼▼▼ 建立圖表模型函式 (已整合「中宮寄宮」邏輯) ▼▼▼
     function buildChartModel(data) {
     let model = {};
@@ -4015,58 +4014,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         }
     }
 
-    // ▼▼▼ PDF 報告生成引擎 (v8 - 最終 jsPDF.html() 版) ▼▼▼
-    async function generatePdfReport(data) {
-        const reportElement = document.getElementById('n8n-ai-output');
-        const downloadBtn = document.getElementById('download-pdf-btn');
-        if (!reportElement || !downloadBtn) return;
-
-        const originalBtnText = downloadBtn.textContent;
-        downloadBtn.textContent = '報告生成中...';
-        downloadBtn.disabled = true;
-
-        try {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({
-                orientation: 'p',
-                unit: 'mm',
-                format: 'a4'
-            });
-
-            // 核心步驟 1: 告訴 jsPDF 我們的自訂字體在哪裡
-            // 它會自動去讀取 fonts/biaukai.ttf 這個檔案
-            doc.addFont('fonts/biaukai.ttf', 'BiauKaiWeb', 'normal');
-            doc.setFont('BiauKaiWeb');
-
-            // 核心步驟 2: 使用 .html() 方法來渲染，並設定邊距和自動分頁
-            await doc.html(reportElement, {
-                callback: function (doc) {
-                    const userName = document.getElementById('user-name').value || '未提供';
-                    // 在 callback 中儲存檔案，確保所有內容都已渲染完畢
-                    doc.save(`小六太乙-${userName}-${data.targetYear}年運勢報告.pdf`);
-                },
-                margin: [15, 15, 15, 15], // 上、右、下、左 的邊距 (單位 mm)
-                autoPaging: 'text', // 啟用基於文字的智慧分頁
-                width: 180, // 內容寬度 (A4 寬度 210mm - 左右邊距 15*2)
-                windowWidth: 650, // 給定一個渲染時參考的寬度
-                fontFaces: [{ // 再次聲明字體，確保渲染引擎能正確捕捉
-                    family: 'BiauKaiWeb',
-                    style: 'normal',
-                    weight: 'normal',
-                    src: [{ url: 'fonts/biaukai.ttf', format: 'truetype' }]
-                }]
-            });
-
-        } catch (error) {
-            console.error("產生PDF時發生錯誤:", error);
-            alert("產生PDF報告時發生錯誤，請檢查主控台。");
-        } finally {
-            // 無論成功或失敗，都恢復按鈕狀態
-            downloadBtn.textContent = originalBtnText;
-            downloadBtn.disabled = false;
-        }
-    }
-
     // ▼▼▼ 從 n8n 獲取 AI 分析結果的專屬函式 ▼▼▼
     async function getN8nAnalysis(data) {
         const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/363afd96-b5b8-4ef5-bba4-f06ebbb1e484';
@@ -4130,6 +4077,75 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         } catch (error) {
             console.error('呼叫 n8n 時發生錯誤:', error);
             return '<h4>分析失敗</h4><p>無法連接到 AI 分析服務，請稍後再試或檢查 n8n 工作流是否正常運作。</p>';
+        }
+    }
+
+    // ▼▼▼ 新增：產生個人資訊頁首 HTML 的共用函式 ▼▼▼
+    function generatePersonalInfoHeaderHTML(data, reportTypeTitle) {
+        const userName = document.getElementById('user-name').value || '未提供';
+        const year = data.birthDate.split('/')[0];
+        const month = data.birthDate.split('/')[1];
+        const day = data.birthDate.split('/')[2];
+        const hour = document.getElementById('birth-hour').value;
+
+        // 組合出最終的 HTML 字串
+        const headerHTML = `
+            <div class="report-header">
+                <h2>${data.targetYear}年 ${reportTypeTitle}</h2>
+                <hr>
+                <p><span class="info-label"><strong>姓名：</strong></span>${userName}</p>
+                <p><span class="info-label"><strong>生日：</strong></span>${year}.${month}.${day} ${hour}時</p>
+                <p><span class="info-label"><strong>四柱：</strong></span>${data.yearPillar} ${data.monthPillar} ${data.dayPillar} ${data.hourPillar}</p>
+            </div>
+        `;
+        return headerHTML;
+    }
+
+    // ▼▼▼ PDF 報告生成引擎 (v9 - 通用版) ▼▼▼
+    async function generatePdfReport(data, elementId, reportTitle) {
+        const reportElement = document.getElementById(elementId); // <--- 修正點 1: 使用傳入的 ID
+        const downloadBtn = document.getElementById('download-pdf-btn');
+        if (!reportElement || !downloadBtn) return;
+
+        const originalBtnText = downloadBtn.textContent;
+        downloadBtn.textContent = '報告生成中...';
+        downloadBtn.disabled = true;
+
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            doc.addFont('fonts/biaukai.ttf', 'BiauKaiWeb', 'normal');
+            doc.setFont('BiauKaiWeb');
+
+            await doc.html(reportElement, {
+                callback: function (doc) {
+                    const userName = document.getElementById('user-name').value || '未提供';
+                    // <--- 修正點 2: 使用傳入的標題來命名檔案
+                    doc.save(`小六太乙-${userName}-${reportTitle}.pdf`);
+                },
+                margin: [15, 15, 15, 15],
+                autoPaging: 'text',
+                width: 180,
+                windowWidth: 650, 
+                fontFaces: [{
+                    family: 'BiauKaiWeb',
+                    style: 'normal',
+                    weight: 'normal',
+                    src: [{ url: 'fonts/biaukai.ttf', format: 'truetype' }]
+                }]
+            });
+
+        } catch (error) {
+            console.error("產生PDF時發生錯誤:", error);
+            alert("產生PDF報告時發生錯誤，請檢查主控台。");
+        } finally {
+            downloadBtn.textContent = originalBtnText;
+            // PDF 產生完後，按鈕會自動恢復可用狀態
         }
     }
 
@@ -4978,7 +4994,6 @@ if (switchToNationalBtn) {
                 monthlyOutput.innerHTML = '';
                 monthlyOutput.style.display = 'none';
             }
-            // ▲▲▲ 新增結束 ▲▲▲
 
             downloadBtn.disabled = true;
             n8nAiOutput.style.display = 'block';
@@ -4989,12 +5004,19 @@ if (switchToNationalBtn) {
             if (aiMarkdownContent.startsWith('<h4>分析失敗')) {
                 n8nAiOutput.innerHTML = aiMarkdownContent;
             } else {
-                n8nAiOutput.innerHTML = `<h4>${currentChartData.targetYear}年 (${currentChartData.currentUserAge}歲) 能量總結與建議</h4>` + marked.parse(aiMarkdownContent);
+                // ▼▼▼ 修正點：在這裡先產生頁首，再組合內容 ▼▼▼
+                const headerHtml = generatePersonalInfoHeaderHTML(currentChartData, '能量趨勢報告');
+                n8nAiOutput.innerHTML = headerHtml + marked.parse(aiMarkdownContent);
 
                 downloadBtn.disabled = false; 
                 
+                // ▼▼▼ 修正點：呼叫新的 PDF 函式，並傳入年度報告的資訊 ▼▼▼
                 downloadBtn.onclick = function() {
-                    generatePdfReport(currentChartData);
+                    generatePdfReport(
+                        currentChartData, 
+                        'n8n-ai-output', 
+                        `${currentChartData.targetYear}年運勢報告`
+                    );
                 };
             }
         });
@@ -5012,17 +5034,12 @@ if (switchToNationalBtn) {
                 return;
             }
 
-            // ▼▼▼ 新增：點擊「本月」時，清空「年度」的結果並禁用PDF下載 ▼▼▼
             const annualOutput = document.getElementById('n8n-ai-output');
             const downloadBtn = document.getElementById('download-pdf-btn');
             if (annualOutput) {
                 annualOutput.innerHTML = '';
                 annualOutput.style.display = 'none';
             }
-            if (downloadBtn) {
-                downloadBtn.disabled = true;
-            }
-            // ▲▲▲ 新增結束 ▲▲▲
 
             aiSummaryOutput.style.display = 'block';
             aiSummaryOutput.innerHTML = '正在產生本月運勢深度分析，請稍候...';
@@ -5035,10 +5052,21 @@ if (switchToNationalBtn) {
             const currentMonthNumber = getSolarTermMonth(today); // 這是您已有的函式
             const currentMonthIndex = currentMonthNumber - 1;
             const currentLunarDateStr = MONTH_NAMES_CHINESE[currentMonthIndex];
-            // ▲▲▲ 修改結束 ▲▲▲
             
-            // 將結果顯示在舊的輸出區塊
-            aiSummaryOutput.innerHTML = `<h4>本月（${currentLunarDateStr}）運勢深度解析</h4>` + marked.parse(summaryText);
+            const headerHtml = generatePersonalInfoHeaderHTML(currentChartData, '本月運勢深度解析');
+            aiSummaryOutput.innerHTML = headerHtml + marked.parse(summaryText);
+
+            // ▼▼▼ 修正點 2：在產生報告後，啟用下載按鈕並綁定新任務 ▼▼▼
+            if (downloadBtn) {
+                downloadBtn.disabled = false;
+                downloadBtn.onclick = function() {
+                    generatePdfReport(
+                        currentChartData,
+                        'ai-summary-output',
+                        `${currentChartData.targetYear}年${currentLunarDateStr}運勢報告`
+                    );
+                };
+            }
         });
 }
 

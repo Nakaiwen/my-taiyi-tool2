@@ -1930,8 +1930,8 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
    
     // ▼▼▼ 每次增加星都要更新的函式 ▼▼▼
     function generateMainChartData(lookupResult, deitiesResult, suanStarsResult, shiWuFuResult, xiaoYouResult, junJiResult, chenJiResult, minJiResult, tianYiResult, diYiResult, siShenResult, feiFuResult, daYouResult, yueJiangData, guiRenData, starsToDisplay = []) {
-    const chartData = {};
-    const allPalaceKeys = Object.keys(RADIAL_LAYOUT.angles);
+        const chartData = {};
+        const allPalaceKeys = Object.keys(RADIAL_LAYOUT.angles);
     allPalaceKeys.forEach(key => {
         chartData[key] = {
             lineLeft: { fieldA: "", fieldB: "", fieldG: "" },
@@ -1939,6 +1939,21 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
             lineRight:  { fieldE: "", fieldF: "", fieldE2: "", fieldF2: "" }
         };
     });
+
+    // 輔助函式：將星曜放入第一個可用的空位 (具備自動換行到 lineRight 的功能)
+    function placeInFirstAvailable(palaceId, starName) {
+        const lineLeft = chartData[palaceId].lineLeft;
+        const lineRight = chartData[palaceId].lineRight;
+
+        if (!lineLeft.fieldA) lineLeft.fieldA = starName;
+        else if (!lineLeft.fieldB) lineLeft.fieldB = starName;
+        else if (!lineLeft.fieldG) lineLeft.fieldG = starName;
+        // 【核心修正點】如果 lineLeft 已滿，則溢出到 lineRight
+        else if (!lineRight.fieldE) lineRight.fieldE = starName;
+        else if (!lineRight.fieldF) lineRight.fieldF = starName;
+        else if (!lineRight.fieldE2) lineRight.fieldE2 = starName;
+        else if (!lineRight.fieldF2) lineRight.fieldF2 = starName;
+    }
 
     // 處理 太乙、文昌、始擊 (您的同宮判斷邏輯)
     if (lookupResult) {
@@ -2245,6 +2260,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         const daYouResult = calculateDaYou(hourJishu);
         const yueJiangData = calculateYueJiang(solarLunar.solar2lunar(parseInt(dataForCalculation.birthDate.split('/')[0]), parseInt(dataForCalculation.birthDate.split('/')[1]), parseInt(dataForCalculation.birthDate.split('/')[2]), hour), dataForCalculation.hourPillar.charAt(1));
         const guiRenData = calculateGuiRen(dataForCalculation.dayPillar.charAt(0), dataForCalculation.hourPillar.charAt(1), yueJiangData);
+        
         const newLifePalacesData = dataForCalculation.arrangedLifePalaces;
         const newSdrData = calculateSdrPalaces(dataForCalculation, dataForCalculation.direction);
         const newAgeLimitData = [];

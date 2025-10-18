@@ -920,6 +920,16 @@ document.addEventListener('DOMContentLoaded', () => {
     '午': '丁', '未': '己', '申': '庚', '酉': '辛', '戌': '戊', '亥': '壬'
     };
 
+    // ▼▼▼ 新增：日柱空亡規則資料庫 ▼▼▼
+    const KONG_WANG_RULES = {
+        '甲子': ['戌', '亥'], '乙丑': ['戌', '亥'], '丙寅': ['戌', '亥'], '丁卯': ['戌', '亥'], '戊辰': ['戌', '亥'], '己巳': ['戌', '亥'], '庚午': ['戌', '亥'], '辛未': ['戌', '亥'], '壬申': ['戌', '亥'], '癸酉': ['戌', '亥'],
+        '甲戌': ['申', '酉'], '乙亥': ['申', '酉'], '丙子': ['申', '酉'], '丁丑': ['申', '酉'], '戊寅': ['申', '酉'], '己卯': ['申', '酉'], '庚辰': ['申', '酉'], '辛巳': ['申', '酉'], '壬午': ['申', '酉'], '癸未': ['申', '酉'],
+        '甲申': ['午', '未'], '乙酉': ['午', '未'], '丙戌': ['午', '未'], '丁亥': ['午', '未'], '戊子': ['午', '未'], '己丑': ['午', '未'], '庚寅': ['午', '未'], '辛卯': ['午', '未'], '壬辰': ['午', '未'], '癸巳': ['午', '未'],
+        '甲午': ['辰', '巳'], '乙未': ['辰', '巳'], '丙申': ['辰', '巳'], '丁酉': ['辰', '巳'], '戊戌': ['辰', '巳'], '己亥': ['辰', '巳'], '庚子': ['辰', '巳'], '辛丑': ['辰', '巳'], '壬寅': ['辰', '巳'], '癸卯': ['辰', '巳'],
+        '甲辰': ['寅', '卯'], '乙巳': ['寅', '卯'], '丙午': ['寅', '卯'], '丁未': ['寅', '卯'], '戊申': ['寅', '卯'], '己酉': ['寅', '卯'], '庚戌': ['寅', '卯'], '辛亥': ['寅', '卯'], '壬子': ['寅', '卯'], '癸丑': ['寅', '卯'],
+        '甲寅': ['子', '丑'], '乙卯': ['子', '丑'], '丙辰': ['子', '丑'], '丁巳': ['子', '丑'], '戊午': ['子', '丑'], '己未': ['子', '丑'], '庚申': ['子', '丑'], '辛酉': ['子', '丑'], '壬戌': ['子', '丑'], '癸亥': ['子', '丑']
+    };
+
 
 // =================================================================
 //  SECTION 2: SVG 圖盤繪製邏輯 (最終整理版)
@@ -3965,6 +3975,14 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return `<div style="color: red; font-weight: bold;">注意！未來天剋地衝年份：${yearsString}年。</div>`;
     }
 
+    // ▼▼▼ 計算日柱空亡的函式 ▼▼▼
+    function calculateKongWang(dayPillar) {
+        if (!dayPillar || !KONG_WANG_RULES[dayPillar]) {
+            return null; // 如果輸入無效或找不到規則，返回 null
+        }
+        return KONG_WANG_RULES[dayPillar]; // 返回包含兩個地支的陣列，例如 ['戌', '亥']
+    }
+
     // ▼▼▼ 格式化星曜資料給 AI 使用的專屬函式 ▼▼▼
     function formatStarsForAI(starNames) {
         if (!starNames || starNames.length === 0) {
@@ -3980,7 +3998,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         }).join('、 ');
     }
 
-    // ▼▼▼ (新) 獲取「當月運勢」深度分析的專屬函式 ▼▼▼
+    // ▼▼▼ 獲取「當月運勢」深度分析的專屬函式 ▼▼▼
     async function getMonthlyAnalysis(data) {
         const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/71e49418-c32c-4731-b574-57e1c9ae105c';
 
@@ -4080,7 +4098,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         }
     }
 
-    // ▼▼▼ 新增：產生個人資訊頁首 HTML 的共用函式 ▼▼▼
+    // ▼▼▼ 產生個人資訊頁首 HTML 的共用函式 ▼▼▼
     function generatePersonalInfoHeaderHTML(data, reportTypeTitle) {
         const userName = document.getElementById('user-name').value || '未提供';
         const year = data.birthDate.split('/')[0];
@@ -4470,6 +4488,19 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
         // ▼▼▼ 在這裡新增下面這一行 ▼▼▼
         document.getElementById('day-master-info').innerHTML = dataForCalculation.dayMasterInfo;
+
+        // ▼▼▼ 新增：在這裡更新空亡資訊的顯示 ▼▼▼
+        const kongWangInfoDiv = document.getElementById('kong-wang-info');
+        if (kongWangInfoDiv) {
+            if (dataForCalculation.kongWangResult) {
+                // 如果成功計算出空亡，就顯示出來 (用中文頓號連接)
+                kongWangInfoDiv.innerHTML = `日柱空亡：${dataForCalculation.kongWangResult.join('、 ')}`;
+            } else {
+                // 如果計算失敗 (雖然不太可能)，顯示提示訊息
+                kongWangInfoDiv.innerHTML = '日柱空亡：無法計算';
+            }
+        }
+
         document.getElementById('element-interaction-info').innerHTML = formatElementInteractionInfo(dataForCalculation.elementInteraction);
         document.getElementById('ten-gods-info').innerHTML = formatTenGodsInfo(dataForCalculation.tenGodsAnalysis);
         document.getElementById('tianke-dichong-info').innerHTML = formatTianKeDiChongInfo(dataForCalculation.tianKeDiChongYears);
@@ -4869,6 +4900,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     dataForCalculation.dayMasterData = getDayMasterData(dataForCalculation.dayPillar.charAt(0));
     dataForCalculation.dayMasterInfo = getDayMasterInfo(dataForCalculation.dayMasterData);
+    dataForCalculation.kongWangResult = calculateKongWang(dataForCalculation.dayPillar);
     dataForCalculation.bureauResult = bureauResult;
     dataForCalculation.lookupResult = lookupResult;
     dataForCalculation.deitiesResult = calculateDeities(bureauResult, dataForCalculation.hourPillar.charAt(1));

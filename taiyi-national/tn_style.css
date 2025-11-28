@@ -112,7 +112,7 @@
     /* 「君基、臣基、民基」的專屬樣式 */
     .ji-star-style {
     font-size: 14px;
-    fill: #009b29; 
+    fill: #02961d; 
     font-weight: bold;
     }
 
@@ -120,6 +120,13 @@
     .celestial-messenger-style {
     font-size: 14px;
     fill: #e500d2; 
+    font-weight: bold;
+    }
+
+    /* 建除十二神樣式 */
+    .jian-chu-style {
+    font-size: 16px;
+    fill: #007289; /* 深灰色，可自行調整 */
     font-weight: bold;
     }
 

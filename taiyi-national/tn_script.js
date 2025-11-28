@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         yueJiangRing: { radius: 288, rotationOffset: 6, palaces: ['pZi','pHai','pXu','pYou','pShen','pWei','pWu','pSi','pChen','pMao','pYin','pChou'], flipPalaces: ['pHai','pSi','pXu','pYou','pShen'], color: '#501dd3' },
         guiRenRing: { radius: 288, rotationOffset: -5, palaces: ['pZi','pChou','pYin','pMao','pChen','pSi','pWu','pWei','pShen','pYou','pXu','pHai'], flipPalaces: ['pZi','pHai','pSi','pXu','pYou','pWu','pShen'], color: '#ae00ff' },
         outerRing: { radius: 103, palaces: ['pZi', 'pGen', 'pMao', 'pXun', 'pWu', 'pKun', 'pYou', 'pQian']},
-        xingNianRing: { radius: 303, flipPalaces: ['pZi', 'pHai', 'pXu', 'pYou', 'pShen', 'pSi']},
+        xingNianRing: { radius: 310, palaces: ['pZi','pChou','pYin','pMao','pChen','pSi','pWu','pWei','pShen','pYou','pXu','pHai'], flipPalaces: ['pZi', 'pHai', 'pXu', 'pYou', 'pShen', 'pSi'], className: 'jian-chu-style' },
         yangJiuRing: { radius: 331, rotationOffset: 5, className: 'yang-jiu-style', flipPalaces: ['pHai','pSi','pXu','pYou','pShen'] },
         baiLiuRing: { radius: 331, rotationOffset: -5.5, className: 'bai-liu-style', flipPalaces: ['pZi', 'pHai', 'pWu', 'pXu', 'pYou', 'pShen', 'pSi'] }, 
         baiLiuXiaoXianRing: { radius: 317, rotationOffset: -5.5, className: 'bai-liu-style', flipPalaces: ['pZi', 'pHai', 'pWu', 'pXu', 'pYou', 'pShen', 'pSi'] },
@@ -760,6 +760,9 @@ document.addEventListener('DOMContentLoaded', () => {
     '亥': '北北西方'
     };
 
+    // ▼▼▼ 建除十二神順序 ▼▼▼
+    const JIAN_CHU_ORDER = ['建', '除', '滿', '平', '定', '執', '破', '危', '成', '收', '開', '閉'];
+
 
 
 
@@ -961,7 +964,7 @@ function addCenterText(text, coords, className) {
 }
 
 // --- 繪圖主函式 (最終整理版) ---
-function renderChart(mainData, palacesData, agesData, sdrData, centerData, outerRingData) {    
+function renderChart(mainData, palacesData, agesData, sdrData, centerData, outerRingData, jianChuData) {    
     clearDynamicData();
         if (outerRingData) {
             const ringConfig = RADIAL_LAYOUT.outerRing;
@@ -983,6 +986,11 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
             addCenterText(centerData.field3, RADIAL_LAYOUT.centerFields.field3, 'center-info-style');
             addCenterText(centerData.field4, RADIAL_LAYOUT.centerFields.field4, 'center-info-style');
         }
+        // ▼▼▼ 【新增】繪製建除十二神 ▼▼▼
+        if (jianChuData && jianChuData.length > 0) {
+        addRotatedRingText(jianChuData, RADIAL_LAYOUT.xingNianRing);
+        }
+
         for (const palaceKey in mainData) {
             if (!mainData[palaceKey]) continue;
             const centerAngle = RADIAL_LAYOUT.angles[palaceKey];
@@ -1841,6 +1849,30 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     return '';
     }
 
+    // ▼▼▼ 【新增】計算建除十二神的函式 ▼▼▼
+    function calculateJianChu(hourBranch) {
+    if (!hourBranch) return [];
+    
+    // 1. 找出時支 (建神起點) 在十二地支中的索引 (子=0, 丑=1...)
+    const startIndex = solarLunar.zhi.indexOf(hourBranch);
+    if (startIndex === -1) return [];
+
+    // 2. 準備結果陣列，對應 ['子', '丑', '寅'...] 的順序
+    const result = [];
+
+    // 3. 填入十二宮位
+    for (let i = 0; i < 12; i++) {
+        // 計算目前宮位(i)相對於起點(startIndex)的距離
+        // 因為是順時鐘，直接減法處理 (加上12確保為正數)
+        const godIndex = (i - startIndex + 12) % 12;
+        
+        // 填入對應的神煞
+        result.push(JIAN_CHU_ORDER[godIndex]);
+    }
+
+    return result;
+    }
+
     // ▼▼▼ 【V2 - 結構化輸出版】計算所有格局的函式 ▼▼▼
     function calculatePatterns(lookupResult, suanStarsResult) {
     const patterns = [];
@@ -2260,7 +2292,8 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         const daYouResult = calculateDaYou(hourJishu);
         const yueJiangData = calculateYueJiang(solarLunar.solar2lunar(parseInt(dataForCalculation.birthDate.split('/')[0]), parseInt(dataForCalculation.birthDate.split('/')[1]), parseInt(dataForCalculation.birthDate.split('/')[2]), hour), dataForCalculation.hourPillar.charAt(1));
         const guiRenData = calculateGuiRen(dataForCalculation.dayPillar.charAt(0), dataForCalculation.hourPillar.charAt(1), yueJiangData);
-        
+        // 【新增】計算建除十二神 (使用時支)
+        const jianChuData = calculateJianChu(hourPillar.charAt(1));
         const newLifePalacesData = dataForCalculation.arrangedLifePalaces;
         const newSdrData = calculateSdrPalaces(dataForCalculation, dataForCalculation.direction);
         const newAgeLimitData = [];
@@ -2298,7 +2331,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         else if (!centerData.field4) centerData.field4 = starText;
         });
 
-        renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData); 
+        renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData, jianChuData); 
 
         let outputText = `\n  局數 : ${bureauResult}`;
     if (lookupResult) {

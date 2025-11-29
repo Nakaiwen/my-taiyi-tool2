@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     '午': -5,  '未': -4,  '申': -3, '酉': -2, '戌': -1, '亥': 0
     };
 
-    // ▼▼▼ 夏至冬至基準點資料庫 (1900-2030) ▼▼▼
+    // ▼▼▼ 夏至冬至基準點資料庫 (1900-2050) ▼▼▼
     const SOLSTICE_DATA = {
     1900: { summer: { date: new Date("1900-06-22T05:39:00"), dayPillar: "丙寅", dayBureau: 39, dayJishu: 11386982 }, winter: { date: new Date("1900-12-22T14:41:00"), dayPillar: "己巳", dayBureau: 6, dayJishu: 11387165 } },
     1901: { summer: { date: new Date("1901-06-22T11:27:00"), dayPillar: "辛未", dayBureau: 44, dayJishu: 11387347 }, winter: { date: new Date("1901-12-22T20:36:00"), dayPillar: "甲戌", dayBureau: 11, dayJishu: 11387530 } },
@@ -189,7 +189,27 @@ document.addEventListener('DOMContentLoaded', () => {
     2027: { summer: { date: new Date("2027-06-21T22:10:00"), dayPillar: "辛未", dayBureau: 56, dayJishu: 11433367 }, winter: { date: new Date("2027-12-22T10:41:00"), dayPillar: "乙亥", dayBureau: 24, dayJishu: 11433551 } },
     2028: { summer: { date: new Date("2028-06-21T04:01:00"), dayPillar: "丁丑", dayBureau: 62, dayJishu: 11433733 }, winter: { date: new Date("2028-12-21T16:19:00"), dayPillar: "庚辰", dayBureau: 29, dayJishu: 11433916 } },
     2029: { summer: { date: new Date("2029-06-21T09:47:00"), dayPillar: "壬午", dayBureau: 67, dayJishu: 11434098 }, winter: { date: new Date("2029-12-21T22:13:00"), dayPillar: "乙酉", dayBureau: 34, dayJishu: 11434281 } },
-    2030: { summer: { date: new Date("2030-06-21T15:30:00"), dayPillar: "丁亥", dayBureau: 72, dayJishu: 11434463 }, winter: { date: new Date("2030-12-22T04:09:00"), dayPillar: "辛卯", dayBureau: 40, dayJishu: 11434647 } }
+    2030: { summer: { date: new Date("2030-06-21T15:30:00"), dayPillar: "丁亥", dayBureau: 72, dayJishu: 11434463 }, winter: { date: new Date("2030-12-22T04:09:00"), dayPillar: "辛卯", dayBureau: 40, dayJishu: 11434647 } },
+    2031: { summer: { date: new Date("2031-06-21T21:16:00"), dayPillar: "壬辰", dayBureau: 5, dayJishu: 11434828 }, winter: { date: new Date("2031-12-22T09:55:00"), dayPillar: "丙申", dayBureau: 45, dayJishu: 11435012 } },
+    2032: { summer: { date: new Date("2032-06-21T03:08:00"), dayPillar: "戊戌", dayBureau: 11, dayJishu: 11435194 }, winter: { date: new Date("2032-12-21T15:55:00"), dayPillar: "辛丑", dayBureau: 51, dayJishu: 11435377 } },
+    2033: { summer: { date: new Date("2033-06-21T09:00:00"), dayPillar: "癸卯", dayBureau: 16, dayJishu: 11435559 }, winter: { date: new Date("2033-12-21T21:45:00"), dayPillar: "丙午", dayBureau: 55, dayJishu: 11435742 } },
+    2034: { summer: { date: new Date("2034-06-21T14:43:00"), dayPillar: "戊申", dayBureau: 21, dayJishu: 11435924 }, winter: { date: new Date("2034-12-22T03:33:00"), dayPillar: "壬子", dayBureau: 61, dayJishu: 11436108 } },
+    2035: { summer: { date: new Date("2035-06-21T20:32:00"), dayPillar: "癸丑", dayBureau: 26, dayJishu: 11436289 }, winter: { date: new Date("2035-12-22T09:30:00"), dayPillar: "丁巳", dayBureau: 66, dayJishu: 11436473 } },
+    2036: { summer: { date: new Date("2036-06-21T02:31:00"), dayPillar: "己未", dayBureau: 32, dayJishu: 11436655 }, winter: { date: new Date("2036-12-21T15:12:00"), dayPillar: "壬戌", dayBureau: 71, dayJishu: 11436838 } },
+    2037: { summer: { date: new Date("2037-06-21T08:21:00"), dayPillar: "甲子", dayBureau: 37, dayJishu: 11437020 }, winter: { date: new Date("2037-12-21T21:07:00"), dayPillar: "丁卯", dayBureau: 4, dayJishu: 11437203 } },
+    2038: { summer: { date: new Date("2038-06-21T14:08:00"), dayPillar: "己巳", dayBureau: 42, dayJishu: 11437385 }, winter: { date: new Date("2038-12-22T03:01:00"), dayPillar: "癸酉", dayBureau: 10, dayJishu: 11437569 } },
+    2039: { summer: { date: new Date("2039-06-21T19:56:00"), dayPillar: "甲戌", dayBureau: 47, dayJishu: 11437750 }, winter: { date: new Date("2039-12-22T08:40:00"), dayPillar: "戊寅", dayBureau: 15, dayJishu: 11437934 } },
+    2040: { summer: { date: new Date("2040-06-21T01:45:00"), dayPillar: "庚辰", dayBureau: 53, dayJishu: 11438116 }, winter: { date: new Date("2040-12-21T14:32:00"), dayPillar: "癸未", dayBureau: 20, dayJishu: 11438299 } },
+    2041: { summer: { date: new Date("2041-06-21T07:35:00"), dayPillar: "乙酉", dayBureau: 58, dayJishu: 11438481 }, winter: { date: new Date("2041-12-21T20:17:00"), dayPillar: "戊子", dayBureau: 25, dayJishu: 11438664 } },
+    2042: { summer: { date: new Date("2042-06-21T13:15:00"), dayPillar: "庚寅", dayBureau: 63, dayJishu: 11438846 }, winter: { date: new Date("2042-12-22T02:03:00"), dayPillar: "甲午", dayBureau: 31, dayJishu: 11439030 } },
+    2043: { summer: { date: new Date("2043-06-21T18:57:00"), dayPillar: "乙未", dayBureau: 68, dayJishu: 11439211 }, winter: { date: new Date("2043-12-22T08:00:00"), dayPillar: "己亥", dayBureau: 36, dayJishu: 11439395 } },
+    2044: { summer: { date: new Date("2044-06-21T00:50:00"), dayPillar: "辛丑", dayBureau: 2, dayJishu: 11439577 }, winter: { date: new Date("2044-12-21T13:42:00"), dayPillar: "甲辰", dayBureau: 41, dayJishu: 11439760 } },
+    2045: { summer: { date: new Date("2045-06-21T06:33:00"), dayPillar: "丙午", dayBureau: 7, dayJishu: 11439942 }, winter: { date: new Date("2045-12-21T19:34:00"), dayPillar: "己酉", dayBureau: 46, dayJishu: 11440125 } },
+    2046: { summer: { date: new Date("2046-06-21T12:13:00"), dayPillar: "辛亥", dayBureau: 12, dayJishu: 11440307 }, winter: { date: new Date("2046-12-22T01:27:00"), dayPillar: "乙卯", dayBureau: 52, dayJishu: 11440491 } },
+    2047: { summer: { date: new Date("2047-06-21T18:02:00"), dayPillar: "丙辰", dayBureau: 17, dayJishu: 11440672 }, winter: { date: new Date("2047-12-22T07:06:00"), dayPillar: "庚申", dayBureau: 57, dayJishu: 11440856 } },
+    2048: { summer: { date: new Date("2048-06-20T23:53:00"), dayPillar: "辛酉", dayBureau: 22, dayJishu: 11441037 }, winter: { date: new Date("2048-12-21T13:01:00"), dayPillar: "乙丑", dayBureau: 62, dayJishu: 11441221 } },
+    2049: { summer: { date: new Date("2049-06-21T05:46:00"), dayPillar: "丁卯", dayBureau: 28, dayJishu: 11441403 }, winter: { date: new Date("2049-12-21T18:51:00"), dayPillar: "庚午", dayBureau: 67, dayJishu: 11441586 } },
+    2050: { summer: { date: new Date("2050-06-21T11:32:00"), dayPillar: "壬申", dayBureau: 33, dayJishu: 11441768 }, winter: { date: new Date("2050-12-22T00:37:00"), dayPillar: "丙子", dayBureau: 1, dayJishu: 11441952 } }
     };
 
     // ▼▼▼ 時區資料庫 (詳細版) ▼▼▼

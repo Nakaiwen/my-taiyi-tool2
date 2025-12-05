@@ -1492,11 +1492,10 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         calculatedBureau: calculatedBureau
     };
     }
-    // ▼▼▼ 計算「年積數」與「月積數」的函式 ▼▼▼
+    // ▼▼▼ 計算「年積數」與「月積數」的函式 (V5 - 修正版) ▼▼▼
     function calculateNationalJishu(year, month, day, hour) {
     // 檢查收到的參數是否有效
     if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour)) {
-        // 返回一個安全的預設值，避免程式完全崩潰
         return {
             annualJishu: 0, annualBureau: '', annualGanZhi: '',
             monthlyJishu: 0, monthlyBureau: '', monthlyGanZhi: ''
@@ -1505,7 +1504,6 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
 
     // 1. 計算年積數及其衍生資料
     const annualJishu = TAI_YI_BASE_JISHU + year;
-    
     const annualBureauRem = annualJishu % 72;
     const annualBureauNum = (annualBureauRem === 0) ? 72 : annualBureauRem;
     const annualBureau = `陽${annualBureauNum}局`;
@@ -1523,8 +1521,9 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     let monthlyJishu = baseHaiJishu + offset;
 
     // 【核心修正點】處理子月和丑月的跨年問題
-    // 這兩個月在干支曆中屬於下一個年度週期，所以積數要 +12
-    if (monthBranch === '子' || monthBranch === '丑') {
+    // 只有在「公曆年底」(11月或12月) 且遇到「子月或丑月」時才需要 +12。
+    // 如果是公曆年初(1月)，因為輸入的 year 已經+1了，公式會自動平衡，不需要額外加。
+    if ((monthBranch === '子' || monthBranch === '丑') && month >= 11) {
         monthlyJishu += 12;
     }
 

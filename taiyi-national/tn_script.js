@@ -796,6 +796,24 @@ dynamicGroup.setAttribute('id', 'dynamic-text-group');
 if (svgPlate) { svgPlate.appendChild(dynamicGroup); }
 let pathCounter = 0;
 
+// ▼▼▼ 【新增】動畫小幫手：為元素加上隨機延遲與顯示 Class ▼▼▼
+function applyStarAnimation(element) {
+    // 1. 計算隨機延遲時間 (0秒 ~ 0.6秒之間)，營造錯落感
+    // 雖然淡入要1秒，但延遲不要太久，否則使用者會覺得反應慢
+    const randomDelay = Math.random() * 0.6; 
+    
+    // 2. 直接設定 CSS 變數給這個元素
+    element.style.transitionDelay = `${randomDelay}s`;
+
+    // 3. 使用雙重 requestAnimationFrame 確保瀏覽器先渲染了 "opacity: 0"
+    // 然後才加上 "star-visible" 觸發過渡效果
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            element.classList.add('star-visible');
+        });
+    });
+}
+
 // --- 所有的繪圖「工具函式」都集中在這裡 ---
 // ▼▼▼ 繪製放射狀文字的工具函式 (可翻轉版) ▼▼▼
 // ▼▼▼ 繪製放射狀文字的工具函式 (可針對特定宮位翻轉) ▼▼▼
@@ -831,6 +849,8 @@ function addRadialText(palaceId, angle, startRadius, text, className) {
         textElement.setAttribute('dominant-baseline', 'central');
         textElement.setAttribute('text-anchor', 'middle');
         textElement.textContent = text;
+
+        applyStarAnimation(textElement); // <--- 注入動畫
         dynamicGroup.appendChild(textElement);
 
     } else {
@@ -857,6 +877,8 @@ function addRadialText(palaceId, angle, startRadius, text, className) {
         textPath.textContent = text;
         
         textElement.appendChild(textPath);
+
+        applyStarAnimation(textElement); // <--- 注入動畫
         dynamicGroup.appendChild(textElement);
     }
 }
@@ -882,6 +904,8 @@ function addSingleCharRing(data, ringConfig) {
             textElement.setAttribute('style', `fill: ${ringConfig.color};`);
         }
         textElement.textContent = char;
+
+        applyStarAnimation(textElement); // <--- 注入動畫
         dynamicGroup.appendChild(textElement);
     }
 }
@@ -916,6 +940,7 @@ function addRotatedRingText(data, ringConfig) {
         textElement.setAttribute('style', styleString);
         textElement.setAttribute('transform', `rotate(${rotation}, ${x}, ${y})`);
         textElement.textContent = text;
+        applyStarAnimation(textElement); // <--- 注入動畫
         dynamicGroup.appendChild(textElement);
     }
 }
@@ -943,6 +968,8 @@ function addSdrRing(sdrDataObject, ringConfig) {
             textElement.setAttribute('dominant-baseline', 'central');
             textElement.setAttribute('class', 'dynamic-text sdr-style');
             textElement.textContent = char;
+
+            applyStarAnimation(textElement); // <--- 注入動畫
             dynamicGroup.appendChild(textElement);
         }
     }
@@ -955,6 +982,11 @@ function addEncircledText(text, x, y, rotation, textClassName, circleClassName) 
     circle.setAttribute('cy', 0);
     circle.setAttribute('r', 10);  //紅色圓圈的直徑設定
     circle.setAttribute('class', circleClassName);
+
+    // 圓圈也加上動畫，讓它和文字一起浮現
+    circle.style.opacity = 0;
+    circle.style.transition = "opacity 1s ease-out";
+
     const textElement = document.createElementNS(SVG_NS, 'text');
     textElement.setAttribute('x', 0);
     textElement.setAttribute('y', 0);
@@ -965,6 +997,11 @@ function addEncircledText(text, x, y, rotation, textClassName, circleClassName) 
     textElement.textContent = text;
     group.appendChild(circle);
     group.appendChild(textElement);
+
+    // 對整個群組裡的文字和圓圈套用動畫
+    applyStarAnimation(textElement);
+    applyStarAnimation(circle); // 讓圓圈也跟著閃爍
+
     dynamicGroup.appendChild(group);
 }
 function clearDynamicData() {
@@ -980,6 +1017,7 @@ function addCenterText(text, coords, className) {
     textElement.setAttribute('class', `dynamic-text ${className}`);
     textElement.textContent = text;
     textElement.setAttribute('style', 'writing-mode: horizontal-tb;');
+    applyStarAnimation(textElement); // <--- 注入動畫
     dynamicGroup.appendChild(textElement);
 }
 

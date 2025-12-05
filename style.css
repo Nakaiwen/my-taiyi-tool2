@@ -20,12 +20,22 @@
         border-radius: 10px;
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    /* 為動態加入的文字設定基本樣式 */
+    /* 修改：為動態文字加入過渡效果的基底 */
     .dynamic-text {
-        font-family: 'BiauKaiWeb';
-        fill: #000000;
-        writing-mode: vertical-rl;
-        glyph-orientation-vertical: 0;
+    font-family: 'BiauKaiWeb';
+    fill: #000000;
+    writing-mode: vertical-rl;
+    glyph-orientation-vertical: 0;
+
+    /* ▼▼▼ 動畫設定 ▼▼▼ */
+    opacity: 0; /* 預設為隱藏 (透明) */
+    transition: opacity 1.0s ease-out; /* 設定 1秒 的淡入時間，ease-out 讓結尾更柔和 */
+    /* ▲▲▲ 動畫設定 ▲▲▲ */
+    }
+
+    /* 新增：當星星要顯示時，加上這個 class */
+    .star-visible {
+    opacity: 1; /* 變成不透明 (顯示) */
     }
 
     /* --- 紅色星形圖標樣式 --- */

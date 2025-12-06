@@ -793,6 +793,23 @@ document.addEventListener('DOMContentLoaded', () => {
     { name: '甲寅旬', void: '子丑' }  // 50-59
     ];
 
+    // ▼▼▼ 空亡底色位置微調設定表 (單位：度) ▼▼▼
+    // 正數(+)為順時鐘偏移，負數(-)為逆時鐘偏移
+    const KONG_WANG_OFFSET_CONFIG = {
+    '子': 0, 
+    '丑': -1, 
+    '寅': 0, 
+    '卯': 0, 
+    '辰': 0, 
+    '巳': 1.1, 
+    '午': 0, 
+    '未': -1, 
+    '申': 0, 
+    '酉': 0, 
+    '戌': 0, 
+    '亥': 1 
+    };
+
 
 
 
@@ -1020,9 +1037,14 @@ function drawKongWangSector(palaceBranch) {
     const palaceId = BRANCH_TO_PALACE_ID[palaceBranch];
     if (!palaceId) return;
 
-    // 2. 取得該宮位的中心角度
-    const centerAngle = RADIAL_LAYOUT.angles[palaceId];
+    // 2. 取得該宮位的原始中心角度
+    let centerAngle = RADIAL_LAYOUT.angles[palaceId];
     if (centerAngle === undefined) return;
+
+    // 【核心修正點】讀取微調設定並應用
+    // 如果設定表中有該地支的數值，就加到中心角度上
+    const manualOffset = KONG_WANG_OFFSET_CONFIG[palaceBranch] || 0;
+    centerAngle += manualOffset;
 
     // 3. 設定扇形的參數
     // 保持收窄的 9 度，避免蓋到四維卦
@@ -1065,7 +1087,6 @@ function drawKongWangSector(palaceBranch) {
     pathElement.setAttribute('d', pathData);
     pathElement.setAttribute('class', 'kong-wang-bg star-visible'); 
     
-    // 把背景插在最前面
     dynamicGroup.insertBefore(pathElement, dynamicGroup.firstChild);
 }
 

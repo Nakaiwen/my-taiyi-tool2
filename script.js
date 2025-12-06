@@ -950,6 +950,13 @@ document.addEventListener('DOMContentLoaded', () => {
         '甲寅': ['子', '丑'], '乙卯': ['子', '丑'], '丙辰': ['子', '丑'], '丁巳': ['子', '丑'], '戊午': ['子', '丑'], '己未': ['子', '丑'], '庚申': ['子', '丑'], '辛酉': ['子', '丑'], '壬戌': ['子', '丑'], '癸亥': ['子', '丑']
     };
 
+    // ▼▼▼ 新增：空亡底色位置微調設定表 (單位：度) ▼▼▼
+    // 正數(+)為順時鐘偏移，負數(-)為逆時鐘偏移
+    const KONG_WANG_OFFSET_CONFIG = {
+        '子': 0, '丑': -1, '寅': 0, '卯': 0, '辰': 0, '巳': 1.1, 
+        '午': 0, '未': -1, '申': 0, '酉': 0, '戌': 0, '亥': 1 
+    };
+
 
 // =================================================================
 //  SECTION 2: SVG 圖盤繪製邏輯 (最終整理版)
@@ -1171,6 +1178,53 @@ function addCenterText(text, coords, className) {
     textElement.setAttribute('style', 'writing-mode: horizontal-tb;');
     applyStarAnimation(textElement); // <--- 注入動畫
     dynamicGroup.appendChild(textElement);
+}
+
+// ▼▼▼ 【新增】繪製空亡扇形背景函式 ▼▼▼
+function drawKongWangSector(palaceBranch) {
+    const palaceId = BRANCH_TO_PALACE_ID[palaceBranch];
+    if (!palaceId) return;
+
+    let centerAngle = RADIAL_LAYOUT.angles[palaceId];
+    if (centerAngle === undefined) return;
+
+    // 讀取微調設定
+    const manualOffset = KONG_WANG_OFFSET_CONFIG[palaceBranch] || 0;
+    centerAngle += manualOffset;
+
+    // 設定扇形參數 (收窄一點，避免蓋到旁邊)
+    const halfSlice = 11.2; 
+    const startAngle = centerAngle - halfSlice;
+    const endAngle = centerAngle + halfSlice;
+
+    const innerRadius = 93;  
+    const outerRadius = 352; 
+
+    const toRad = (deg) => deg * (Math.PI / 180); 
+    
+    const x1 = RADIAL_LAYOUT.center.x + innerRadius * Math.cos(toRad(startAngle));
+    const y1 = RADIAL_LAYOUT.center.y + innerRadius * Math.sin(toRad(startAngle));
+    
+    const x2 = RADIAL_LAYOUT.center.x + outerRadius * Math.cos(toRad(startAngle));
+    const y2 = RADIAL_LAYOUT.center.y + outerRadius * Math.sin(toRad(startAngle));
+    
+    const x3 = RADIAL_LAYOUT.center.x + outerRadius * Math.cos(toRad(endAngle));
+    const y3 = RADIAL_LAYOUT.center.y + outerRadius * Math.sin(toRad(endAngle));
+    
+    const x4 = RADIAL_LAYOUT.center.x + innerRadius * Math.cos(toRad(endAngle));
+    const y4 = RADIAL_LAYOUT.center.y + innerRadius * Math.sin(toRad(endAngle));
+
+    const pathData = `M ${x1} ${y1} L ${x2} ${y2} A ${outerRadius} ${outerRadius} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${innerRadius} ${innerRadius} 0 0 0 ${x1} ${y1} Z`;
+
+    const pathElement = document.createElementNS(SVG_NS, 'path');
+    pathElement.setAttribute('d', pathData);
+    // 注意：這裡只設 'kong-wang-bg'，不要預設 'star-visible'，讓動畫函式去加
+    pathElement.setAttribute('class', 'kong-wang-bg'); 
+    
+    applyStarAnimation(pathElement);
+
+    // 畫在最底層
+    dynamicGroup.insertBefore(pathElement, dynamicGroup.firstChild);
 }
 
 // --- 繪圖主函式 (最終整理版) ---
@@ -4549,13 +4603,18 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         // ▼▼▼ 新增：在這裡更新空亡資訊的顯示 ▼▼▼
         const kongWangInfoDiv = document.getElementById('kong-wang-info');
         if (kongWangInfoDiv) {
-            if (dataForCalculation.kongWangResult) {
-                // 如果成功計算出空亡，就顯示出來 (用中文頓號連接)
-                kongWangInfoDiv.innerHTML = `日柱空亡：${dataForCalculation.kongWangResult.join('、 ')}`;
-            } else {
-                // 如果計算失敗 (雖然不太可能)，顯示提示訊息
-                kongWangInfoDiv.innerHTML = '日柱空亡：無法計算';
-            }
+        if (dataForCalculation.kongWangResult) {
+            // 1. 顯示文字資訊
+            kongWangInfoDiv.innerHTML = `日柱空亡：${dataForCalculation.kongWangResult.join('、 ')}`;
+
+            // 2. 繪製圖形 (直接使用計算好的結果)
+            // dataForCalculation.kongWangResult 是一個陣列，例如 ['戌', '亥']
+            dataForCalculation.kongWangResult.forEach(branch => {
+                drawKongWangSector(branch);
+            });
+        } else {
+            kongWangInfoDiv.innerHTML = '日柱空亡：無法計算';
+        }
         }
 
         document.getElementById('element-interaction-info').innerHTML = formatElementInteractionInfo(dataForCalculation.elementInteraction);

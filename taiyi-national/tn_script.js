@@ -1370,50 +1370,68 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     };
     }
 
+    // ▼▼▼ 【修正版】計算月將 (同時回傳 畫圖資料 與 月將名稱) ▼▼▼
     function calculateYueJiang(solarDate, hourBranch) {
-
-        // --- 步驟 1: 根據「節氣期間」找出正確的起始月將 ---
-        let termIndex = -1;
-        for (let i = 23; i >= 0; i--) {
-            const termTime = solarLunar.getTerm(solarDate.year, i + 1);
-            if (solarDate.date.getTime() >= termTime) {
-                termIndex = i;
-                break;
-            }
+    // --- 步驟 1: 根據「節氣期間」找出正確的起始月將 ---
+    let termIndex = -1;
+    for (let i = 23; i >= 0; i--) {
+        const termTime = solarLunar.getTerm(solarDate.year, i + 1);
+        if (solarDate.date.getTime() >= termTime) {
+            termIndex = i;
+            break;
         }
-        if (termIndex === -1) {
-             const prevYearTermTime = solarLunar.getTerm(solarDate.year - 1, 24);
-             if (solarDate.date.getTime() >= prevYearTermTime) { termIndex = 23; } 
-             else { return new Array(12).fill(""); }
+    }
+    // 處理跨年節氣
+    if (termIndex === -1) {
+        const prevYearTermTime = solarLunar.getTerm(solarDate.year - 1, 24);
+        if (solarDate.date.getTime() >= prevYearTermTime) { 
+            termIndex = 23; 
+        } else { 
+            // 如果找不到，回傳空資料
+            return { ringData: new Array(12).fill(""), name: "未知" }; 
         }
-        let generalTermIndex = termIndex;
-        if (generalTermIndex % 2 === 0) { generalTermIndex = generalTermIndex - 1; }
-        if (generalTermIndex < 0) { generalTermIndex = 23; }
-        const monthlyGeneralName = MONTHLY_GENERALS_MAPPING[generalTermIndex];
-        
-        if (!monthlyGeneralName) return new Array(12).fill("");
+    }
+    
+    let generalTermIndex = termIndex;
+    // 月將規則：中氣過後換將
+    if (generalTermIndex % 2 === 0) { generalTermIndex = generalTermIndex - 1; }
+    if (generalTermIndex < 0) { generalTermIndex = 23; }
+    
+    const monthlyGeneralName = MONTHLY_GENERALS_MAPPING[generalTermIndex];
+    
+    // 如果找不到月將名稱，回傳空資料
+    if (!monthlyGeneralName) {
+        return { ringData: new Array(12).fill(""), name: "未知" };
+    }
 
-        // --- 步驟 2: 找出月將和時支的起始位置 ---
-        const startGeneralIndex = FULL_GENERALS_ORDER.indexOf(monthlyGeneralName);
-        const startPalaceIndex = solarLunar.zhi.indexOf(hourBranch);
-        if (startGeneralIndex === -1 || startPalaceIndex === -1) { return new Array(12).fill(""); }
+    // --- 步驟 2: 找出月將和時支的起始位置 ---
+    const startGeneralIndex = FULL_GENERALS_ORDER.indexOf(monthlyGeneralName);
+    const startPalaceIndex = solarLunar.zhi.indexOf(hourBranch);
+    
+    if (startGeneralIndex === -1 || startPalaceIndex === -1) { 
+        return { ringData: new Array(12).fill(""), name: "未知" }; 
+    }
 
-        // --- 步驟 3: 逆時鐘排列 (已修正排序邏輯) ---
-        const palaceToGeneralMap = {};
-        for (let i = 0; i < 12; i++) { // i 對應地支的索引 (0=子, 1=丑...)
-            const currentPalaceZhi = solarLunar.zhi[i];
-            // 計算當前宮位(i)與起始宮位的「逆時鐘」距離
-            const counterClockwiseOffset = (startPalaceIndex - i + 12) % 12;
-            // 將這個距離應用到神將的順序上
-            const generalIndex = (startGeneralIndex - counterClockwiseOffset + 12) % 12;
-            palaceToGeneralMap[currentPalaceZhi] = FULL_GENERALS_ORDER[generalIndex];
-        }
-        
-        // --- 步驟 4: 按照繪圖順序輸出結果 (結構不變) ---
-        const drawingPalaceOrder = RADIAL_LAYOUT.yueJiangRing.palaces.map(pId => PALACE_ID_TO_BRANCH[pId]);
-        const result = drawingPalaceOrder.map(zhi => palaceToGeneralMap[zhi] || "");
+    // --- 步驟 3: 逆時鐘排列 ---
+    const palaceToGeneralMap = {};
+    for (let i = 0; i < 12; i++) { 
+        const currentPalaceZhi = solarLunar.zhi[i];
+        const counterClockwiseOffset = (startPalaceIndex - i + 12) % 12;
+        const generalIndex = (startGeneralIndex - counterClockwiseOffset + 12) % 12;
+        palaceToGeneralMap[currentPalaceZhi] = FULL_GENERALS_ORDER[generalIndex];
+    }
+    
+    // --- 步驟 4: 按照繪圖順序輸出結果 ---
+    const drawingPalaceOrder = RADIAL_LAYOUT.yueJiangRing.palaces.map(pId => PALACE_ID_TO_BRANCH[pId]);
+    
+    // 【修正點】這裡變數名稱改回 result，確保定義與使用一致
+    const result = drawingPalaceOrder.map(zhi => palaceToGeneralMap[zhi] || "");
 
-        return result;
+    // 回傳物件：包含畫圖用的陣列(ringData) 和 純文字名稱(name)
+    return {
+        ringData: result,
+        name: monthlyGeneralName.substring(0, 2) 
+    };
     }
     // ▼▼▼ 根據生日自動計算日積數、日柱、日局數的函式 (最終修正版v2) ▼▼▼
     function calculateDailyValues(birthDate) {
@@ -1905,7 +1923,6 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     // 如果不符合條件，返回空字串
     return '';
     }
-
     // ▼▼▼ 【新增】計算建除十二神的函式 ▼▼▼
     function calculateJianChu(hourBranch) {
     if (!hourBranch) return [];
@@ -2012,6 +2029,45 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         if (presentSuanStars.length >= 2) {
             patterns.push({ palace: `${palace}宮`, text: `${presentSuanStars.join(' ')} <span class="pattern-style">關</span>` });
         }
+    }
+
+    return patterns;
+    }
+
+    // ▼▼▼ 【新增】計算時辰吉格的函式 ▼▼▼
+    function calculateLuckyPatterns(yueJiangData, guiRenData) {
+    const patterns = [];
+    if (!yueJiangData || !guiRenData) return patterns;
+
+    // 內部小幫手：檢查某個宮位是否包含特定星曜
+    const checkStarInBranch = (dataArray, ringConfig, branch, starKeyword) => {
+        const palaceId = BRANCH_TO_PALACE_ID[branch];
+        const index = ringConfig.palaces.indexOf(palaceId);
+        // 確保該宮位在環圈定義中存在，且資料中有該星曜關鍵字
+        if (index !== -1 && dataArray[index] && dataArray[index].includes(starKeyword)) {
+            return true;
+        }
+        return false;
+    };
+
+    // 1. 天罡指巳 (月將環的天罡 在 巳宮)
+    if (checkStarInBranch(yueJiangData, RADIAL_LAYOUT.yueJiangRing, '巳', '天罡')) {
+        patterns.push('天罡指巳');
+    }
+    
+    // 2. 罡塞鬼戶 (月將環的天罡 在 寅宮)
+    if (checkStarInBranch(yueJiangData, RADIAL_LAYOUT.yueJiangRing, '寅', '天罡')) {
+        patterns.push('罡塞鬼戶');
+    }
+
+    // 3. 貴塞鬼戶 (貴人環的貴人 在 寅宮)
+    if (checkStarInBranch(guiRenData, RADIAL_LAYOUT.guiRenRing, '寅', '貴人')) {
+        patterns.push('貴塞鬼戶');
+    }
+
+    // 4. 貴登天門 (貴人環的貴人 在 亥宮)
+    if (checkStarInBranch(guiRenData, RADIAL_LAYOUT.guiRenRing, '亥', '貴人')) {
+        patterns.push('貴登天門');
     }
 
     return patterns;
@@ -2347,8 +2403,14 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         const siShenResult = calculateSiShen(hourJishu);
         const feiFuResult = calculateFeiFu(hourJishu);
         const daYouResult = calculateDaYou(hourJishu);
-        const yueJiangData = calculateYueJiang(solarLunar.solar2lunar(parseInt(dataForCalculation.birthDate.split('/')[0]), parseInt(dataForCalculation.birthDate.split('/')[1]), parseInt(dataForCalculation.birthDate.split('/')[2]), hour), dataForCalculation.hourPillar.charAt(1));
+        // ▼▼▼ 【核心修正點】一次取得 繪圖資料(yueJiangData) 和 名稱(currentYueJiangName) ▼▼▼
+        const yueJiangResult = calculateYueJiang(solarLunar.solar2lunar(parseInt(dataForCalculation.birthDate.split('/')[0]), parseInt(dataForCalculation.birthDate.split('/')[1]), parseInt(dataForCalculation.birthDate.split('/')[2]), hour), hourPillar.charAt(1));
+        const yueJiangData = yueJiangResult.ringData;       // 給繪圖用
+        const currentYueJiangName = yueJiangResult.name;    // 給左側顯示用
+        
         const guiRenData = calculateGuiRen(dataForCalculation.dayPillar.charAt(0), dataForCalculation.hourPillar.charAt(1), yueJiangData);
+        // 【新增】計算吉格
+        const luckyPatterns = calculateLuckyPatterns(yueJiangData, guiRenData);
         // 【新增】計算建除十二神 (使用時支)
         const jianChuData = calculateJianChu(hourPillar.charAt(1));
         const newLifePalacesData = dataForCalculation.arrangedLifePalaces;
@@ -2390,8 +2452,22 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
 
         renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData, jianChuData); 
 
-        let outputText = `\n  局數 : ${bureauResult}`;
-    if (lookupResult) {
+        // --- 更新左側摘要文字 (順序已調整) ---
+    
+        // 1. 先顯示月將
+        let outputText = `\n  月將 : <span class="yue-jiang-style">${currentYueJiangName}</span>`;
+
+        // 2. 再顯示吉格
+        if (luckyPatterns.length > 0) {
+        luckyPatterns.forEach(pattern => {
+            outputText += `\n  時辰吉格 : <span class="lucky-pattern-style">${pattern}</span>`;
+        });
+        }
+
+        // 3. 【移到這裡】最後顯示局數
+        outputText += `\n  局數 : ${bureauResult}`;
+        
+        if (lookupResult) {
         const zhuSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.主算] || '';
         const keSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.客算] || '';
         const dingSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.定算] || '';

@@ -783,6 +783,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // ▼▼▼ 建除十二神順序 ▼▼▼
     const JIAN_CHU_ORDER = ['建', '除', '滿', '平', '定', '執', '破', '危', '成', '收', '開', '閉'];
 
+    // ▼▼▼ 六十甲子空亡規則資料庫 (依序對應：甲子旬, 甲戌旬, 甲申旬, 甲午旬, 甲辰旬, 甲寅旬) ▼▼▼
+    const KONG_WANG_DATA = [
+    { name: '甲子旬', void: '戌亥' }, // 0-9
+    { name: '甲戌旬', void: '申酉' }, // 10-19
+    { name: '甲申旬', void: '午未' }, // 20-29
+    { name: '甲午旬', void: '辰巳' }, // 30-39
+    { name: '甲辰旬', void: '寅卯' }, // 40-49
+    { name: '甲寅旬', void: '子丑' }  // 50-59
+    ];
+
 
 
 
@@ -1004,6 +1014,61 @@ function addEncircledText(text, x, y, rotation, textClassName, circleClassName) 
 
     dynamicGroup.appendChild(group);
 }
+// ▼▼▼ 【修正版V2】繪製空亡扇形背景 (修正角度偏移問題) ▼▼▼
+function drawKongWangSector(palaceBranch) {
+    // 1. 將地支轉為宮位 ID
+    const palaceId = BRANCH_TO_PALACE_ID[palaceBranch];
+    if (!palaceId) return;
+
+    // 2. 取得該宮位的中心角度
+    const centerAngle = RADIAL_LAYOUT.angles[palaceId];
+    if (centerAngle === undefined) return;
+
+    // 3. 設定扇形的參數
+    // 保持收窄的 9 度，避免蓋到四維卦
+    const halfSlice = 11.2; 
+    const startAngle = centerAngle - halfSlice;
+    const endAngle = centerAngle + halfSlice;
+
+    // 內徑與外徑
+    const innerRadius = 93;  
+    const outerRadius = 352; 
+
+    // 4. 計算扇形路徑的四個點
+    // 【核心修正點】直接將角度轉為弧度，不要減 90 度
+    const toRad = (deg) => deg * (Math.PI / 180); 
+    
+    const x1 = RADIAL_LAYOUT.center.x + innerRadius * Math.cos(toRad(startAngle));
+    const y1 = RADIAL_LAYOUT.center.y + innerRadius * Math.sin(toRad(startAngle));
+    
+    const x2 = RADIAL_LAYOUT.center.x + outerRadius * Math.cos(toRad(startAngle));
+    const y2 = RADIAL_LAYOUT.center.y + outerRadius * Math.sin(toRad(startAngle));
+    
+    const x3 = RADIAL_LAYOUT.center.x + outerRadius * Math.cos(toRad(endAngle));
+    const y3 = RADIAL_LAYOUT.center.y + outerRadius * Math.sin(toRad(endAngle));
+    
+    const x4 = RADIAL_LAYOUT.center.x + innerRadius * Math.cos(toRad(endAngle));
+    const y4 = RADIAL_LAYOUT.center.y + innerRadius * Math.sin(toRad(endAngle));
+
+    // 5. 組合 SVG 路徑指令
+    const pathData = `
+        M ${x1} ${y1}
+        L ${x2} ${y2}
+        A ${outerRadius} ${outerRadius} 0 0 1 ${x3} ${y3}
+        L ${x4} ${y4}
+        A ${innerRadius} ${innerRadius} 0 0 0 ${x1} ${y1}
+        Z
+    `;
+
+    // 6. 建立元素並加入畫面
+    const pathElement = document.createElementNS(SVG_NS, 'path');
+    pathElement.setAttribute('d', pathData);
+    pathElement.setAttribute('class', 'kong-wang-bg star-visible'); 
+    
+    // 把背景插在最前面
+    dynamicGroup.insertBefore(pathElement, dynamicGroup.firstChild);
+}
+
 function clearDynamicData() {
     if (dynamicGroup) {
         dynamicGroup.innerHTML = '';
@@ -2072,6 +2137,26 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
 
     return patterns;
     }
+
+    // ▼▼▼ 【新增】計算日柱空亡的函式 ▼▼▼
+    function calculateDayKongWang(dayPillar) {
+    if (!dayPillar) return "";
+    
+    // 1. 找出日柱在六十甲子中的索引 (0-59)
+    const index = JIAZI_CYCLE_ORDER.indexOf(dayPillar);
+    if (index === -1) return "";
+
+    // 2. 計算屬於哪一旬 (每10個一組)
+    // 索引 0-9 是第0組(甲子旬)，30-39 是第3組(甲午旬)，以此類推
+    const xunIndex = Math.floor(index / 10);
+    const data = KONG_WANG_DATA[xunIndex];
+
+    if (data) {
+        // 回傳格式化後的字串，並套用 CSS
+        return `\n  ${data.name}：空亡在<span class="kong-wang-style">${data.void}</span>`;
+    }
+    return "";
+    }
    
     // ▼▼▼ 每次增加星都要更新的函式 ▼▼▼
     function generateMainChartData(lookupResult, deitiesResult, suanStarsResult, shiWuFuResult, xiaoYouResult, junJiResult, chenJiResult, minJiResult, tianYiResult, diYiResult, siShenResult, feiFuResult, daYouResult, yueJiangData, guiRenData, starsToDisplay = []) {
@@ -2462,6 +2547,26 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         luckyPatterns.forEach(pattern => {
             outputText += `\n  時辰吉格 : <span class="lucky-pattern-style">${pattern}</span>`;
         });
+        }
+
+        // 3. 【修改】顯示並繪製日柱空亡
+        // 我們先手動計算空亡的地支，因為要拿來畫圖
+        const dayPillarIndex = JIAZI_CYCLE_ORDER.indexOf(dayPillar);
+        if (dayPillarIndex !== -1) {
+        const xunIndex = Math.floor(dayPillarIndex / 10);
+        const kongWangData = KONG_WANG_DATA[xunIndex]; // 取得 {name: '甲子旬', void: '戌亥'}
+        
+        if (kongWangData) {
+            // 1. 加入左側文字
+            outputText += `\n  ${kongWangData.name}：空亡在<span class="kong-wang-style">${kongWangData.void}</span>`;
+            
+            // 2. 繪製扇形背景 (將 '戌亥' 拆解為 '戌' 和 '亥')
+            const branch1 = kongWangData.void.charAt(0);
+            const branch2 = kongWangData.void.charAt(1);
+            
+            drawKongWangSector(branch1);
+            drawKongWangSector(branch2);
+        }
         }
 
         // 3. 【移到這裡】最後顯示局數

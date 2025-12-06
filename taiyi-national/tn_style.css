@@ -460,3 +460,12 @@
     margin: 0 5px; /* 讓格局名稱和星曜之間有點間距 */
 }
 
+/* 新增：空亡宮位的背景底色 */
+.kong-wang-bg {
+    fill: #fad957;       /* 淺灰色，代表空亡 */
+    fill-opacity: 0.15;   /* 60% 透明度，才不會遮住底圖的線條 */
+    stroke: none;        /* 不要邊框 */
+    pointer-events: none;/* 讓滑鼠點擊可以穿透它 */
+    transition: opacity 1s ease-in-out; /* 一樣加上淡入動畫 */
+}
+

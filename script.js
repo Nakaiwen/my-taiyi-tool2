@@ -4129,84 +4129,143 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         };
 
         try {
-            const response = await fetch(n8nWebhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) { throw new Error(`n8n 伺服器錯誤: ${response.statusText}`); }
-            const result = await response.json();
-            return result.message.content; 
-        } catch (error) {
-            console.error('呼叫 n8n 月運分析時發生錯誤:', error);
-            return '<h4>月運分析失敗</h4><p>無法連接到 AI 服務，請稍後再試。</p>';
+        const response = await fetch(n8nWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) { throw new Error(`n8n 伺服器錯誤: ${response.statusText}`); }
+
+        const result = await response.json();
+        console.log('n8n 回傳原始資料:', result);
+
+        // --- 2. 強化解析邏輯 (相容物件與陣列) ---
+        let aiText = "";
+        // 判斷是否為陣列，若是則取第一個元素
+        const dataObj = Array.isArray(result) ? result[0] : result;
+
+        if (dataObj.content && dataObj.content.parts && dataObj.content.parts[0]) {
+            aiText = dataObj.content.parts[0].text;
+        } else {
+            aiText = dataObj.output || dataObj.text || (dataObj.message && dataObj.message.content) || "";
         }
+
+        if (!aiText) {
+            console.error('解析失敗，原始資料結構為:', result);
+            throw new Error('無法從回傳資料中提取文字內容');
+        }
+
+        // --- 3. 清理文字 (精準控制：標題銜接，1.2.3. 保持分段) ---
+
+        // A. 處理標題後的斷行 (例如 "**標題**:\n" 變成 "**標題**: ")
+        aiText = aiText.replace(/(\*\*.*?\*\*[:：])\s*\n/g, '$1 ');
+
+        // B. 處理標號與標題之間的斷行 (例如 "1.\n **標題**" 變成 "1. **標題**")
+        aiText = aiText.replace(/(\d+\.)\s*\n\s*(\*\*)/g, '$1 $2');
+
+        // C. 關鍵修正：確保 1. 2. 3. 之前一定有雙換行，強制 Markdown 分段
+        // 尋找句號或分號後接數字標號的情況，補上兩個換行符號
+        aiText = aiText.replace(/([。！?？;；])\s*(?=\d+\.)/g, '$1\n\n');
+
+        // D. 處理句子中間不必要的單個硬斷行，但避開清單項目
+        // 只有在換行符號後面「不是數字標點」時才合併文字
+        aiText = aiText.replace(/([^\n])\n(?!\d+\.)([^\n])/g, '$1$2');
+
+        // --- 4. 渲染到網頁 ---
+        return typeof marked !== 'undefined' ? marked.parse(aiText) : aiText;
+
+    } catch (error) {
+        console.error('呼叫 n8n 月運分析時發生錯誤:', error);
+        return '<h4>月運分析失敗</h4><p>無法解析 AI 回傳內容，請檢查控制台資料結構。</p>';
+    }
     }
 
-    // ▼▼▼ 從 n8n 獲取 AI 分析結果的專屬函式 ▼▼▼
+    // ▼▼▼ 從 n8n 獲取 AI 分析結果的專屬函式 (已更新為 Gemini 結構) ▼▼▼
     async function getN8nAnalysis(data) {
-        const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/363afd96-b5b8-4ef5-bba4-f06ebbb1e484';
+    const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/363afd96-b5b8-4ef5-bba4-f06ebbb1e484';
 
-        // --- ▼▼▼ 核心修正點：所有資料都直接從傳入的 data 物件中獲取 ▼▼▼ ---
-        const today = new Date();
-        const currentMonthNumber = getSolarTermMonth(today);
-        const currentMonthIndex = currentMonthNumber - 1;
-        const currentMonthHexagram = data.monthlyHexagramsResult[currentMonthIndex];
-        const currentLunarDateStr = MONTH_NAMES_CHINESE[currentMonthIndex];
-        const todayString = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
-        const formattedMonthlyHexagrams = formatMonthlyHexagramsForAI(data.monthlyHexagramsResult);
+    // --- 準備資料 (保持原有邏輯) ---
+    const today = new Date();
+    const currentMonthNumber = getSolarTermMonth(today);
+    const currentMonthIndex = currentMonthNumber - 1;
+    const currentMonthHexagram = data.monthlyHexagramsResult[currentMonthIndex];
+    const todayString = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+    const formattedMonthlyHexagrams = formatMonthlyHexagramsForAI(data.monthlyHexagramsResult);
+    const currentLunarDateStr = MONTH_NAMES_CHINESE[currentMonthIndex];
 
-        
-        // 我們直接使用從 data 傳過來的 annualPalaceId 來找星曜
-        const annualPalaceStars = formatStarsForAI(Object.keys(data.chartModel[data.annualPalaceId]?.stars || {}));
+    const payload = {
+        bazi: { yearPillar: data.yearPillar, monthPillar: data.monthPillar, dayPillar: data.dayPillar, hourPillar: data.hourPillar },
+        dayMaster: data.dayMasterInfo,
+        age: data.currentUserAge,
+        annualTrendScore: data.annualTrendScore.toFixed(0),
+        greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
+        greatLimitStars: formatStarsForAI(Object.keys(data.chartModel[VALID_PALACES_CLOCKWISE[data.currentGreatLimitIndex]]?.stars || {})),
+        greatLimitAgeRange: data.greatLimitAgeRange,
+        annualPalaceFullName: PALACE_FULL_NAME_MAP[data.annualPalaceShortName] || '未知',
+        annualPalaceStars: formatStarsForAI(Object.keys(data.chartModel[data.annualPalaceId]?.stars || {})),
+        targetYear: data.targetYear,
+        annualHexagram: data.annualHexagramResult,
+        changingHexagram: data.annualChangingHexagramResult,
+        todayDate: todayString,
+        currentLunarDate: currentLunarDateStr,
+        annualPillar: data.annualPillar,
+        elementInteraction: data.elementInteraction,
+        annualHuaYaoInfo: data.annualHuaYaoInfo,
+        tenGodsAnalysis: data.tenGodsAnalysis,
+        annualHexagramName: data.annualHexagramResult?.name || '資料空缺',
+        annualHexagramExplanation: data.annualHexagramResult?.explanation || '資料空缺',
+        changingHexagramName: data.changingHexagramResult?.name || '資料空缺',
+        changingHexagramExplanation: data.changingHexagramResult?.explanation || '資料空缺',
+        monthHexagramName: currentMonthHexagram?.hexagram?.name || '資料空缺',
+        monthHexagramExplanation: currentMonthHexagram?.hexagram?.explanation || '資料空缺',
+        formattedMonthlyHexagrams: formattedMonthlyHexagrams
+    };
 
-        const payload = {
-            bazi: { yearPillar: data.yearPillar, monthPillar: data.monthPillar, dayPillar: data.dayPillar, hourPillar: data.hourPillar },
-            dayMaster: data.dayMasterInfo,
-            age: data.currentUserAge,
-            annualTrendScore: data.annualTrendScore.toFixed(0),
-            greatLimitName: PALACE_FULL_NAME_MAP[data.arrangedLifePalaces[data.currentGreatLimitIndex]] || '未知',
-            greatLimitStars: formatStarsForAI(Object.keys(data.chartModel[VALID_PALACES_CLOCKWISE[data.currentGreatLimitIndex]]?.stars || {})),
-            greatLimitAgeRange: data.greatLimitAgeRange,
-            annualPalaceFullName: PALACE_FULL_NAME_MAP[data.annualPalaceShortName] || '未知',
-            annualPalaceStars: formatStarsForAI(Object.keys(data.chartModel[data.annualPalaceId]?.stars || {})),
-            targetYear: data.targetYear,
-           
-            annualHexagram: data.annualHexagramResult,
-            changingHexagram: data.annualChangingHexagramResult,
-        
-            todayDate: todayString,
-            currentLunarDate: currentLunarDateStr,
-            annualPillar: data.annualPillar,
-            elementInteraction: data.elementInteraction,
-            annualHuaYaoInfo: data.annualHuaYaoInfo,
-            tenGodsAnalysis: data.tenGodsAnalysis,
+    console.log("準備發送到 n8n 的最終資料 (Payload):", JSON.stringify(payload, null, 2));
+    
+    try {
+        const response = await fetch(n8nWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-            annualHexagramName: data.annualHexagramResult?.name || '資料空缺',
-            annualHexagramExplanation: data.annualHexagramResult?.explanation || '資料空缺',
-            changingHexagramName: data.changingHexagramResult?.name || '資料空缺',
-            changingHexagramExplanation: data.changingHexagramResult?.explanation || '資料空缺',
-            monthHexagramName: currentMonthHexagram?.hexagram?.name || '資料空缺',
-            monthHexagramExplanation: currentMonthHexagram?.hexagram?.explanation || '資料空缺',
-            formattedMonthlyHexagrams: formattedMonthlyHexagrams
-        };
+        if (!response.ok) { throw new Error(`n8n 伺服器錯誤: ${response.statusText}`); }
 
-        // ▼▼▼ 在 payload 物件的正下方，再次加入我們的「攔截」指令 ▼▼▼
-        console.log("準備發送到 n8n 的最終資料 (Payload):", JSON.stringify(payload, null, 2));
-        
-        try {
-            const response = await fetch(n8nWebhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) { throw new Error(`n8n 伺服器錯誤: ${response.statusText}`); }
-            const result = await response.json();
-            return result.message.content; 
-        } catch (error) {
-            console.error('呼叫 n8n 時發生錯誤:', error);
-            return '<h4>分析失敗</h4><p>無法連接到 AI 分析服務，請稍後再試或檢查 n8n 工作流是否正常運作。</p>';
+        const result = await response.json();
+        console.log('n8n 年運原始資料:', result);
+
+        // --- 核心修正：適配 Gemini 結構並清理文字 ---
+        let aiText = "";
+        const dataObj = Array.isArray(result) ? result[0] : result;
+
+        // 提取文字內容 
+        if (dataObj.content && dataObj.content.parts && dataObj.content.parts[0]) {
+            aiText = dataObj.content.parts[0].text;
+        } else {
+            aiText = dataObj.output || dataObj.text || (dataObj.message && dataObj.message.content) || "";
         }
+
+        if (!aiText) { throw new Error('無法從回傳資料中提取內容'); }
+
+        // --- 清理邏輯：確保 1. 2. 3. 分段且標題銜接  ---
+        // 1. 標題與說明銜接 (例如 "**事業**: \n內容" 變成 "**事業**: 內容")
+        aiText = aiText.replace(/(\*\*.*?\*\*[:：])\s*\n/g, '$1 ');
+        // 2. 標號與標題銜接 (例如 "1.\n **標題**" 變成 "1. **標題**")
+        aiText = aiText.replace(/(\d+\.)\s*\n\s*(\*\*)/g, '$1 $2');
+        // 3. 確保數字列表前有雙換行，觸發條列格式 [cite: 113]
+        aiText = aiText.replace(/([。！?？;；])\s*(?=\d+\.)/g, '$1\n\n');
+        // 4. 移除句子中間單個斷行，保持句子流暢 
+        aiText = aiText.replace(/([^\n])\n(?!\d+\.)([^\n])/g, '$1$2');
+
+        // 使用 marked 渲染 (如果有)
+        return typeof marked !== 'undefined' ? marked.parse(aiText) : aiText;
+
+    } catch (error) {
+        console.error('呼叫 n8n 時發生錯誤:', error);
+        return '<h4>分析失敗</h4><p>無法解析 AI 回傳內容，請檢查資料結構。</p>';
+    }
     }
 
     // ▼▼▼ 產生個人資訊頁首 HTML 的共用函式 ▼▼▼

@@ -670,43 +670,65 @@
 
 /* --- 3. 內容排版：段落 (p) --- */
 #ai-summary-output p,
-#n8n-ai-output p {
-    margin-top: 0;
-    margin-bottom: 0.8em;
+#n8n-ai-output p > strong:first-child {
+    display: block;
+    width: 100%;
+    margin-bottom: 1em;
+    line-height: 1.8;
+    text-align: justify; /* 左右對齊會讓排版像書本一樣整齊 */
+    white-space: normal; /* 忽略 AI 內容中多餘的單行換行 */
+    display: inline; /* <-- 改成這樣 */
 }
 
 /* --- 4. 內容排版：列表 (ul, ol, li) --- */
 #ai-summary-output ul,
 #n8n-ai-output ul,
-#ai-summary-output ol,
+
+#ai-summary-output ol, 
 #n8n-ai-output ol {
-    padding-left: 25px;
-    margin-top: 0;
-    margin-bottom: 1em;
-    list-style-position: inside;
+    padding-left: 20px;
+    list-style-position: outside; /* 讓數字在外面，文字對齊更整齊 */
 }
 
-#ai-summary-output li,
-#n8n-ai-output li {
+/* 確保清單項目是分段條列的 */
+#ai-summary-output ol li,
+#n8n-ai-output ol li {
+    display: list-item;    /* 確保它是列表格式 */
+    margin-bottom: 12px;   /* 項目之間的距離 */
     padding-left: 5px;
-    margin-bottom: 8px;
+    line-height: 1.7;
 }
 
-/* --- 5. 內容排版：特殊元件 (strong, h6) --- */
+#ai-summary-output li, 
+#n8n-ai-output li {
+    margin-bottom: 15px; /* 項目之間的間距 */
+    line-height: 1.8;
+    text-align: justify;
+}
+
+/* 內部的重點文字依然保持 inline，防止垂直排列 */
+#ai-summary-output li strong,
+#n8n-ai-output li strong {
+    display: inline !important;
+    color: #c93e00;
+}
+
+/* --- 5. 內容排版：特殊元件 (strong) 修正 --- */
 #ai-summary-output strong,
 #n8n-ai-output strong {
     color: #c93e00;
-    display: inline-block;
-    vertical-align: baseline;
+    display: inline !important; 
+    width: auto !important;
+    margin-right: 0 !important;
+    text-align: left !important;
+    font-weight: bold;
 }
 
-/* ▼▼▼ 新增：對齊 AI 內容中的「標籤式」粗體文字 ▼▼▼ */
-#ai-summary-output p > strong:first-child,
-#n8n-ai-output p > strong:first-child {
-    display: inline-block;
-    width: 90px;           /* 【可調整】設定一個固定的寬度 */
-    text-align: right;     /* 讓標籤文字靠右對齊 */
-    margin-right: 8px;     /* 在冒號和內容間加一點距離 */
+/* 針對外層容器的保險設定 */
+.main-container, .plate {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
 }
 
 #ai-summary-output h6,
@@ -720,7 +742,7 @@
     margin-bottom: 20px;
 }
 
-/* (此處已移除重複的 h6 strong 規則) */
+
 
 /* --- 6. PDF 報告頁首的專屬樣式 --- */
 .report-header {

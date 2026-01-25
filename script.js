@@ -4181,7 +4181,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     }
     }
 
-    // ▼▼▼ 從 n8n 獲取 AI 分析結果的專屬函式 (已更新為 Gemini 結構) ▼▼▼
+    // ▼▼▼ 從 n8n 獲取 AI 分析結果的專屬函式 (安全修正 + 月份分段版) ▼▼▼
     async function getN8nAnalysis(data) {
     const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/363afd96-b5b8-4ef5-bba4-f06ebbb1e484';
 
@@ -4236,35 +4236,43 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const result = await response.json();
         console.log('n8n 年運原始資料:', result);
 
-        // --- 核心修正：適配 Gemini 結構並清理文字 ---
+        // --- 核心修正：加入 ?. 安全檢查，防止 undefined 錯誤 ---
         let aiText = "";
         const dataObj = Array.isArray(result) ? result[0] : result;
 
-        // 提取文字內容 
-        if (dataObj.content && dataObj.content.parts && dataObj.content.parts[0]) {
+        // ▼▼▼ 這裡加了問號 (?.) 來防止崩潰 ▼▼▼
+        if (dataObj?.content?.parts?.[0]?.text) {
             aiText = dataObj.content.parts[0].text;
         } else {
-            aiText = dataObj.output || dataObj.text || (dataObj.message && dataObj.message.content) || "";
+            // 備用路徑也加上安全檢查
+            aiText = dataObj?.output || dataObj?.text || (dataObj?.message && dataObj.message.content) || "";
         }
 
-        if (!aiText) { throw new Error('無法從回傳資料中提取內容'); }
+        if (!aiText) { throw new Error('無法從回傳資料中提取內容 (Result is empty)'); }
 
-        // --- 清理邏輯：確保 1. 2. 3. 分段且標題銜接  ---
-        // 1. 標題與說明銜接 (例如 "**事業**: \n內容" 變成 "**事業**: 內容")
+        // --- 清理邏輯：確保排版美觀 ---
+        
+        // 1. (補回) 月份分段：確保「正月、二月...」前有雙換行
+        aiText = aiText.replace(/([。！?？;；])\s*(?=(?:正月|二月|三月|四月|五月|六月|七月|八月|九月|十月|十一月|十二月|[一二三四五六七八九十]{1,2}月))/g, '$1\n\n');
+
+        // 2. 標題與說明銜接
         aiText = aiText.replace(/(\*\*.*?\*\*[:：])\s*\n/g, '$1 ');
-        // 2. 標號與標題銜接 (例如 "1.\n **標題**" 變成 "1. **標題**")
-        aiText = aiText.replace(/(\d+\.)\s*\n\s*(\*\*)/g, '$1 $2');
-        // 3. 確保數字列表前有雙換行，觸發條列格式 [cite: 113]
-        aiText = aiText.replace(/([。！?？;；])\s*(?=\d+\.)/g, '$1\n\n');
-        // 4. 移除句子中間單個斷行，保持句子流暢 
-        aiText = aiText.replace(/([^\n])\n(?!\d+\.)([^\n])/g, '$1$2');
 
-        // 使用 marked 渲染 (如果有)
+        // 3. 標號與標題銜接
+        aiText = aiText.replace(/(\d+\.)\s*\n\s*(\*\*)/g, '$1 $2');
+
+        // 4. 確保數字列表前有雙換行
+        aiText = aiText.replace(/([。！?？;；])\s*(?=\d+\.)/g, '$1\n\n');
+
+        // 5. 移除句子中間單個斷行 (排除月份與清單，避免誤刪)
+        aiText = aiText.replace(/([^\n])\n(?!(?:\d+\.|正月|二月|三月|四月|五月|六月|七月|八月|九月|十月|十一月|十二月|[一二三四五六七八九十]{1,2}月))([^\n])/g, '$1$2');
+
         return typeof marked !== 'undefined' ? marked.parse(aiText) : aiText;
 
     } catch (error) {
         console.error('呼叫 n8n 時發生錯誤:', error);
-        return '<h4>分析失敗</h4><p>無法解析 AI 回傳內容，請檢查資料結構。</p>';
+        // 回傳錯誤訊息時，稍微美化一下，讓使用者知道不是程式壞掉，是連線問題
+        return `<h4>分析失敗</h4><p>無法取得內容，請稍後再試。</p><p style="font-size:12px;color:#999">錯誤代碼: ${error.message}</p>`;
     }
     }
 

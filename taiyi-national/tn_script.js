@@ -1262,36 +1262,53 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         }
         return {};
     }
+    // 原本的 calculateSuanStars 函式內部邏輯需要調整
     function calculateSuanStars(lookupResult) {
-    const result = { chartStars: {}, centerStars: [] };
-    if (!lookupResult) { // 安全檢查：如果查表失敗，直接回傳空結果
-        return result;
-    }
-    const suanMap = {
-        '主': lookupResult.主算,
-        '客': lookupResult.客算,
-        '定': lookupResult.定算
-    };
+        const result = { chartStars: {}, centerStars: [] };
+        if (!lookupResult) return result;
 
-    for (const prefix in suanMap) {
-        const suanValue = suanMap[prefix];
-        const lastDigit = String(suanValue).slice(-1);
-        const rule = SUAN_DIGIT_RULES[lastDigit];
-        
-        if (rule) {
-            if (rule.Da === '中') {
-                result.centerStars.push(`${prefix}大`);
+        const suanMap = {
+            '主': lookupResult.主算,
+            '客': lookupResult.客算,
+            '定': lookupResult.定算
+        };
+
+        for (const prefix in suanMap) {
+            let suanValue = parseInt(suanMap[prefix], 10);
+            if (isNaN(suanValue)) continue;
+
+            // ▼▼▼ 修正開始：處理整十數與一般數的邏輯 ▼▼▼
+            let targetKey;
+
+            // 規則：如果是 10, 20, 30, 40，則除以 9 取餘數 (即 1, 2, 3, 4)
+            // 實際上 10, 20, 30, 40 的餘數剛好就是它們的十位數 (1, 2, 3, 4)
+            if (suanValue % 10 === 0) {
+                targetKey = String(suanValue / 10); // 40 -> '4', 30 -> '3'
+                // 注意：如果您的 SUAN_DIGIT_RULES 只有 '1'~'9' 和 '0'
+                // 這裡 40 變成 '4' 就會正確對應到 SUAN_DIGIT_RULES['4'] (卯/午)
             } else {
-                result.chartStars[`${prefix}大`] = rule.Da;
+                // 一般數字：取個位數
+                targetKey = String(suanValue % 10);
             }
-            if (rule.Can === '中') {
-                result.centerStars.push(`${prefix}參`);
-            } else {
-                result.chartStars[`${prefix}參`] = rule.Can;
+            // ▲▲▲ 修正結束 ▲▲▲
+
+            const rule = SUAN_DIGIT_RULES[targetKey];
+            
+            if (rule) {
+                // ... (後續將星曜放入 chartStars 或 centerStars 的代碼保持不變)
+                if (rule.Da === '中') {
+                    result.centerStars.push(`${prefix}大`);
+                } else {
+                    result.chartStars[`${prefix}大`] = rule.Da;
+                }
+                if (rule.Can === '中') {
+                    result.centerStars.push(`${prefix}參`);
+                } else {
+                    result.chartStars[`${prefix}參`] = rule.Can;
+                }
             }
         }
-    }
-    return result;
+        return result;
     }
     function calculateXiaoYou(hourJishu) {
         if (!hourJishu) {
@@ -1386,74 +1403,109 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         }
         return null;
     }
-    function calculateDaYou(hourJishu) {
-        if (!hourJishu) return null;
-        let remainder = Number(hourJishu) % 288;
-        if (remainder === 0) remainder = 288;
-        const palaceIndex = Math.floor((remainder - 1) / 36);
-        if (palaceIndex < DA_YOU_ORDER.length) {
-            return DA_YOU_ORDER[palaceIndex];
-        }
-        return null;
+    // ▼▼▼ 【修正版V3】計算大遊 (年/月/日積數+34, 時盤不加, 週期288, 每36一宮) ▼▼▼
+    function calculateDaYou(jishu, chartType) {
+    if (jishu === null || jishu === undefined) return null;
+    
+    let finalJishu = Number(jishu);
+
+    // 【核心修正點】
+    // 只有「非時盤」(年/月/日) 才需要 +34
+    // 時盤 (chartType === 'hour') 不需要加，保持原積數
+    if (chartType !== 'hour') {
+        finalJishu += 34;
+    }
+    
+    // 1. 除以 288 取餘數
+    let remainder = finalJishu % 288;
+    
+    // 2. 處理餘數為 0 的情況 (代表走到週期的最後一步)
+    if (remainder === 0) remainder = 288;
+    
+    // 3. 按照每 36 個單位換一個宮位
+    const palaceIndex = Math.floor((remainder - 1) / 36);
+    
+    if (palaceIndex < DA_YOU_ORDER.length) {
+        return DA_YOU_ORDER[palaceIndex];
+    }
+    return null;
     }
 
-/**
- * 通用的五福星計算函式 (V2 - 修正月五福數字版)
- * @param {number|object} jishuInput - 根據類型傳入 年份、物件{year, month}、或 積數
- * @param {string} namePrefix - 星曜名稱前綴 (年五福, 月五福...)
- * @returns {object|null} - 返回包含宮位和顯示文字的物件，或 null
- */
+    // ▼▼▼ 【修正版V3】通用五福星計算 (修正月五福亥月基準倒推) ▼▼▼
     function calculateWuFu(jishuInput, namePrefix) {
-    if (jishuInput === null || jishuInput === undefined) return null;
+        if (jishuInput === null || jishuInput === undefined) return null;
 
-    const WU_FU_BASE_JISHU = 423007;
-    const CYCLE = 225;
-    const UNITS_PER_PALACE = 45;
-    let finalJishu;
-    let finalSubNumber; // 將 subNumber 的計算移到外面
+        const WU_FU_BASE_JISHU = 423007;
+        const CYCLE = 225;
+        const UNITS_PER_PALACE = 45;
+        let finalJishu; 
+        let remainder;
 
-    // 根據星曜名稱決定積數的算法
-    switch (namePrefix) {
-        case '年五福':
-            finalJishu = WU_FU_BASE_JISHU + jishuInput; // jishuInput 此時是 'year'
-            break;
-        case '月五福':
-            finalJishu = (WU_FU_BASE_JISHU + jishuInput.year) * 12;
-            break;
-        default:
-            finalJishu = jishuInput; // 日、時五福直接使用傳入的積數
-            break;
-    }
+        switch (namePrefix) {
+            case '年五福':
+                // jishuInput 這裡傳入的是 taiYiYear (太乙年)
+                finalJishu = WU_FU_BASE_JISHU + jishuInput; 
+                remainder = Number(finalJishu) % CYCLE;
+                break;
 
-    let remainder = Number(finalJishu) % CYCLE;
-    if (remainder === 0) {
-        remainder = CYCLE;
-    }
+            case '月五福':
+                // jishuInput 這裡傳入的是物件 { taiYiYear, monthBranch, isYearEnd }
+                const { taiYiYear, monthBranch, isYearEnd } = jishuInput;
+                
+                // 1. 先算出該太乙年「亥月 (年底)」的總積數
+                const baseJishuForHai = (WU_FU_BASE_JISHU + taiYiYear) * 12;
+                let baseRemainder = baseJishuForHai % CYCLE;
+                if (baseRemainder === 0) baseRemainder = CYCLE;
 
-    const palaceIndex = Math.floor((remainder - 1) / UNITS_PER_PALACE);
-    const palaceName = (palaceIndex < WU_FU_ORDER.length) ? WU_FU_ORDER[palaceIndex] : null;
+                // 2. 確定目標月份的順序 (子=0 ... 亥=11)
+                let branchIndex = EARTHLY_BRANCHES.indexOf(monthBranch);
+                
+                // 3. 處理「年底子丑月」的特殊銜接
+                // 如果現在是公曆年底(11/12月)，但還沒過冬至(taiYiYear沒+1)，
+                // 這時的子/丑月其實是該太乙年的「第13/14個月」(邏輯上的延伸)，
+                // 這樣才能確保從亥月(11)往後推算時是正確的 (+1, +2)。
+                if (isYearEnd && (monthBranch === '子' || monthBranch === '丑')) {
+                    branchIndex += 12;
+                }
 
-    if (!palaceName) return null;
+                // 4. 計算與亥月(基準點)的距離
+                // 亥的標準索引是 11
+                const haiIndex = 11;
+                // 距離 = 亥月索引 - 目標月索引
+                // 例：求酉月(9)，11 - 9 = 2 (酉月在亥月前2個月) -> 餘數要 -2
+                // 例：求明年子月(0)，11 - 0 = 11 (子月在亥月前11個月) -> 餘數要 -11
+                // 例：求年底子月(12)，11 - 12 = -1 (年底子月在亥月後1個月) -> 餘數要 -(-1) = +1
+                const diff = haiIndex - branchIndex;
+                
+                // 5. 應用倒推邏輯
+                remainder = baseRemainder - diff;
+                
+                // 6. 處理循環 (確保餘數在 1~225 之間)
+                while (remainder <= 0) remainder += CYCLE;
+                while (remainder > CYCLE) remainder -= CYCLE;
+                break;
 
-    // --- 【核心修正點】根據不同五福星，決定數字的計算方式 ---
-    if (namePrefix === '月五福') {
-        // 1. 先算出亥月(基準月)的數字
-        const subNumberForHai = (remainder - 1) % UNITS_PER_PALACE + 1;
-        // 2. 拿到當前的農曆月份 (1-12)
-        const currentLunarMonth = jishuInput.month;
-        // 3. 亥月是農曆第10個月，計算月份差距
-        const monthDistance = currentLunarMonth - 10;
-        // 4. 用基準月數字加上差距，得出最終數字
-        finalSubNumber = subNumberForHai + monthDistance;
-    } else {
-        // 其他五福星(年/日/時)的數字計算方式不變
-        finalSubNumber = (remainder - 1) % UNITS_PER_PALACE + 1;
-    }
+            default:
+                // 日五福、時五福：jishuInput 直接是積數
+                remainder = Number(jishuInput) % CYCLE;
+                break;
+        }
 
-    return {
-        palace: palaceName,
-        text: `${namePrefix}${finalSubNumber}`
-    };
+        if (remainder === 0) remainder = CYCLE;
+
+        // --- 找出對應宮位 ---
+        const palaceIndex = Math.floor((remainder - 1) / UNITS_PER_PALACE);
+        const palaceName = (palaceIndex < WU_FU_ORDER.length) ? WU_FU_ORDER[palaceIndex] : null;
+
+        if (!palaceName) return null;
+
+        // --- 計算該宮位內的第幾個單位 ---
+        const finalSubNumber = (remainder - 1) % UNITS_PER_PALACE + 1;
+
+        return {
+            palace: palaceName,
+            text: `${namePrefix}${finalSubNumber}`
+        };
     }
 
     // ▼▼▼ 【修正版】計算月將 (同時回傳 畫圖資料 與 月將名稱) ▼▼▼
@@ -1634,56 +1686,72 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         calculatedBureau: calculatedBureau
     };
     }
-    // ▼▼▼ 計算「年積數」與「月積數」的函式 (V5 - 修正版) ▼▼▼
+    // ▼▼▼ 【修正版】計算「年積數」與「月積數」 (引入冬至換年邏輯) ▼▼▼
     function calculateNationalJishu(year, month, day, hour) {
-    // 檢查收到的參數是否有效
-    if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour)) {
+        // 檢查收到的參數是否有效
+        if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour)) {
+            return {
+                annualJishu: 0, annualBureau: '', annualGanZhi: '',
+                monthlyJishu: 0, monthlyBureau: '', monthlyGanZhi: ''
+            };
+        }
+
+        // --- 【新增】冬至換年邏輯 ---
+        // 1. 取得當年的冬至時間 (termIndex 24 代表冬至)
+        // solarLunar.getTerm 回傳的是該節氣的 timestamp
+        const dongZhiTime = solarLunar.getTerm(year, 24);
+        const currentDate = new Date(year, month - 1, day, hour);
+        
+        // 2. 判斷是否已過冬至
+        // 如果當前時間 >= 冬至，太乙年視為下一年 (year + 1)
+        // 否則維持當年 (year)
+        let taiYiYear = year;
+        if (currentDate.getTime() >= dongZhiTime) {
+            taiYiYear = year + 1;
+        }
+
+        // 3. 計算年積數 (使用 taiYiYear)
+        const annualJishu = TAI_YI_BASE_JISHU + taiYiYear;
+        const annualBureauRem = annualJishu % 72;
+        const annualBureauNum = (annualBureauRem === 0) ? 72 : annualBureauRem;
+        const annualBureau = `陽${annualBureauNum}局`;
+        const annualGanZhiRem = annualJishu % 60;
+        const annualGanZhiIndex = (annualGanZhiRem === 0) ? 59 : annualGanZhiRem - 1;
+        const annualGanZhi = JIAZI_CYCLE_ORDER[annualGanZhiIndex];
+
+        // 4. 精準月積數計算 (使用 taiYiYear 為基準)
+        const lunarDate = solarLunar.solar2lunar(year, month, day, hour);
+        const monthBranch = lunarDate.getMonthInGanZhi().charAt(1);
+        const monthBranchIndex = EARTHLY_BRANCHES.indexOf(monthBranch);
+        
+        // 計算基礎月積數
+        const baseHaiJishu = (TAI_YI_BASE_JISHU + taiYiYear) * 12;
+        const offset = monthBranchIndex - 11; // 子=-11, 亥=0
+        let monthlyJishu = baseHaiJishu + offset;
+
+        // 【邏輯修正】處理子月和丑月的跨年銜接
+        // 情況 A (冬至前): taiYiYear 尚未+1，但月份已是年底的子/丑月，需要 +12 (視為下一年的開端)
+        // 情況 B (冬至後): taiYiYear 已經+1，baseHaiJishu 已經包含了一整年的月份 (12個月)，
+        //                此時子月(-11)會自動對應到新的一年的第一個月，因此不需要再 +12
+        if (taiYiYear === year && (monthBranch === '子' || monthBranch === '丑') && month >= 11) {
+            monthlyJishu += 12;
+        }
+
+        const monthlyBureauRem = monthlyJishu % 72;
+        const monthlyBureauNum = (monthlyBureauRem === 0) ? 72 : monthlyBureauRem;
+        const monthlyBureau = `陽${monthlyBureauNum}局`;
+        const monthlyGanZhiRem = monthlyJishu % 60;
+        const monthlyGanZhiIndex = (monthlyGanZhiRem === 0) ? 59 : monthlyGanZhiRem - 1;
+        const monthlyGanZhi = JIAZI_CYCLE_ORDER[monthlyGanZhiIndex];
+
         return {
-            annualJishu: 0, annualBureau: '', annualGanZhi: '',
-            monthlyJishu: 0, monthlyBureau: '', monthlyGanZhi: ''
+            annualJishu,
+            annualBureau,
+            annualGanZhi,
+            monthlyJishu,
+            monthlyBureau,
+            monthlyGanZhi
         };
-    }
-
-    // 1. 計算年積數及其衍生資料
-    const annualJishu = TAI_YI_BASE_JISHU + year;
-    const annualBureauRem = annualJishu % 72;
-    const annualBureauNum = (annualBureauRem === 0) ? 72 : annualBureauRem;
-    const annualBureau = `陽${annualBureauNum}局`;
-    const annualGanZhiRem = annualJishu % 60;
-    const annualGanZhiIndex = (annualGanZhiRem === 0) ? 59 : annualGanZhiRem - 1;
-    const annualGanZhi = JIAZI_CYCLE_ORDER[annualGanZhiIndex];
-
-    // 2. 精準月積數計算
-    const lunarDate = solarLunar.solar2lunar(year, month, day, hour);
-    const monthBranch = lunarDate.getMonthInGanZhi().charAt(1);
-    const monthBranchIndex = EARTHLY_BRANCHES.indexOf(monthBranch);
-    
-    const baseHaiJishu = (TAI_YI_BASE_JISHU + year) * 12;
-    const offset = monthBranchIndex - 11;
-    let monthlyJishu = baseHaiJishu + offset;
-
-    // 【核心修正點】處理子月和丑月的跨年問題
-    // 只有在「公曆年底」(11月或12月) 且遇到「子月或丑月」時才需要 +12。
-    // 如果是公曆年初(1月)，因為輸入的 year 已經+1了，公式會自動平衡，不需要額外加。
-    if ((monthBranch === '子' || monthBranch === '丑') && month >= 11) {
-        monthlyJishu += 12;
-    }
-
-    const monthlyBureauRem = monthlyJishu % 72;
-    const monthlyBureauNum = (monthlyBureauRem === 0) ? 72 : monthlyBureauRem;
-    const monthlyBureau = `陽${monthlyBureauNum}局`;
-    const monthlyGanZhiRem = monthlyJishu % 60;
-    const monthlyGanZhiIndex = (monthlyGanZhiRem === 0) ? 59 : monthlyGanZhiRem - 1;
-    const monthlyGanZhi = JIAZI_CYCLE_ORDER[monthlyGanZhiIndex];
-
-    return {
-        annualJishu,
-        annualBureau,
-        annualGanZhi,
-        monthlyJishu,
-        monthlyBureau,
-        monthlyGanZhi
-    };
     }
     // ▼▼▼ 計算「八門」位置的函式▼▼▼
     function calculateOuterRingData(bureauResult, hourJishu, lookupResult) {
@@ -1774,57 +1842,89 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
 
     return finalGates;
     }
-    // ▼▼▼ 計算「貴人十二神」位置的函式▼▼▼
+    // ▼▼▼ 【修正版V2】計算「貴人十二神」 (依據天干取月將，視月將落宮定順逆) ▼▼▼
     function calculateGuiRen(dayGan, hourBranch, yueJiangData) {
-        const result = new Array(12).fill("");
-        if (!dayGan || !hourBranch || !yueJiangData || yueJiangData.length === 0) {
-            return result;
-        }
+    const result = new Array(12).fill("");
+    // 基礎檢查：確保有日干、時支，且月將資料已計算完成
+    if (!dayGan || !hourBranch || !yueJiangData || yueJiangData.length === 0) {
+        return result;
+    }
 
-        // --- 1. 根據日干和時支，找出貴人所跟隨的「月將」是誰 ---
-        let targetYueJiang;
-        if (GUI_REN_DAY_BRANCHES.includes(hourBranch)) {
-            targetYueJiang = GUI_REN_YUE_JIANG_MAP[dayGan].day;
-        } else if (GUI_REN_NIGHT_BRANCHES.includes(hourBranch)) {
-            targetYueJiang = GUI_REN_YUE_JIANG_MAP[dayGan].night;
+    // --- 1. 定義天干對應的「貴人月將」 (晝夜不同) ---
+    // 這裡的值代表月將的「地支後綴」，例如 '未' 代表 '小吉未'
+    const GUI_REN_GENERAL_MAP = {
+        '甲': { day: '未', night: '丑' }, // 晝:小吉未, 夜:大吉丑
+        '乙': { day: '申', night: '子' }, // 晝:傳送申, 夜:神后子
+        '丙': { day: '酉', night: '亥' }, // 晝:從魁酉, 夜:登明亥
+        '丁': { day: '亥', night: '酉' }, // 晝:登明亥, 夜:從魁酉
+        '戊': { day: '丑', night: '未' }, // 晝:大吉丑, 夜:小吉未
+        '己': { day: '子', night: '申' }, // 晝:神后子, 夜:傳送申
+        '庚': { day: '丑', night: '未' }, // 晝:大吉丑, 夜:小吉未 (依您設定)
+        '辛': { day: '寅', night: '午' }, // 晝:功曹寅, 夜:勝光午
+        '壬': { day: '卯', night: '巳' }, // 晝:太衝卯, 夜:太乙巳
+        '癸': { day: '巳', night: '卯' }  // 晝:太乙巳, 夜:太衝卯
+    };
+
+    // --- 2. 定義晝夜時辰列表 ---
+    const DAY_HOURS = ['卯', '辰', '巳', '午', '未', '申'];
+    
+    // --- 3. 判斷晝夜，取得目標月將的後綴 ---
+    let targetGeneralSuffix;
+    if (DAY_HOURS.includes(hourBranch)) {
+        targetGeneralSuffix = GUI_REN_GENERAL_MAP[dayGan]?.day;
+    } else {
+        targetGeneralSuffix = GUI_REN_GENERAL_MAP[dayGan]?.night;
+    }
+
+    if (!targetGeneralSuffix) return result;
+
+    // --- 4. 在目前的月將盤 (yueJiangData) 中，找到該月將的位置 ---
+    // yueJiangData 裡的格式是 "神后子", "大吉丑" 等，所以我們檢查是否以目標後綴結尾
+    let generalLocationIndex = -1;
+    for (let i = 0; i < yueJiangData.length; i++) {
+        if (yueJiangData[i] && yueJiangData[i].endsWith(targetGeneralSuffix)) {
+            generalLocationIndex = i;
+            break;
+        }
+    }
+
+    // 如果找不到該月將 (代表資料可能有誤)，回傳空
+    if (generalLocationIndex === -1) return result;
+
+    // --- 5. 取得該月將「落入的宮位」 (Palace Branch) ---
+    // 透過索引去查月將環的宮位定義
+    const palaceId = RADIAL_LAYOUT.yueJiangRing.palaces[generalLocationIndex];
+    const palaceBranch = PALACE_ID_TO_BRANCH[palaceId]; // 例如 '子', '丑'...
+
+    // --- 6. 決定順逆 (根據月將落入的宮位) ---
+    // 規則：亥子丑寅卯辰 -> 順時鐘，巳午未申酉戌 -> 逆時鐘
+    const CLOCKWISE_BRANCHES = ['亥', '子', '丑', '寅', '卯', '辰'];
+    const direction = CLOCKWISE_BRANCHES.includes(palaceBranch) ? 'clockwise' : 'counter-clockwise';
+
+    // --- 7. 排列十二神 ---
+    // 準備標準地支順序，方便計算
+    const standardBranches = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+    const startBranchIndex = standardBranches.indexOf(palaceBranch);
+    
+    const finalMapping = {}; // 暫存：地支 -> 神煞名稱
+
+    for (let i = 0; i < 12; i++) {
+        // 計算當前神煞 (GUI_REN_ORDER[i]) 應該在哪個地支
+        let currentBranchIndex;
+        if (direction === 'clockwise') {
+            currentBranchIndex = (startBranchIndex + i) % 12;
         } else {
-            return result;
-        }
-
-        // --- 2. 在月將十二神的盤中，找到這個目標月將的位置 ---
-        const yueJiangPalaceIndex = yueJiangData.indexOf(targetYueJiang);
-        if (yueJiangPalaceIndex === -1) {
-            return result;
-        }
-
-        // --- 3. 根據月將的位置，找到「貴人」的起始宮位地支 ---
-        const noblemanPalaceId = RADIAL_LAYOUT.yueJiangRing.palaces[yueJiangPalaceIndex];
-        const noblemanPalaceBranch = PALACE_ID_TO_BRANCH[noblemanPalaceId];
-
-        // 將起始宮位地支，換算成標準的十二地支索引 (0-11)
-        const noblemanStandardIndex = solarLunar.zhi.indexOf(noblemanPalaceBranch);
-        if (noblemanStandardIndex === -1) {
-            return result;
+            currentBranchIndex = (startBranchIndex - i + 12) % 12;
         }
         
-        // --- 4. 判斷貴人落宮，決定排列方向 ---
-        const direction = CLOCKWISE_PALACES.includes(noblemanPalaceBranch) ? 'clockwise' : 'counter-clockwise';
+        const currentBranch = standardBranches[currentBranchIndex];
+        finalMapping[currentBranch] = GUI_REN_ORDER[i];
+    }
 
-        // --- 5. 根據起始宮位和方向，排列剩下的11位神 ---
-        const finalResult = new Array(12);
-        for (let i = 0; i < 12; i++) { // i 代表十二神的順序 (0=貴人, 1=騰蛇...)
-            let palaceIndex;
-            if (direction === 'clockwise') {
-                palaceIndex = (noblemanStandardIndex + i) % 12; // 使用標準索引來計算
-            } else {
-                palaceIndex = (noblemanStandardIndex - i + 12) % 12;
-            }
-            finalResult[palaceIndex] = GUI_REN_ORDER[i];
-        }
-
-        // 6. 最後，按照繪圖所需的特殊順序，重新整理結果
-        const drawingPalaceOrder = RADIAL_LAYOUT.guiRenRing.palaces.map(pId => PALACE_ID_TO_BRANCH[pId]);
-        return drawingPalaceOrder.map(zhi => finalResult[solarLunar.zhi.indexOf(zhi)] || "");
+    // --- 8. 轉換為繪圖順序 ---
+    // 根據貴人環的繪圖宮位順序，填入對應的神煞
+    const drawingPalaceOrder = RADIAL_LAYOUT.guiRenRing.palaces.map(pId => PALACE_ID_TO_BRANCH[pId]);
+    return drawingPalaceOrder.map(branch => finalMapping[branch] || "");
     }
     // ▼▼▼ 計算所有年日化曜結果的函式 ▼▼▼
     function calculateAllHuaYao(yearStem, dayStem, dayBranch) {
@@ -2178,6 +2278,43 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     }
     return "";
     }
+
+    // ▼▼▼ 【新增】計算「歲乙相格」的函式 ▼▼▼
+    function calculateSuiYiXiangGe(lookupResult, deitiesResult) {
+    // 安全檢查：確保有太乙和太歲的資料
+    if (!lookupResult || !lookupResult.太乙 || !deitiesResult || !deitiesResult.太歲) {
+        return '';
+    }
+
+    const taiYiPalace = lookupResult.太乙;
+    const taiSuiPalace = deitiesResult.太歲;
+
+    // 1. 定義寄宮規則 (乾寄亥, 艮寄寅, 巽寄巳, 坤寄申)
+    const mapping = { 
+        '乾': '亥', 
+        '艮': '寅', 
+        '巽': '巳', 
+        '坤': '申' 
+    };
+
+    // 2. 取得太乙的實際地支位置 
+    // (如果太乙在四維卦，則轉換為寄宮地支；如果是普通地支，則維持原樣)
+    const taiYiBranch = mapping[taiYiPalace] || taiYiPalace;
+
+    // 確保轉換後是有效的地支 (在 PALACE_OPPOSITES 資料庫中有定義)
+    if (!PALACE_OPPOSITES[taiYiBranch]) return '';
+
+    // 3. 找出對沖宮位 (例如 子->午, 亥->巳)
+    const oppositeBranch = PALACE_OPPOSITES[taiYiBranch];
+
+    // 4. 判斷太歲是否在對沖宮位
+    if (taiSuiPalace === oppositeBranch) {
+        // 格式化輸出文字
+        return '\n  歲乙相格：有崩亡兵役之事';
+    }
+
+    return '';
+    }
    
     // ▼▼▼ 每次增加星都要更新的函式 ▼▼▼
     function generateMainChartData(lookupResult, deitiesResult, suanStarsResult, shiWuFuResult, xiaoYouResult, junJiResult, chenJiResult, minJiResult, tianYiResult, diYiResult, siShenResult, feiFuResult, daYouResult, yueJiangData, guiRenData, starsToDisplay = []) {
@@ -2485,20 +2622,37 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         const { bureauResult, lookupResult, hourJishu, wuFuResults, yearPillar, monthPillar, dayPillar, hourPillar } = dataForCalculation;
     
         // --- 1. 決定要顯示哪些五福星 ---
-        const starsToDisplay = [];
-        if (wuFuResults.year) starsToDisplay.push(wuFuResults.year);
-        if (chartType === 'month' || chartType === 'day' || chartType === 'hour') {
+    const starsToDisplay = [];
+    if (wuFuResults.year) starsToDisplay.push(wuFuResults.year);
+    if (chartType === 'month' || chartType === 'day' || chartType === 'hour') {
         if (wuFuResults.month) starsToDisplay.push(wuFuResults.month);
-        }
-        if (chartType === 'day' || chartType === 'hour') {
+    }
+    if (chartType === 'day' || chartType === 'hour') {
         if (wuFuResults.day) starsToDisplay.push(wuFuResults.day);
-        }
-        if (chartType === 'hour') {
+    }
+    if (chartType === 'hour') {
         if (wuFuResults.hour) starsToDisplay.push(wuFuResults.hour);
-        }
+    }
+
+    // --- 2. 【核心修正】計算太歲、合神、計神 (依據盤面類型選擇對應的地支) ---
+    let targetDeityBranch;
+    switch (chartType) {
+        case 'year':
+            targetDeityBranch = yearPillar.charAt(1); // 年盤用年支
+            break;
+        case 'month':
+            targetDeityBranch = monthPillar.charAt(1); // 月盤用月支
+            break;
+        case 'day':
+            targetDeityBranch = dayPillar.charAt(1);   // 日盤用日支
+            break;
+        default: // 'hour'
+            targetDeityBranch = hourPillar.charAt(1);  // 時盤用時支
+            break;
+    }
 
         // --- 2. 計算其他所有星曜 ---
-        const deitiesResult = calculateDeities(bureauResult, hourPillar.charAt(1));
+        const deitiesResult = calculateDeities(bureauResult, targetDeityBranch);
         const suanStarsResult = calculateSuanStars(lookupResult);
         const xiaoYouResult = calculateXiaoYou(hourJishu);
         const junJiResult = calculateJunJi(hourJishu);
@@ -2514,42 +2668,59 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         const yueJiangData = yueJiangResult.ringData;       // 給繪圖用
         const currentYueJiangName = yueJiangResult.name;    // 給左側顯示用
         
-        const guiRenData = calculateGuiRen(dataForCalculation.dayPillar.charAt(0), dataForCalculation.hourPillar.charAt(1), yueJiangData);
+        // 計算貴人資料 (用於繪圖) - 注意：貴人依然主要是看日干與時支(或月將)，這裡維持原邏輯，若貴人也有盤面規則需另外告知
+        const guiRenData = calculateGuiRen(dayPillar.charAt(0), hourPillar.charAt(1), yueJiangData);
+        
         // 【新增】計算吉格
         const luckyPatterns = calculateLuckyPatterns(yueJiangData, guiRenData);
-        // 【新增】計算建除十二神 (使用時支)
+        
+        // 計算建除十二神 (維持使用時支，或是依需求修改)
         const jianChuData = calculateJianChu(hourPillar.charAt(1));
+        
         const newLifePalacesData = dataForCalculation.arrangedLifePalaces;
         const newSdrData = calculateSdrPalaces(dataForCalculation, dataForCalculation.direction);
         const newAgeLimitData = [];
     
         let outerRingData;
-    if (chartType === 'hour') {
-        // 如果是「時盤」，使用舊的規則
+        if (chartType === 'hour') {
+        // 如果是「時盤」，使用時積數規則
         outerRingData = calculateOuterRingData(bureauResult, hourJishu, lookupResult);
-    } else {
+        } else {
         // 如果是「年盤」、「月盤」或「日盤」，使用我們新增的規則
         const taiYiPalace = lookupResult ? lookupResult.太乙 : null;
         outerRingData = calculateYmdOuterRingData(hourJishu, taiYiPalace);
-    }
+        }
         
         const { chartData: newMainChartData, centerStars: wuFuCenterStars } = generateMainChartData(
-            lookupResult, dataForCalculation.deitiesResult, dataForCalculation.suanStarsResult,
+            lookupResult, deitiesResult, dataForCalculation.suanStarsResult,
             dataForCalculation.shiWuFuResult, dataForCalculation.xiaoYouResult,
             dataForCalculation.junJiResult, dataForCalculation.chenJiResult, dataForCalculation.minJiResult,
             dataForCalculation.tianYiResult, dataForCalculation.diYiResult, dataForCalculation.siShenResult, dataForCalculation.feiFuResult,
             dataForCalculation.daYouResult, yueJiangData, guiRenData, starsToDisplay
         );
 
-        const centerData = {
-             field1: dataForCalculation.suanStarsResult.centerStars[0] || '',
-             field2: dataForCalculation.suanStarsResult.centerStars[1] || '',
-             field3: dataForCalculation.suanStarsResult.centerStars[2] || '',
-             field4: dataForCalculation.suanStarsResult.centerStars[3] || ''
-        };
+        // 補上 mingWuFuResult 的計算 (如果您原本有 calculateMingWuFu 的話，這裡應該要補上，以免報錯)
+    // 假設您在 SECTION 3 有 calculateMingWuFu，這裡加一行：
+        const mingWuFuResult = (typeof calculateMingWuFu === 'function') ? calculateMingWuFu(hourJishu) : null; 
+    // 重新呼叫 generateMainChartData (因為上面那次呼叫 mingWuFuResult 可能是 undefined)
+        const mainChartDataResult = generateMainChartData(
+        lookupResult, deitiesResult, suanStarsResult,
+        dataForCalculation.shiWuFuResult, xiaoYouResult,
+        junJiResult, chenJiResult, minJiResult,
+        tianYiResult, diYiResult, siShenResult, feiFuResult,
+        daYouResult, yueJiangData, guiRenData, starsToDisplay, mingWuFuResult
+        );
+        const newMainChartDataReal = mainChartDataResult.chartData;
+        const wuFuCenterStarsReal = mainChartDataResult.centerStars;
 
-        // 將落入中宮的五福星填入空位
-        wuFuCenterStars.forEach(starText => {
+        const centerData = {
+        field1: suanStarsResult.centerStars[0] || '',
+        field2: suanStarsResult.centerStars[1] || '',
+        field3: suanStarsResult.centerStars[2] || '',
+        field4: suanStarsResult.centerStars[3] || ''
+        };
+    
+        wuFuCenterStarsReal.forEach(starText => {
         if (!centerData.field1) centerData.field1 = starText;
         else if (!centerData.field2) centerData.field2 = starText;
         else if (!centerData.field3) centerData.field3 = starText;
@@ -2623,8 +2794,12 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         } else {
         outputText += `\n\n  格局 : 無`;
         }
-        // ▼▼▼ 【新增】呼叫新的太乙格局計算並附加到結果中 ▼▼▼
+        // ▼▼▼ 呼叫太乙陰陽宮位預測 ▼▼▼
         outputText += calculateTaiYiPalacePattern(lookupResult);
+
+        // ▼▼▼ 【新增】呼叫歲乙相格計算 (顯示在下一行) ▼▼▼
+        outputText += calculateSuiYiXiangGe(lookupResult, deitiesResult);
+
         }
         document.getElementById('calculation-summary').innerHTML = outputText;
 }
@@ -2671,11 +2846,21 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         }
         const nationalJishu = calculateNationalJishu(year, month, day, hour);
 
+        // ▼▼▼ 【新增】準備月五福所需的精準參數 ▼▼▼
+        // 1. 反推太乙年 (因為 calculateNationalJishu 內部已經處理過冬至換年了)
+        const taiYiYear = nationalJishu.annualJishu - TAI_YI_BASE_JISHU;
+        
+        // 2. 取得月支
+        const monthBranch = lunarDate.getMonthInGanZhi().charAt(1);
+        
+        // 3. 判斷是否為「年底但未過冬至」的特殊狀況 (同 calculateNationalJishu 邏輯)
+        const isYearEnd = (taiYiYear === year && (monthBranch === '子' || monthBranch === '丑') && month >= 11);
+        // ▲▲▲ 新增結束 ▲▲▲
+
 
         // --- ▼▼▼ 核心修改點：根據盤面類型，決定使用哪個「積數」和「局數」▼▼▼ ---
         let bureauResult;
-        let dayJishuForDisplay, hourJishuForDisplay;
-        let jishuForStarCalc = { day: null, hour: null, year: year, month: month };
+        let finalJishuForStars; // 修正變數名稱宣告
 
         switch (chartType) {
         case 'year':
@@ -2701,16 +2886,14 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         return;
         }
     
-        dayJishuDisplay.textContent = dayJishuForDisplay || '計算失敗';
-        hourJishuDisplay.textContent = hourJishuForDisplay || '計算失敗';
+        dayJishuDisplay.textContent = precisionResult.dayJishu;
+        hourJishuDisplay.textContent = precisionResult.hourJishu;
         
-        const gender = '男'; // 國運盤預設
+        const gender = '男'; 
         const direction = determineDirection(lunarDate.getYearInGanZhi().charAt(0), gender);
         const lifePalaceId = findPalaceByCounting(lunarDate.getYearInGanZhi().charAt(1), lunarDate.getMonthInGanZhi().charAt(1), lunarDate.getTimeInGanZhi().charAt(1), direction);
         const arrangedLifePalaces = lifePalaceId ? arrangeLifePalaces(lifePalaceId, direction) : [];
         
-        // 【核心修正點】在這裡先從 lunarDate 取得月份地支，再轉換成數字
-        const monthBranch = lunarDate.getMonthInGanZhi().charAt(1);
         const astrologicalMonthNumber = ASTROLOGICAL_MONTH_MAP[monthBranch];
 
         const dataForCalculation = {
@@ -2723,10 +2906,12 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         bureauResult: bureauResult,
         lookupResult: lookupBureauData(bureauResult),
         wuFuResults: {
-            year: calculateWuFu(year, '年五福'),
-            month: calculateWuFu({ year: year, month: astrologicalMonthNumber }, '月五福'),
-            day: calculateWuFu(precisionResult.dayJishu, '日五福'),
-            hour: calculateWuFu(precisionResult.hourJishu, '時五福')
+                // 【核心修正】傳入 taiYiYear 給年五福
+                year: calculateWuFu(taiYiYear, '年五福'),
+                // 【核心修正】傳入完整物件給月五福 (支援亥月倒推)
+                month: calculateWuFu({ taiYiYear, monthBranch, isYearEnd }, '月五福'),
+                day: calculateWuFu(precisionResult.dayJishu, '日五福'),
+                hour: calculateWuFu(precisionResult.hourJishu, '時五福')
         }
     };
         document.getElementById('annual-jishu-display').textContent = nationalJishu.annualJishu;

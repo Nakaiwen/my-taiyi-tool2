@@ -3405,7 +3405,10 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                     .jianchu-bad { color: #d32f2f; font-weight: bold; }   
                     .jianchu-neutral { color: #ed6c02; font-weight: bold; } 
                     
+                    .term-highlight { background-color: #fff9c4 !important; }
+                    
                     @media print {
+                        .term-highlight { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                         body { padding: 0; }
                         button { display: none; }
                         table { page-break-inside: auto; }
@@ -3440,8 +3443,12 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         `;
 
         results.forEach(r => {
+            // 🌟 核心修改：判斷節氣字串中是否包含 <br> 標籤
+            // 如果包含 <br>，代表有顯示第二列的時間資訊，即為節氣轉換日
+            const highlightClass = r.term.includes('<br>') ? 'term-highlight' : '';
+
             html += `
-                <tr>
+                <tr class="${highlightClass}">
                     <td>${r.dateStr}</td>
                     <td>${r.dayPillar}</td>
                     <td class="term-text">${r.term}</td>

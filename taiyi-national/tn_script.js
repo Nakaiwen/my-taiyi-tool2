@@ -3423,6 +3423,13 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                 </h1>
                 <table>
                     <thead>
+                        <tr style="background-color: #e0e0e0ff; font-size: 15px;">
+                            <th colspan="3">基礎曆法</th>
+                            <th colspan="2">值日神煞</th>
+                            <th colspan="1">太乙吉方</th>
+                            <th colspan="6">特殊吉時</th>
+                            <th colspan="1">綜合</th>
+                        </tr>
                         <tr>
                             <th>日期</th>
                             <th>日柱干支</th>

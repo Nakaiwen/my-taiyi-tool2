@@ -2109,7 +2109,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     // 如果不符合條件，返回空字串
     return '';
     }
-    // ▼▼▼ 【新增】計算建除十二神的函式 ▼▼▼
+    // ▼▼▼ 【新增】計算建除十二神（時辰版）的函式 ▼▼▼
     function calculateJianChu(hourBranch) {
     if (!hourBranch) return [];
     
@@ -2131,6 +2131,33 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     }
 
     return result;
+    }
+
+    // ▼▼▼ 【新增】計算「建除十二神（日）」的函式 ▼▼▼
+    function calculateDailyJianChu(monthBranch, dayBranch) {
+        const branches = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+        const deities = ['建', '除', '滿', '平', '定', '執', '破', '危', '成', '收', '開', '閉'];
+        
+        const mIndex = branches.indexOf(monthBranch);
+        const dIndex = branches.indexOf(dayBranch);
+        
+        if (mIndex === -1 || dIndex === -1) return { name: '', type: '' };
+        
+        // 計算差距：月建與日支的相對位置
+        const offset = (dIndex - mIndex + 12) % 12;
+        const deityName = deities[offset];
+        
+        // 判斷吉凶以決定顯示顏色
+        let type = '';
+        if (['除', '滿', '定', '危', '成', '收', '開'].includes(deityName)) {
+            type = 'good'; // 吉日
+        } else if (['建', '破', '閉'].includes(deityName)) {
+            type = 'bad'; // 凶日
+        } else {
+            type = 'neutral'; // 平日
+        }
+        
+        return { name: deityName, type: type };
     }
 
     // ▼▼▼ 【V2 - 結構化輸出版】計算所有格局的函式 ▼▼▼
@@ -2308,12 +2335,26 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         return liuFuDays.includes(dayPillar);
     }
 
-    // ▼▼▼ 【新增】整合判斷當日所有「特殊日」 ▼▼▼
-    function getSpecialDaysPattern(monthBranch, dayPillar) {
+    // ▼▼▼ 【修正版】整合判斷當日所有「特殊日」 (加入招財吉日判斷) ▼▼▼
+    function getSpecialDaysPattern(monthBranch, dayPillar, jianChuName) {
         const specials = [];
-        if (calculateTianSheRi(monthBranch, dayPillar)) specials.push('天赦日');
-        if (calculateLiuFuRi(dayPillar)) specials.push('六富日');
-        return specials.join('、');
+        
+        if (calculateTianSheRi(monthBranch, dayPillar)) {
+            specials.push('天赦日');
+        }
+        
+        if (calculateLiuFuRi(dayPillar)) {
+            // 判斷六富日是否剛好遇到「滿、成、收、開」
+            if (['滿', '成', '收', '開'].includes(jianChuName)) {
+                // 加入紅色粗體的招財吉日小字
+                specials.push('六富日<br><span style="font-size: 12px; color: #db8000ff; font-weight: bold; margin-left: 0;">(招財吉日)</span>');
+            } else {
+                specials.push('六富日');
+            }
+        }
+        
+        // 用 <br> 換行取代頓號，這樣如果同一天有天赦日又有六富日，排版會比較漂亮
+        return specials.join('<br>');
     }
 
     // ▼▼▼ 【新增】計算日柱空亡的函式 ▼▼▼
@@ -3202,7 +3243,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         }
     }
 
-    // ▼▼▼ 主程式：匯出表格 (移除備註欄位版) ▼▼▼
+    // ▼▼▼ 主程式：匯出表格 ▼▼▼
     function generateAndPrintLuckyTable(year, month) {
         // 1. 取得該月份的總天數
         const daysInMonth = new Date(year, month, 0).getDate();
@@ -3219,6 +3260,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
             let currentDayBranch = "";
             let currentMonthBranch = ""; 
             let currentYueJiang = "";
+            let currentJianChu = { name: "", type: "" }; 
             
             // 呼叫函式，取得當天的節氣狀態
             let currentTerm = getActiveTermForDay(year, month, day); 
@@ -3254,6 +3296,9 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                     currentDayGan = dayGan;
                     currentDayBranch = dayBranch;
                     currentMonthBranch = lunarDate.getMonthInGanZhi().charAt(1); 
+                    
+                    // 計算今日的建除十二神
+                    currentJianChu = calculateDailyJianChu(currentMonthBranch, currentDayBranch);
                 }
 
                 // 計算月將
@@ -3300,25 +3345,23 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                 
                 for (let i = 1; i < dailyWuFuPalaces.length; i++) {
                     if (dailyWuFuPalaces[i].palace !== currentPalace) {
-                        // 發生換宮！
-                        const prevBranch = dailyWuFuPalaces[i-1].branch; // 舊宮位的最後一個時辰
-                        const newBranch = dailyWuFuPalaces[i].branch;    // 新宮位的第一個時辰
+                        const prevBranch = dailyWuFuPalaces[i-1].branch; 
+                        const newBranch = dailyWuFuPalaces[i].branch;    
                         const newPalace = dailyWuFuPalaces[i].palace;
                         
-                        wuFuText = `${currentPalace}<span class="subtitle">${prevBranch}時結束</span><br>${newPalace}<span class="subtitle">${newBranch}時開始</span>`;
+                        wuFuText = `${currentPalace}<span class="subtitle">(${prevBranch}時結束)</span><br>${newPalace}<span class="subtitle">(${newBranch}時開始)</span>`;
                         isChanged = true;
                         break; 
                     }
                 }
                 
-                // 如果一整天都沒換宮，就只顯示該宮位
                 if (!isChanged) {
                     wuFuText = currentPalace;
                 }
             }
 
-            // 取得當天是否為「特殊日」
-            const specialDayText = getSpecialDaysPattern(currentMonthBranch, currentDayPillar);
+            // 【核心修改】傳入 currentJianChu.name 讓函式判斷是否為招財吉日
+            const specialDayText = getSpecialDaysPattern(currentMonthBranch, currentDayPillar, currentJianChu.name);
 
             // 將這一天的結果存入陣列 
             results.push({
@@ -3326,6 +3369,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                 dayPillar: currentDayPillar,
                 term: currentTerm, 
                 yueJiang: currentYueJiang, 
+                jianChu: currentJianChu,
                 shiWuFu: wuFuText, 
                 guiDeng: dailyPatterns['貴登天門'].join('、'),
                 gangSai: dailyPatterns['罡塞鬼戶'].join('、'),
@@ -3356,6 +3400,11 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                     .special-text { color: #1565c0; font-weight: bold; }
                     .term-time { font-size: 12px; font-weight: normal; color: #555; display: block; margin-top: 3px; }
                     .subtitle { font-size: 12px; font-weight: normal; color: #666; display: inline-block; margin-left: 2px; }
+                    
+                    .jianchu-good { color: #2e7d32; font-weight: bold; }  
+                    .jianchu-bad { color: #d32f2f; font-weight: bold; }   
+                    .jianchu-neutral { color: #ed6c02; font-weight: bold; } 
+                    
                     @media print {
                         body { padding: 0; }
                         button { display: none; }
@@ -3365,7 +3414,10 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                 </style>
             </head>
             <body>
-                <h1>${year}年${month}月 吉時表</h1>
+                <h1>
+                    ${year}年${month}月 吉時表
+                    <span style="font-size: 16px; font-weight: normal; color: #666;">（小六太乙提供）</span>
+                </h1>
                 <table>
                     <thead>
                         <tr>
@@ -3373,6 +3425,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                             <th>日柱干支</th>
                             <th>節氣</th>
                             <th>月將</th>
+                            <th>建除十二神</th> 
                             <th>時五福</th>
                             <th>貴登天門</th>
                             <th>罡塞鬼戶</th>
@@ -3393,7 +3446,8 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                     <td>${r.dayPillar}</td>
                     <td class="term-text">${r.term}</td>
                     <td>${r.yueJiang}</td>
-                    <td style="font-weight: bold;">${r.shiWuFu}</td>
+                    <td class="jianchu-${r.jianChu.type}">${r.jianChu.name}</td>
+                    <td>${r.shiWuFu}</td>
                     <td class="pattern-text">${r.guiDeng}</td>
                     <td class="pattern-text">${r.gangSai}</td>
                     <td class="pattern-text">${r.guiSai}</td>

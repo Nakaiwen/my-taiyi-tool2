@@ -40,11 +40,12 @@
         <input type="radio" id="chart-type-hour" name="chart-type" value="hour" checked>
         <label for="chart-type-hour" class="radio-label">時盤</label>
     </div>
-                <div class="input-row" id="action-buttons-row">
-                <button id="switch-to-personal-btn" style="margin-left: 10px;">切換太乙命法</button>
-					      <button id="save-pdf-btn" style="margin-left: 20px;">儲存PDF</button>
-                <button id="calculate-btn">更新盤面資訊</button>
-                </div>
+            <div id="action-buttons-container">
+            <button id="switch-to-personal-btn" class="action-btn">切換太乙命法</button>
+            <button id="calculate-btn" class="action-btn calculate-highlight">更新盤面資訊</button>
+            <button id="save-pdf-btn" class="action-btn">儲存盤面</button>
+            <button id="lucky-table-btn" class="action-btn table-highlight">📆 導出吉時表</button>
+            </div>
                 <div id="output-area">
                 <div class="output-row" id="jishu-display-row1">
     <label>年積數：</label>

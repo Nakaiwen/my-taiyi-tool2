@@ -1,310 +1,194 @@
-    /* 這裡是 CSS 樣式區，可以控制網頁的外觀 */
+/* ====================================================== */
+/* 基礎設定與字體                                         */
+/* ====================================================== */
 
-    @font-face {
+@font-face {
     font-family: 'BiauKaiWeb'; 
     src: url('fonts/biaukai.ttf') format('truetype'); 
-    }
+}
 
-    body {
-    font-family: 'BiauKaiWeb';
+body {
+    font-family: 'BiauKaiWeb', sans-serif;
     display: flex;
     padding: 0px;
     background-color: #ffffff;
-    }
+}
 
+.taiyi-container {
+    width: 880px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
 
-    .taiyi-container {
-        width: 880px;
-        background-color: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    /* 修改：為動態文字加入過渡效果的基底 */
-    .dynamic-text {
-    font-family: 'BiauKaiWeb';
-    fill: #000000;
-    writing-mode: vertical-rl;
-    glyph-orientation-vertical: 0;
+/* --- 全新版面配置：左右兩欄式結構 --- */
+.main-container {
+    display: flex;           /* 啟用 Flexbox，讓內部元素(欄位)水平排列 */
+    align-items: flex-start; /* 讓兩欄從頂部開始對齊 */
+    gap: 20px;               /* 在兩欄之間增加 20px 的間距 */
+    width: 100%;
+    max-width: 1200px;       /* 設定整個應用的最大寬度 */
+    margin: 0 auto;          /* 讓主容器在頁面中水平置中 */
+}
 
-    /* ▼▼▼ 動畫設定 ▼▼▼ */
-    opacity: 0; /* 預設為隱藏 (透明) */
-    transition: opacity 1.0s ease-out; /* 設定 1秒 的淡入時間，ease-out 讓結尾更柔和 */
-    /* ▲▲▲ 動畫設定 ▲▲▲ */
-    }
-
-    /* 新增：當星星要顯示時，加上這個 class */
-    .star-visible {
-    opacity: 1; /* 變成不透明 (顯示) */
-    }
-
-    /* --- 紅色星形圖標樣式 --- */
-    .red-star-icon {
-    width: 14px;          /* 【可調整】設定星星圖片的寬度 */
-    height: 14px;         /* 【可調整】設定星星圖片的高度 */
-    vertical-align: middle; /* 讓星星圖片與旁邊的文字在垂直方向上對齊 */
-    margin-right: 4px;    /* 【可調整】設定星星與右邊文字的間距 */
-    }
-
-    /* 宮位星的樣式 */
-    .palace-name-style {
-        font-size: 14px;
-    }
-    /* 主要資訊的樣式 */
-    .main-info-style {
-        font-size: 14px;
-        fill: #f20000;
-        font-weight: bold;
-    }
-
-    /* 次要資訊的樣式 */
-    .sub-info-style {
-        font-size: 14px;
-        fill: #e58600;
-        font-weight: bold;
-    }
-    /* 年齡數字的專屬樣式 */
-    .age-limit-style {
-    font-size: 10px; 
-    fill: #2a2a2a;
-    font-weight: bold;  
-    }
-
-    /* --- 「行年歲數」的專屬樣式 --- */
-    .xing-nian-style {
-    font-size: 9px;    /* 【可調整】控制行年歲數的字體大小 */
-    fill: #4a008f;      /* 【可調整】控制行年歲數的字體顏色 (此為深紫色) */
-    font-weight: bold;
-    }
-
-    /* 太乙、文昌、始擊 的專屬樣式 */
-    .main-star-style {
-        font-size: 14px;  
-        fill: #680000;  
-        font-weight: bold;
-    }
-
-    /* 新增：年月日時五福專屬樣式 */
-    .wu-fu-style {
-    font-size: 13px;      /* 【可調整】控制五福星的字體大小 */
-    fill: #ff0000;        /* 【可調整】控制五福星的字體顏色 (範例為綠色) */
-    font-weight: bold;
-    }
-
-    /* 「定目」的專屬樣式 */
-    .ding-mu-style {
-    font-size: 14px;      /* 字體大小 */
-    fill: #814fb4;        /* 字體顏色 (範例為紫色，可自行修改) */
-    font-weight: bold;
-    }
-
-    /* 太歲、合神、計神 的專屬樣式 */
-    .deity-style {
-        font-size: 14px; 
-        fill: #027bb4; 
-        font-weight: bold;
-    }
-
-    /* 「小遊」的專屬樣式 */
-    .xiaoyou-style {
-        font-size: 14px;
-        fill: #89b700;
-        font-weight: bold;
-    }
-
-    /* 「大遊」的專屬樣式 */
-    .dayou-style {
-    font-size: 14px;
-    fill: #89b700;
-    font-weight: bold;
-    }
-
-    /* 「君基、臣基、民基」的專屬樣式 */
-    .ji-star-style {
-    font-size: 14px;
-    fill: #02961d; 
-    font-weight: bold;
-    }
-
-    /*「天乙、地乙、四神、飛符」的專屬樣式 */
-    .celestial-messenger-style {
-    font-size: 14px;
-    fill: #e500d2; 
-    font-weight: bold;
-    }
-
-    /* 建除十二神樣式 */
-    .jian-chu-style {
-    font-size: 16px;
-    fill: #007289; /* 深灰色，可自行調整 */
-    font-weight: bold;
-    }
-
-
-
-    /* 圓心特殊宮位的文字樣式 */
-    .center-info-style {
-    font-size: 14px;      
-    fill: #e58600;        
-    font-weight: bold;
-    text-anchor: middle;  
-    }
-
-    /* 主客定算屬性文字樣式 */
-    .suan-attribute-style {
-    color: #6c757d; 
-    font-size: 11px; 
-    font-family: sans-serif; 
-    }
-
-    /* 「卦象簡釋」的專屬樣式 */
-    .hexagram-description-style {
-    font-size: 14px;          /* 字體可以稍微小一點 */
-    color: #1268ba;             /* 使用柔和的灰色，不搶主資訊風采 */
-    font-weight: normal;      /* 使用標準體重 */
-    }
-
-    /* 用於凸顯星曜的圓圈樣式 */
-    .highlight-circle {
-    fill: none;           /* 圓圈內部透明 */
-    stroke: #fe1500;      /* 圓圈邊框顏色 (您圖片中的橘紅色) */
-    stroke-width: 1px;    /* 圓圈邊框粗細 */
-    }
-
-    /* 新增：八門專屬樣式 */
-    .eight-gates-style {
-    font-size: 14px;
-    fill: #5c00b1; /* 範例為深紫色 */
-    font-weight: normal;
-    }
-    
-/* ====================================================== */
-/* 左側資訊欄 (Controls Column) 相關樣式                */
-/* ====================================================== */
-
-/* 1. 控制「整個左欄」的寬度 */
 .controls-column {
-    flex: 0 0 330px;  /* 這是在Flexbox佈局中設定欄位寬度為 400px，您可以調整這個數值 */
+    flex: 0 0 330px;  /* 左側控制欄固定寬度 */
 }
 
-/* 2. 控制「資訊容器」的整體外觀 */
+.plate-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; 
+}
+
+
+/* ====================================================== */
+/* 左側控制區 (Input & Buttons)                         */
+/* ====================================================== */
+
 .input-container {
-    padding: 10px;                  /* 容器的內部留白 */
-    background-color: #ffffff;      /* 容器的背景顏色 */
-    border: 1px solid #ffffff;         /* 容器的邊框 */
-    border-radius: 18px;            /* 容器的圓角 */
-    width: 100%;                    /* 讓容器寬度充滿整個 .controls-column */
-    box-sizing: border-box;         /* 確保 padding 和 border 不會增加額外寬度 */
+    padding: 10px;                  
+    background-color: #ffffff;      
+    border: 1px solid #ffffff;         
+    border-radius: 18px;            
+    width: 100%;                    
+    box-sizing: border-box;         
 }
 
-/* 3. 控制「每一行輸入項」的通用排列與間距 */
 .input-row {
-    display: flex;                  /* 啟用 Flexbox，讓內部的 label 和 input 水平排列 */
-    align-items: center;            /* 讓 label 和 input 在垂直方向上置中對齊 */
-    margin-bottom: 4px;            /* 每一行之間的垂直間距 */
+    display: flex;                  
+    align-items: center;            
+    margin-bottom: 4px;            
 }
 
-/* 4. 控制「每一行的文字標籤」(如 "西元生日：") 的寬度與對齊 */
 .input-row label {
-    width: 90px;                    /* 【可調整】這控制了所有標籤的寬度 */
-    margin-right: 10px;             /* 標籤與右邊輸入框的間距 */
-    font-size: 14px;                /* 標籤的字體大小 */
-    text-align: right;              /* 讓標籤文字靠右對齊，形成整齊的邊界 */
-    flex-shrink: 0;                 /* 防止標籤在空間不足時被壓縮 */
+    width: 90px;                    
+    margin-right: 10px;             
+    font-size: 14px;                
+    text-align: right;              
+    flex-shrink: 0;                 
 }
 
-/* 5. 控制「輸入框」和「下拉選單」的通用樣式 */
 .input-row input,
 .input-row select {
     padding: 6px;
     font-size: 12px;
     border-radius: 4px;
     border: 1px solid #ccc;
-    margin-right: 5px; /* 微調右邊間距 */
+    margin-right: 5px; 
 }
 
 .input-row input[type="number"] {
     width: 150px;
 }
 
-/* 6. 控制「更新盤面資訊」按鈕的樣式 */
-.input-row button {
+.radio-label {
+    width: auto !important; 
+    text-align: left !important;
+    margin-left: 2px !important;
+    margin-right: 10px !important;
+}
+
+
+/* --- ▼▼▼ 按鈕網格排版 (2x2) ▼▼▼ --- */
+#action-buttons-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 切成兩欄等寬 */
+    gap: 8px;                       /* 按鈕之間的上下左右間距 */
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 5px 0;
+    font-size: 14px; 
+    font-family: '微軟正黑體', 'PingFang TC', sans-serif; 
+    font-weight: normal; /* 🌟 新增這行：強制設定為一般粗細 (不加粗) */
+    box-sizing: border-box;
     cursor: pointer;
-    background-color: #0092db;
+    background-color: #0092db; 
     color: white;
-    border: none; /* 移除非必要的邊框顏色設定 */
+    border: none;
     border-radius: 4px;
-    margin-right: 15px; /* 【新增】讓按鈕自動推到最右邊，更美觀 */
-    padding: 6px 12px;
-    white-space: nowrap; /* <-- 新增這一行，禁止文字換行 */
+    text-align: center;
+    white-space: nowrap; 
+    transition: background-color 0.2s; 
 }
 
-/* 「更新盤面資訊」按鈕的專屬醒目樣式 */
-#calculate-btn {
-    background-color: #dc6b02; /* 主要顏色 (範例為亮藍色) */
-    border-color: #007bff;
-    color: white;
-    font-weight: bold;
+.action-btn:hover {
+    background-color: #0056b3; 
 }
 
-.input-row button:hover {
-    background-color: #0056b3;
+/* 更新盤面按鈕的專屬醒目樣式 */
+.calculate-highlight {
+    background-color: #dc6b02; 
+    /* 已移除 font-weight: bold; */
 }
+.calculate-highlight:hover {
+    background-color: #b55802;
+}
+
+/* 導出吉時表按鈕的專屬樣式 */
+.table-highlight {
+    color: #fff23b; 
+    /* 已移除 font-weight: bold; */
+}
+/* --- ▲▲▲ 按鈕網格排版結束 ▲▲▲ --- */
+
 
 /* ====================================================== */
-/* 結果顯示區 (Output Area) 相關樣式                     */
+/* 左側結果顯示區 (Output Area)                           */
 /* ====================================================== */
 
-/* 1. 控制「結果區塊」的整體外觀 */
 #output-area {
-    margin-top: 20px;               /* 結果區塊與上方按鈕的距離 */
-    padding: 15px;             /* 結果區塊的內部留白 */
+    margin-top: 20px;               
+    padding: 15px;             
     background-color: #f3f3f3;
     border-radius: 4px;
-    font-size: 16px;                /* 結果區的基礎字體大小 */
+    font-size: 16px;                
     font-family: 'BiauKaiWeb', sans-serif;
     white-space: normal;
-    line-height: 1.5;               /* 結果區的基礎行距 */
+    line-height: 1.5;               
 }
 
-/* --- 結果區標題樣式 --- */
 #output-title {
     margin-top: 15px;
     font-weight: bold;
     font-size: 20px;
     color: #000000;
     border-bottom: 1px solid #ccc;
-    justify-content: center; /* 讓四柱在容器內水平置中 */
-    padding-bottom: 10px; /* 控制標題與底線的距離 */
-    margin-bottom: 20px; /* 控制標題底線與下方四柱的距離 */
+    justify-content: center; 
+    padding-bottom: 10px; 
+    margin-bottom: 20px; 
     display: flex;
     align-items: center;
 }
 
-/* 3. 控制「四柱垂直顯示」的區塊 */
+/* 四柱垂直顯示區塊 */
 #bazi-pillars-container {
     display: flex;
-    justify-content: center; /* 讓四柱在容器內水平置中 */
-    text-align: center;   /* 讓干支在其空間內置中 */
-    gap: 30px;            /* 【可調整】這就是間距參數，控制每一個柱之間的固定距離 */
-    margin-right: 2px;   /* 改用右邊距來創造間隔 */
-    padding-bottom: 20px; /* 控制四柱與下方分隔線的距離 */
+    justify-content: center; 
+    text-align: center;   
+    gap: 30px;            
+    margin-right: 2px;   
+    padding-bottom: 20px; 
 }
 
 .pillar {
     display: flex;
-    flex-direction: column; /* 控制「四柱干支」呈現垂直顯示 */
+    flex-direction: column; 
     align-items: center;
 }
 
-/* 控制「四柱干支」標題的區塊 */
 .pillar-title {
     font-size: 14px;
     color: #555;
     margin-bottom: 4px;
 }
 
-/* 控制「四柱干支」字體的區塊 */
 .pillar-char {
     font-size: 24px;
     font-weight: bold;
@@ -313,49 +197,14 @@
     line-height: 1.2;
 }
 
-/* 控制「計算結果摘要」的區塊 */
+/* 計算結果摘要區塊 */
 #calculation-summary {
-    font-size: 15px; /* 【可調整】您可以修改這個數字來控制主要結果的字體大小 */
-    margin-left: 10px;   /* 改用右邊距來創造間隔 */
+    font-size: 15px; 
+    margin-left: 10px;   
     padding-top: 5px;
     margin-top: 0px;
     border-top: 1px solid #ccc;
     white-space: pre-wrap;
-}
-
-
-.radio-label {
-    width: auto !important; /* 覆蓋固定寬度 */
-    text-align: left !important;
-    margin-left: 2px !important;
-    margin-right: 10px !important;
-}
-
-/* --- 限制圓盤SVG的縮放範圍 --- */
-#taiyi-plate {
-    width: 100%;        /* 基礎寬度為100%，以適應容器 */
-    max-width: 1000px;   /* 限制最大寬度不超過 750px */
-    min-width: 500px;   /* 限制最小寬度不小於 450px */
-    height: auto;       /* 高度自動，以保持長寬比 */
-}
-
-/* --- 全新版面配置：左右兩欄式結構 --- */
-.main-container {
-    display: flex;           /* 啟用 Flexbox，讓內部元素(欄位)水平排列 */
-    align-items: flex-start; /* 讓兩欄從頂部開始對齊 */
-    gap: 20px;               /* 在兩欄之間增加 30px 的間距 */
-    width: 100%;
-    max-width: 1200px;       /* 設定整個應用的最大寬度 */
-    margin: 0 auto;          /* 讓主容器在頁面中水平置中 */
-}
-
-
-/* (請用此版本替換您舊的 .plate-column) */
-.plate-column {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start; /* 改為從頭部開始排列，而不是置中 */
 }
 
 /* 積數顯示區塊的樣式 */
@@ -364,7 +213,7 @@
     padding-bottom: 10px;
     display: flex;
     align-items: center;
-    font-family: sans-serif; /* 讓標籤使用一般字體 */
+    font-family: sans-serif; 
 }
 .output-row label {
     margin-right: 8px;
@@ -373,36 +222,126 @@
 #annual-jishu-display, #monthly-jishu-display, #day-jishu-display, #hour-jishu-display {
     font-family: monospace;
     font-weight: bold;
-    color: #0056b3;     /* 使用與四柱相同的顏色 */
+    color: #0056b3;     
     font-size: 14px;
 }
 
-/* --- 列印專用樣式 (v2) --- */
+/* 特殊結果的醒目樣式 */
+.yue-jiang-style {
+    color: #6a0dad; 
+    font-weight: bold;
+    font-size: 15px; 
+}
+
+.lucky-pattern-style {
+    color: #007a00;
+    font-weight: bold;
+    font-size: 15px;
+    background-color: #eaffea; 
+    padding: 1px 4px;          
+    border-radius: 3px;        
+}
+
+.pattern-style {
+    color: #d9534f; 
+    font-weight: bold;
+    margin: 0 5px; 
+}
+
+.suan-attribute-style {
+    color: #6c757d; 
+    font-size: 11px; 
+    font-family: sans-serif; 
+}
+
+
+/* ====================================================== */
+/* 圓盤 SVG 與星曜文字樣式                                */
+/* ====================================================== */
+
+#taiyi-plate {
+    width: 100%;        
+    max-width: 1000px;   
+    min-width: 500px;   
+    height: auto;       
+}
+
+.dynamic-text {
+    font-family: 'BiauKaiWeb';
+    fill: #000000;
+    writing-mode: vertical-rl;
+    glyph-orientation-vertical: 0;
+    /* 動畫設定 */
+    opacity: 0; 
+    transition: opacity 1.0s ease-out; 
+}
+
+.star-visible {
+    opacity: 1; 
+}
+
+/* --- 個別星曜樣式設定 --- */
+.palace-name-style { font-size: 14px; }
+.main-info-style { font-size: 14px; fill: #f20000; font-weight: bold; }
+.sub-info-style { font-size: 14px; fill: #e58600; font-weight: bold; }
+.age-limit-style { font-size: 10px; fill: #2a2a2a; font-weight: bold; }
+.xing-nian-style { font-size: 9px; fill: #4a008f; font-weight: bold; }
+.main-star-style { font-size: 14px; fill: #680000; font-weight: bold; }
+.wu-fu-style { font-size: 13px; fill: #ff0000; font-weight: bold; }
+.ding-mu-style { font-size: 14px; fill: #814fb4; font-weight: bold; }
+.deity-style { font-size: 14px; fill: #027bb4; font-weight: bold; }
+.xiaoyou-style { font-size: 14px; fill: #89b700; font-weight: bold; }
+.dayou-style { font-size: 14px; fill: #89b700; font-weight: bold; }
+.ji-star-style { font-size: 14px; fill: #02961d; font-weight: bold; }
+.celestial-messenger-style { font-size: 14px; fill: #e500d2; font-weight: bold; }
+.jian-chu-style { font-size: 16px; fill: #007289; font-weight: bold; }
+.eight-gates-style { font-size: 14px; fill: #5c00b1; font-weight: normal; }
+
+.center-info-style {
+    font-size: 14px;      
+    fill: #e58600;        
+    font-weight: bold;
+    text-anchor: middle;  
+}
+
+.hexagram-description-style {
+    font-size: 14px;          
+    color: #1268ba;             
+    font-weight: normal;      
+}
+
+.highlight-circle {
+    fill: none;           
+    stroke: #fe1500;      
+    stroke-width: 1px;    
+}
+
+.kong-wang-bg {
+    fill: #fad957;       
+    fill-opacity: 0.15;   
+    stroke: none;        
+    pointer-events: none;
+    transition: opacity 1s ease-in-out; 
+}
+
+
+/* ====================================================== */
+/* 列印專用樣式 (Print Media Query)                       */
+/* ====================================================== */
+
 @media print {
-    
     @page {
         size: A4 landscape;
         margin: 15mm;
     }
 
-    /* 預設先隱藏所有頁面元素 */
     body > * {
         display: none !important;
     }
 
-    /* 然後只讓我們的主容器顯示出來 */
     .main-container {
         display: flex !important;
         visibility: visible !important;
-    }
-    
-    /* 在列印時，只隱藏我們標記的按鈕列 */
-    #action-buttons-row {
-    display: none !important;
-    }
-    
-    /* 確保主容器和其子欄位的樣式在列印時是正確的 */
-    .main-container {
         width: 100%;
         max-width: 100%;
         height: 100%;
@@ -411,6 +350,11 @@
         box-shadow: none;
         border: none;
         gap: 15px;
+    }
+    
+    /* 隱藏按鈕區 */
+    #action-buttons-container {
+        display: none !important;
     }
     
     .controls-column {
@@ -424,7 +368,6 @@
         height: auto;
     }
     
-    /* 讓結果區的樣式更適合列印 */
     #output-area {
         background-color: transparent;
         border: 1px solid #ccc;
@@ -433,39 +376,3 @@
         height: 100%;
     }
 }
-
-/* --- 新增：月將與吉格的醒目樣式 --- */
-
-/* 月將專屬樣式 (範例：深紫色 + 加粗) */
-.yue-jiang-style {
-    color: #6a0dad; 
-    font-weight: bold;
-    font-size: 15px; /* 字體稍微大一點 */
-}
-
-/* 吉格專屬樣式 (範例：亮綠色文字 + 淺綠底色 + 圓角) */
-.lucky-pattern-style {
-    color: #007a00;
-    font-weight: bold;
-    font-size: 15px;
-    background-color: #eaffea; /* 淡淡的背景色讓它更突出 */
-    padding: 1px 4px;          /* 增加一點內距 */
-    border-radius: 3px;        /* 圓角 */
-}
-
-/* 格局名稱的專屬樣式 */
-.pattern-style {
-    color: #d9534f; /* 範例為紅色，可自行修改 */
-    font-weight: bold;
-    margin: 0 5px; /* 讓格局名稱和星曜之間有點間距 */
-}
-
-/* 新增：空亡宮位的背景底色 */
-.kong-wang-bg {
-    fill: #fad957;       /* 淺灰色，代表空亡 */
-    fill-opacity: 0.15;   /* 60% 透明度，才不會遮住底圖的線條 */
-    stroke: none;        /* 不要邊框 */
-    pointer-events: none;/* 讓滑鼠點擊可以穿透它 */
-    transition: opacity 1s ease-in-out; /* 一樣加上淡入動畫 */
-}
-

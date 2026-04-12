@@ -324,6 +324,24 @@ body {
     transition: opacity 1s ease-in-out; 
 }
 
+/* 化曜星通用標籤 */
+.hy-badge {
+    display: inline-block;
+    padding: 2px 5px;
+    border-radius: 4px;
+    color: white;
+    font-size: 13px;
+    margin: 2px;
+    font-weight: bold;
+}
+
+/* 顏色定義 */
+.hy-blue   { background-color: #1565c0; } /* 官星、祿主、天元 */
+.hy-red    { background-color: #c62828; } /* 鬼星、計星 */
+.hy-green  { background-color: #2e7d32; } /* 妻財、偏祿 */
+.hy-purple { background-color: #6a1b9a; } /* 幹元、文星 */
+.hy-orange { background-color: #ef6c00; } /* 父母、福、吉星 */
+
 
 /* ====================================================== */
 /* 列印專用樣式 (Print Media Query)                       */

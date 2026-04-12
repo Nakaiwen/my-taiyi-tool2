@@ -1107,89 +1107,172 @@ function addCenterText(text, coords, className) {
     dynamicGroup.appendChild(textElement);
 }
 
+
 // --- 繪圖主函式 (最終整理版) ---
-function renderChart(mainData, palacesData, agesData, sdrData, centerData, outerRingData, jianChuData) {    
-    clearDynamicData();
-        if (outerRingData) {
-            const ringConfig = RADIAL_LAYOUT.outerRing;
-            for (const palaceId in outerRingData) {
-                if (ringConfig.palaces.includes(palaceId)) {
-                    const text = outerRingData[palaceId];
-                    const angle = RADIAL_LAYOUT.angles[palaceId];
-                    const angleRad = angle * (Math.PI / 180);
-                    const x = RADIAL_LAYOUT.center.x + ringConfig.radius * Math.cos(angleRad);
-                    const y = RADIAL_LAYOUT.center.y + ringConfig.radius * Math.sin(angleRad);
-                    addEncircledText(text, x, y, 0, 'eight-gates-style', 'highlight-circle');
-                }
-            }
-        }
-        
-        if (centerData) {
-            addCenterText(centerData.field1, RADIAL_LAYOUT.centerFields.field1, 'center-info-style');
-            addCenterText(centerData.field2, RADIAL_LAYOUT.centerFields.field2, 'center-info-style');
-            addCenterText(centerData.field3, RADIAL_LAYOUT.centerFields.field3, 'center-info-style');
-            addCenterText(centerData.field4, RADIAL_LAYOUT.centerFields.field4, 'center-info-style');
-        }
-        // ▼▼▼ 【新增】繪製建除十二神 ▼▼▼
-        if (jianChuData && jianChuData.length > 0) {
-        addRotatedRingText(jianChuData, RADIAL_LAYOUT.xingNianRing);
-        }
 
-        for (const palaceKey in mainData) {
-            if (!mainData[palaceKey]) continue;
-            const centerAngle = RADIAL_LAYOUT.angles[palaceKey];
-            const pData = mainData[palaceKey];
-            if (centerAngle === undefined || !pData) continue;
-            const angleLeft = centerAngle - RADIAL_LAYOUT.angleOffset;
-            const angleCenter = centerAngle;
-            const angleRight = centerAngle + RADIAL_LAYOUT.angleOffset;
-            if (pData.lineLeft) {
-                const getLineLeftClass = (starName) => {
-                    if (typeof starName === 'string' && starName.includes('五福')) {
-                    return 'wu-fu-style';
-                    }
-                    if (starName === '定目') return 'ding-mu-style';
-                    return 'main-info-style';
-                };
-                if (pData.lineLeft.fieldA) addRadialText(palaceKey, angleLeft, RADIAL_LAYOUT.radii.lineLeft.fieldA, pData.lineLeft.fieldA, getLineLeftClass(pData.lineLeft.fieldA));
-                if (pData.lineLeft.fieldB) addRadialText(palaceKey, angleLeft, RADIAL_LAYOUT.radii.lineLeft.fieldB, pData.lineLeft.fieldB, getLineLeftClass(pData.lineLeft.fieldB));
-                if (pData.lineLeft.fieldG) addRadialText(palaceKey, angleLeft, RADIAL_LAYOUT.radii.lineLeft.fieldG, pData.lineLeft.fieldG, getLineLeftClass(pData.lineLeft.fieldG));
-            }
-            if (pData.lineCenter) {
-                const getLineCenterClass = (starName) => {
-                    if (['君基', '臣基', '民基'].includes(starName)) return 'ji-star-style';
-                    return 'sub-info-style';
-                };
-                if (pData.lineCenter.fieldC) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldC, pData.lineCenter.fieldC, getLineCenterClass(pData.lineCenter.fieldC));
-                if (pData.lineCenter.fieldD) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldD, pData.lineCenter.fieldD, getLineCenterClass(pData.lineCenter.fieldD));
-                if (pData.lineCenter.fieldC2) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldC2, pData.lineCenter.fieldC2, getLineCenterClass(pData.lineCenter.fieldC2));
-                if (pData.lineCenter.fieldD2) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldD2, pData.lineCenter.fieldD2, getLineCenterClass(pData.lineCenter.fieldD2));
-            }
-            if (pData.lineRight) {
-                const getLineRightClass = (starName) => {
-                    if (starName === '小遊') return 'xiaoyou-style'; 
-                    if (starName === '大遊') return 'dayou-style';
-                    if (['天乙', '地乙', '四神', '飛符'].includes(starName)) return 'celestial-messenger-style';
-                    if (starName === '皇恩星') return 'huang-en-style'; return 'deity-style';
-                }; 
-                if (pData.lineRight.fieldE) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldE, pData.lineRight.fieldE, getLineRightClass(pData.lineRight.fieldE));
-                if (pData.lineRight.fieldF) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldF, pData.lineRight.fieldF, getLineRightClass(pData.lineRight.fieldF));
-                if (pData.lineRight.fieldE2) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldE2, pData.lineRight.fieldE2, getLineRightClass(pData.lineRight.fieldE2));
-                if (pData.lineRight.fieldF2) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldF2, pData.lineRight.fieldF2, getLineRightClass(pData.lineRight.fieldF2));
-            }
-            
-        }
-        // 繪製其他環圈
-    addSingleCharRing(palacesData, RADIAL_LAYOUT.lifePalacesRing);
-    addSdrRing(sdrData, RADIAL_LAYOUT.sdrRing);
-    
-    // ▼▼▼ 繪製月將十二神環圈 ▼▼▼
-    if (mainData && mainData.yueJiangData) {
-        addRotatedRingText(mainData.yueJiangData, RADIAL_LAYOUT.yueJiangRing);}
+function renderChart(mainData, palacesData, agesData, sdrData, centerData, outerRingData, jianChuData) {
 
-    // ▼▼▼ 繪製貴人十二神環圈 ▼▼▼
-     if (mainData && mainData.guiRenData) {
-         addRotatedRingText(mainData.guiRenData, RADIAL_LAYOUT.guiRenRing);}
+clearDynamicData();
+
+if (outerRingData) {
+
+const ringConfig = RADIAL_LAYOUT.outerRing;
+
+for (const palaceId in outerRingData) {
+
+if (ringConfig.palaces.includes(palaceId)) {
+
+const text = outerRingData[palaceId];
+
+const angle = RADIAL_LAYOUT.angles[palaceId];
+
+const angleRad = angle * (Math.PI / 180);
+
+const x = RADIAL_LAYOUT.center.x + ringConfig.radius * Math.cos(angleRad);
+
+const y = RADIAL_LAYOUT.center.y + ringConfig.radius * Math.sin(angleRad);
+
+addEncircledText(text, x, y, 0, 'eight-gates-style', 'highlight-circle');
+
+}
+
+}
+
+}
+
+
+if (centerData) {
+
+addCenterText(centerData.field1, RADIAL_LAYOUT.centerFields.field1, 'center-info-style');
+
+addCenterText(centerData.field2, RADIAL_LAYOUT.centerFields.field2, 'center-info-style');
+
+addCenterText(centerData.field3, RADIAL_LAYOUT.centerFields.field3, 'center-info-style');
+
+addCenterText(centerData.field4, RADIAL_LAYOUT.centerFields.field4, 'center-info-style');
+
+}
+
+// ▼▼▼ 【新增】繪製建除十二神 ▼▼▼
+
+if (jianChuData && jianChuData.length > 0) {
+
+addRotatedRingText(jianChuData, RADIAL_LAYOUT.xingNianRing);
+
+}
+
+
+
+for (const palaceKey in mainData) {
+
+if (!mainData[palaceKey]) continue;
+
+const centerAngle = RADIAL_LAYOUT.angles[palaceKey];
+
+const pData = mainData[palaceKey];
+
+if (centerAngle === undefined || !pData) continue;
+
+const angleLeft = centerAngle - RADIAL_LAYOUT.angleOffset;
+
+const angleCenter = centerAngle;
+
+const angleRight = centerAngle + RADIAL_LAYOUT.angleOffset;
+
+if (pData.lineLeft) {
+
+const getLineLeftClass = (starName) => {
+
+if (typeof starName === 'string' && starName.includes('五福')) {
+
+return 'wu-fu-style';
+
+}
+
+if (starName === '定目') return 'ding-mu-style';
+
+return 'main-info-style';
+
+};
+
+if (pData.lineLeft.fieldA) addRadialText(palaceKey, angleLeft, RADIAL_LAYOUT.radii.lineLeft.fieldA, pData.lineLeft.fieldA, getLineLeftClass(pData.lineLeft.fieldA));
+
+if (pData.lineLeft.fieldB) addRadialText(palaceKey, angleLeft, RADIAL_LAYOUT.radii.lineLeft.fieldB, pData.lineLeft.fieldB, getLineLeftClass(pData.lineLeft.fieldB));
+
+if (pData.lineLeft.fieldG) addRadialText(palaceKey, angleLeft, RADIAL_LAYOUT.radii.lineLeft.fieldG, pData.lineLeft.fieldG, getLineLeftClass(pData.lineLeft.fieldG));
+
+}
+
+if (pData.lineCenter) {
+
+const getLineCenterClass = (starName) => {
+
+if (['君基', '臣基', '民基'].includes(starName)) return 'ji-star-style';
+
+return 'sub-info-style';
+
+};
+
+if (pData.lineCenter.fieldC) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldC, pData.lineCenter.fieldC, getLineCenterClass(pData.lineCenter.fieldC));
+
+if (pData.lineCenter.fieldD) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldD, pData.lineCenter.fieldD, getLineCenterClass(pData.lineCenter.fieldD));
+
+if (pData.lineCenter.fieldC2) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldC2, pData.lineCenter.fieldC2, getLineCenterClass(pData.lineCenter.fieldC2));
+
+if (pData.lineCenter.fieldD2) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldD2, pData.lineCenter.fieldD2, getLineCenterClass(pData.lineCenter.fieldD2));
+
+}
+
+if (pData.lineRight) {
+
+const getLineRightClass = (starName) => {
+
+if (starName === '小遊') return 'xiaoyou-style';
+
+if (starName === '大遊') return 'dayou-style';
+
+if (['天乙', '地乙', '四神', '飛符'].includes(starName)) return 'celestial-messenger-style';
+
+if (starName === '皇恩星') return 'huang-en-style'; return 'deity-style';
+
+};
+
+if (pData.lineRight.fieldE) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldE, pData.lineRight.fieldE, getLineRightClass(pData.lineRight.fieldE));
+
+if (pData.lineRight.fieldF) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldF, pData.lineRight.fieldF, getLineRightClass(pData.lineRight.fieldF));
+
+if (pData.lineRight.fieldE2) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldE2, pData.lineRight.fieldE2, getLineRightClass(pData.lineRight.fieldE2));
+
+if (pData.lineRight.fieldF2) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldF2, pData.lineRight.fieldF2, getLineRightClass(pData.lineRight.fieldF2));
+
+}
+
+
+}
+
+// 繪製其他環圈
+
+addSingleCharRing(palacesData, RADIAL_LAYOUT.lifePalacesRing);
+
+addSdrRing(sdrData, RADIAL_LAYOUT.sdrRing);
+
+
+// ▼▼▼ 繪製月將十二神環圈 ▼▼▼
+
+if (mainData && mainData.yueJiangData) {
+
+addRotatedRingText(mainData.yueJiangData, RADIAL_LAYOUT.yueJiangRing);}
+
+
+
+// ▼▼▼ 繪製貴人十二神環圈 ▼▼▼
+
+if (mainData && mainData.guiRenData) {
+
+addRotatedRingText(mainData.guiRenData, RADIAL_LAYOUT.guiRenRing);}
+
+
+
 
 
 }
@@ -1642,7 +1725,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     if (!dailyValues) return null;
 
     const hour = birthDate.getHours();
-    const { dayJishu, dayPillar } = dailyValues;
+    const { dayJishu, dayPillar, dayBureau } = dailyValues;
 
     // 步驟 2: 計算精準時積數
     // 處理夜子時(23點)的情況：Bazi日柱會換日，所以用於計算的日積數也要跟著+1
@@ -1683,7 +1766,8 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         hourJishu: hourJishu,
         dayPillar: dayPillar,
         validatedHourPillar: validatedHourPillar,
-        calculatedBureau: calculatedBureau
+        calculatedBureau: calculatedBureau, // 這是時局數
+        dayBureau: dayBureau               
     };
     }
     // ▼▼▼ 【修正版】計算「年積數」與「月積數」 (引入冬至換年邏輯) ▼▼▼
@@ -1928,40 +2012,46 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     }
     // ▼▼▼ 計算所有年日化曜結果的函式 ▼▼▼
     function calculateAllHuaYao(yearStem, dayStem, dayBranch) {
-        const results = {};
+    const results = {};
+    
+    // 輔助函式：幫星星穿衣服
+    const wrap = (stars, label, colorClass) => {
+        if (!stars || stars.length === 0 || stars[0] === '無') return '無';
+        return stars.map(s => `<span class="hy-badge ${colorClass}">${s}<small style="font-size:10px; opacity:0.8; margin-left:2px;">${label}</small></span>`).join(' ');
+    };
 
-        // 1. 年干化曜
-        const nianGanRule = NIAN_GAN_HUA_YAO[yearStem];
-        if (nianGanRule) {
-            results.nianGan = {
-                tianYuan: nianGanRule.tianYuan.join(' '),
-                ganYuan: nianGanRule.ganYuan.join(' '),
-                fuMu: nianGanRule.fuMu.join(' ')
-            };
-        }
+    // 1. 年干化曜
+    const nianGanRule = NIAN_GAN_HUA_YAO[yearStem];
+    if (nianGanRule) {
+        results.nianGan = {
+            tianYuan: wrap(nianGanRule.tianYuan, '天元', 'hy-blue'),
+            ganYuan: wrap(nianGanRule.ganYuan, '干元', 'hy-purple'),
+            fuMu: wrap(nianGanRule.fuMu, '父母', 'hy-orange')
+        };
+    }
 
-        // 2. 日干化曜
-        const riGanRule = RI_GAN_HUA_YAO[dayStem];
-        if (riGanRule) {
-            results.riGan = {
-                luZhu: riGanRule.luZhu.join(' ') || '無',
-                pianLu: riGanRule.pianLu.join(' ') || '無',
-                guanXing: riGanRule.guanXing.join(' ') || '無',
-                qiCai: riGanRule.qiCai.join(' ') || '無',
-                jiXing: riGanRule.jiXing.join(' ') || '無',
-                guiXing: riGanRule.guiXing.join(' ') || '無'
-            };
-        }
+    // 2. 日干化曜
+    const riGanRule = RI_GAN_HUA_YAO[dayStem];
+    if (riGanRule) {
+        results.riGan = {
+            luZhu: wrap(riGanRule.luZhu, '祿主', 'hy-blue'),
+            pianLu: wrap(riGanRule.pianLu, '偏祿', 'hy-green'),
+            guanXing: wrap(riGanRule.guanXing, '官星', 'hy-blue'),
+            qiCai: wrap(riGanRule.qiCai, '妻財', 'hy-green'),
+            jiXing: wrap(riGanRule.jiXing, '忌星', 'hy-red'),
+            guiXing: wrap(riGanRule.guiXing, '鬼星', 'hy-red')
+        };
+    }
 
-        // 3. 日支化曜
-        const riZhiRule = RI_ZHI_HUA_YAO[dayBranch];
-        if (riZhiRule) {
-            results.riZhi = {
-                fuXing: riZhiRule.fuXing.join(' ')
-            };
-        }
+    // 3. 日支化曜
+    const riZhiRule = RI_ZHI_HUA_YAO[dayBranch];
+    if (riZhiRule) {
+        results.riZhi = {
+            fuXing: wrap(riZhiRule.fuXing, '福星', 'hy-orange')
+        };
+    }
 
-        return results;
+    return results;
     }
     // ▼▼▼ 查找「當前」陽九限 (專供圓盤顯示) ▼▼▼
     function findCurrentYangJiuForDisplay(fullLimitArray, currentUserAge) {
@@ -2861,6 +2951,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
 
         // 3. 【移到這裡】最後顯示局數
         outputText += `\n  局數 : ${bureauResult}`;
+
         
         if (lookupResult) {
         const zhuSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.主算] || '';
@@ -2869,6 +2960,30 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         outputText += `\n  主算 : ${lookupResult.主算} <span class="suan-attribute-style">(${zhuSuanAttr})</span>`;
         outputText += `\n  客算 : ${lookupResult.客算} <span class="suan-attribute-style">(${keSuanAttr})</span>`;
         outputText += `\n  定算 : ${lookupResult.定算} <span class="suan-attribute-style">(${dingSuanAttr})</span>`;
+
+        // 1. 先獲取化曜資料 (假設 yStem, dStem, dBranch 已經在上下文定義好)
+        // 注意：這裡要根據 chartType 決定傳入哪一年的年干
+        const yStem = yearPillar.charAt(0);
+        const dStem = dayPillar.charAt(0);
+        const dBranch = dayPillar.charAt(1);
+    
+        // 呼叫您剛剛修改過、會回傳帶標籤 HTML 的函式
+        const hy = calculateAllHuaYao(yStem, dStem, dBranch);
+
+        if (hy) {
+        outputText += `\n\n  --- 化曜資訊 ---`;
+        // 年化曜
+        outputText += `\n  年化：${hy.nianGan.tianYuan} ${hy.nianGan.ganYuan} ${hy.nianGan.fuMu}`;
+        
+        // 日化曜 (合併顯示)
+        let riHua = [
+            hy.riGan.luZhu, hy.riGan.pianLu, hy.riGan.guanXing, 
+            hy.riGan.qiCai, hy.riGan.jiXing, hy.riGan.guiXing, hy.riZhi.fuXing
+        ].filter(s => s !== '無').join(' ');
+        
+        outputText += `\n  日化：${riHua || '無'}`;
+        }
+
 
         // ▼▼▼ 【新增】呼叫地震格局計算，並插入到文字中 ▼▼▼
         outputText += calculateEarthquakePattern(lookupResult);
@@ -2900,7 +3015,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
 
         }
         document.getElementById('calculation-summary').innerHTML = outputText;
-}
+    }
 
     calculateBtn.addEventListener('click', () => {
         const year = parseInt(document.getElementById('birth-year').value, 10);
@@ -3261,6 +3376,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
             let currentMonthBranch = ""; 
             let currentYueJiang = "";
             let currentJianChu = { name: "", type: "" }; 
+            let currentDayBureau = ""; // 🌟 【補上這行】：宣告用來存日局數的變數
             
             // 呼叫函式，取得當天的節氣狀態
             let currentTerm = getActiveTermForDay(year, month, day); 
@@ -3299,6 +3415,12 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                     
                     // 計算今日的建除十二神
                     currentJianChu = calculateDailyJianChu(currentMonthBranch, currentDayBranch);
+
+                    // 🌟 抓取今日的太乙日局數
+                    const dayJishuData = calculateJishuAndBureau(new Date(year, month - 1, day, 0));
+                    if (dayJishuData && dayJishuData.dayBureau) {
+                        currentDayBureau = dayJishuData.dayBureau; // 成功取得 "陽53局"！
+                    }
                 }
 
                 // 計算月將
@@ -3370,6 +3492,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                 term: currentTerm, 
                 yueJiang: currentYueJiang, 
                 jianChu: currentJianChu,
+                dayBureau: currentDayBureau, // 🌟 【補上這行】：把剛算好的局數存進陣列裡，讓後面的 HTML 抓得到！
                 shiWuFu: wuFuText, 
                 guiDeng: dailyPatterns['貴登天門'].join('、'),
                 gangSai: dailyPatterns['罡塞鬼戶'].join('、'),
@@ -3396,7 +3519,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                     th { background-color: #f2f2f2; font-weight: bold; white-space: nowrap; }
                     tbody tr:nth-child(even) { background-color: #fafafa; }
                     .pattern-text { color: #d32f2f; font-weight: bold; }
-                    .term-text { color: #2e7d32; font-weight: bold; }
+                    .term-text { color: #1565c0; font-weight: normal; }
                     .special-text { color: #1565c0; font-weight: bold; }
                     .term-time { font-size: 12px; font-weight: normal; color: #555; display: block; margin-top: 3px; }
                     .subtitle { font-size: 12px; font-weight: normal; color: #666; display: inline-block; margin-left: 2px; }
@@ -3404,8 +3527,9 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                     .jianchu-good { color: #2e7d32; font-weight: bold; }  
                     .jianchu-bad { color: #d32f2f; font-weight: bold; }   
                     .jianchu-neutral { color: #ed6c02; font-weight: bold; } 
-                    
                     .term-highlight { background-color: #fff9c4 !important; }
+
+                    .pattern-text { color: #333333ff; font-weight: 500; }
                     
                     @media print {
                         .term-highlight { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -3421,38 +3545,67 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                     ${year}年${month}月 吉時表
                     <span style="font-size: 16px; font-weight: normal; color: #666;">（小六太乙提供）</span>
                 </h1>
+                <div style="text-align: left; font-size: 14px; font-weight: bold; margin-bottom: 10px; letter-spacing: 1px;">
+                <span style="background-color: #fff9c4; color: #333; padding: 3px 8px; border-radius: 4px; margin-right: 20px;">黃底 / 節氣轉換日</span>    
+                <span style="color: #d32f2f; margin-right: 20px;">紅字 / 諸事不宜</span>
+                <span style="color: #2e7d32;">綠字 / 五星吉日吉時</span>
+                </div>
                 <table>
                     <thead>
-                        <tr style="background-color: #e0e0e0ff; font-size: 15px;">
-                            <th colspan="3">基礎曆法</th>
-                            <th colspan="2">值日神煞</th>
-                            <th colspan="1">太乙吉方</th>
-                            <th colspan="6">特殊吉時</th>
-                            <th colspan="1">綜合</th>
-                        </tr>
-                        <tr>
-                            <th>日期</th>
-                            <th>日柱干支</th>
-                            <th>節氣</th>
-                            <th>月將</th>
-                            <th>建除十二神</th> 
-                            <th>時五福</th>
-                            <th>貴登天門</th>
-                            <th>罡塞鬼戶</th>
-                            <th>貴塞鬼戶</th>
-                            <th>天罡指巳</th>
-                            <th>德入天門<br><span class="subtitle">(日德)</span></th>
-                            <th>德入天門<br><span class="subtitle">(支德)</span></th>
-                            <th>特殊日</th>
-                        </tr>
-                    </thead>
+    <tr style="background-color: #e0e0e0ff; font-size: 15px;">
+        <th colspan="3">基礎曆法</th>
+        <th colspan="2">值日神煞</th> 
+        <th colspan="2">太乙資訊</th>
+        <th colspan="6">特殊吉時</th>
+        <th colspan="1">綜合</th>
+    </tr>
+    <tr>
+        <th>日期</th>
+        <th>日柱干支</th>
+        <th>節氣</th>
+        <th>月將</th>
+        <th>建除十二神</th>
+        <th>日局數</th> 
+        <th>時五福</th>
+        <th>貴登天門</th>
+        <th>罡塞鬼戶</th>
+        <th>貴塞鬼戶</th>
+        <th>天罡指巳</th>
+        <th>德入天門<br><span class="subtitle">(日德)</span></th>
+        <th>德入天門<br><span class="subtitle">(支德)</span></th>
+        <th>特殊日</th>
+    </tr>
+                     </thead>
                     <tbody>
         `;
 
+        // 產生表格的資料列
         results.forEach(r => {
-            // 🌟 核心修改：判斷節氣字串中是否包含 <br> 標籤
-            // 如果包含 <br>，代表有顯示第二列的時間資訊，即為節氣轉換日
             const highlightClass = r.term.includes('<br>') ? 'term-highlight' : '';
+
+            // 🌟 核心功能：計算當天「特殊吉時」中，各時辰的重複次數
+            const branchCounts = {};
+            const patterns = [r.guiDeng, r.gangSai, r.guiSai, r.tianGang, r.deRuTianMenRi, r.deRuTianMenZhi];
+            
+            // 跑迴圈統計：把有字串的地方用 '、' 拆開來計算
+            patterns.forEach(p => {
+                if (p) {
+                    p.split('、').forEach(branch => {
+                        branchCounts[branch] = (branchCounts[branch] || 0) + 1;
+                    });
+                }
+            });
+
+            // 🌟 格式化工具：負責輸出文字。如果重複 >= 2 次，就給它綠色加粗標籤！
+            const formatPattern = (p) => {
+                if (!p) return '<span style="color:#ddd;">-</span>';
+                return p.split('、').map(branch => {
+                    if (branchCounts[branch] >= 2) {
+                        return `<span style="color: #2d9332ff; font-weight: bold;">${branch}</span>`; // 紅色加粗
+                    }
+                    return branch; // 沒重複就維持預設（CSS控制的褐色）
+                }).join('、');
+            };
 
             html += `
                 <tr class="${highlightClass}">
@@ -3461,14 +3614,17 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
                     <td class="term-text">${r.term}</td>
                     <td>${r.yueJiang}</td>
                     <td class="jianchu-${r.jianChu.type}">${r.jianChu.name}</td>
+                    <td style="color: #555;">${r.dayBureau}</td>
                     <td>${r.shiWuFu}</td>
-                    <td class="pattern-text">${r.guiDeng}</td>
-                    <td class="pattern-text">${r.gangSai}</td>
-                    <td class="pattern-text">${r.guiSai}</td>
-                    <td class="pattern-text">${r.tianGang}</td>
-                    <td class="pattern-text">${r.deRuTianMenRi}</td>
-                    <td class="pattern-text">${r.deRuTianMenZhi}</td>
-                    <td class="special-text">${r.specialDay}</td>
+                    
+                    <td class="pattern-text">${formatPattern(r.guiDeng)}</td>
+                    <td class="pattern-text">${formatPattern(r.gangSai)}</td>
+                    <td class="pattern-text">${formatPattern(r.guiSai)}</td>
+                    <td class="pattern-text">${formatPattern(r.tianGang)}</td>
+                    <td class="pattern-text">${formatPattern(r.deRuTianMenRi)}</td>
+                    <td class="pattern-text">${formatPattern(r.deRuTianMenZhi)}</td>
+                    
+                    <td class="special-text">${r.specialDay || '<span style="color:#ddd;">-</span>'}</td>
                 </tr>
             `;
         });

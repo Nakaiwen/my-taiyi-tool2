@@ -1943,20 +1943,17 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     
     const dayDifference = Math.round((birthDayOnly - referenceDayOnly) / (1000 * 60 * 60 * 24));
 
-    // 1. 為了「日柱」，我們使用未經校正的、純粹的實際天數差
+    // 1. 計算日柱
     const startPillarIndex = JIAZI_CYCLE_ORDER.indexOf(referencePoint.dayPillar);
     if (startPillarIndex === -1) return null;
     const newPillarIndex = (startPillarIndex + dayDifference) % 60;
     const dayPillar = JIAZI_CYCLE_ORDER[newPillarIndex];
 
-    // 2. 為了「積數」和「局數」，我們計算需要經過立春校正的天數差
+    // 2. 計算積數 (考慮立春校正)
     let jishuDayDifference = dayDifference;
     const lichunTime = solarLunar.getTerm(year, 3);
     const lichunDate = new Date(lichunTime);
 
-    // ▼▼▼ 唯一的修改點：更精準的判斷條件 ▼▼▼
-    // 只有當生日的「年月日」和立春的「年月日」完全相同，
-    // 且出生時間早於立春時間時，才進行校正。
     if (isCrossYear &&
         birthDate.getDate() === lichunDate.getUTCDate() &&
         birthDate.getMonth() === lichunDate.getUTCMonth() &&
@@ -1966,7 +1963,9 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         console.log("偵錯：觸發「當日立春」校正，天數差減 1。");
     }
 
-    const dayJishu = referencePoint.dayJishu + jishuDayDifference;
+    // 【修改點】：這裡加上 + 1，讓顯示的日積數符合你的需求
+    const dayJishu = referencePoint.dayJishu + jishuDayDifference + 1;
+
     const startBureau = referencePoint.dayBureau;
     const newBureauNum = ((startBureau - 1 + jishuDayDifference) % 72 + 72) % 72 + 1;
     const dayBureau = `陽${newBureauNum}局`;
@@ -1977,34 +1976,39 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         dayBureau: dayBureau
     };
     }
-    // ▼▼▼ 根據生日自動計算積數與局數的整合型函式 (v2-精準版) ▼▼▼
+    // ▼▼▼ 根據生日自動計算積數與局數的整合型函式 (對接日積數 +1 版本) ▼▼▼
     function calculateJishuAndBureau(birthDate) {
     // 步驟 1: 先取得日積數的基礎資料
     const dailyValues = calculateDailyValues(birthDate);
     if (!dailyValues) return null;
 
     const hour = birthDate.getHours();
-    const { dayJishu, dayPillar } = dailyValues;
+    // 從 dailyValues 中解構出 dayJishu (此為顯示用，已 +1) 以及日局
+    const { dayJishu, dayPillar, dayBureau } = dailyValues;
 
     // 步驟 2: 計算精準時積數
-    // 處理夜子時(23點)的情況：Bazi日柱會換日，所以用於計算的日積數也要跟著+1
-    let adjustedDayJishu = dayJishu;
+    // 【核心修正】：因為傳入的 dayJishu 為了顯示需求已經先 +1
+    // 我們在計算時必須先減 1 還原基準，否則時積數會多出 12 個單位
+    let adjustedDayJishu = dayJishu - 1;
+
+    // 處理夜子時 (23點) 的情況：
+    // 在八字/奇門曆法中，23點後視為隔日的開始，所以積數要進位 +1
     if (hour === 23) {
         adjustedDayJishu += 1;
     }
 
-    // 根據您的規則，計算1-12的時辰數 (子時為1, 丑時為2...)
+    // 根據規則計算 1-12 的時辰序數 (子時為 1, 丑時為 2...)
+    // 判斷邏輯：1-22點間使用 (hour+1)/2 取整數，其餘(23與0)為子時
     const hourIndex0Based = (hour >= 1 && hour < 23) ? Math.floor((hour + 1) / 2) : 0;
-    const hourIncrement1Based = hourIndex0Based + 1; // 將 0-11 轉為 1-12
+    const hourIncrement1Based = hourIndex0Based + 1;
 
-    // 最終時積數 = (調整後的日積數 * 12) + 1至12的時辰數
+    // 最終時積數 = (還原後的日積數 * 12) + 1至12的時辰數
     const hourJishu = (adjustedDayJishu * 12) + hourIncrement1Based;
 
     // 步驟 3: 根據時積數，反推時柱以供驗證
-    // 六十甲子是1-60的循環，對應陣列索引0-59。公式為 (數字-1)%60
+    // 公式：(數字 - 1) % 60 得到六十甲子陣列索引
     const hourPillarIndex = (hourJishu - 1 + 60) % 60; 
     const validatedHourPillar = JIAZI_CYCLE_ORDER[hourPillarIndex];
-
 
     // 步驟 4: 根據時積數和冬至/夏至，決定陰陽局數
     const year = birthDate.getFullYear();
@@ -2016,16 +2020,19 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     if (birthDate.getTime() >= yearData.summer.date.getTime() && birthDate.getTime() < yearData.winter.date.getTime()) {
         bureauType = '陰';
     }
+    
+    // 時局數計算：時積數對 72 取餘數 (餘 0 則為 72 局)
     const bureauRemainder = hourJishu % 72;
     const bureauNumber = (bureauRemainder === 0) ? 72 : bureauRemainder;
     const calculatedBureau = `${bureauType}${bureauNumber}局`;
 
     return {
-        dayJishu: dayJishu,
-        hourJishu: hourJishu,
-        dayPillar: dayPillar,
-        validatedHourPillar: validatedHourPillar,
-        calculatedBureau: calculatedBureau
+        dayJishu: dayJishu,               // 這是顯示用的日積數 (含 +1)
+        hourJishu: hourJishu,             // 這是計算出的正確時積數
+        dayPillar: dayPillar,             // 日柱
+        validatedHourPillar: validatedHourPillar, // 時柱
+        calculatedBureau: calculatedBureau, // 這是「時局數」
+        dayBureau: dayBureau               // 這是從第一層帶過來的「日局數」
     };
     }
     // ▼▼▼ 計算「八門」位置的函式▼▼▼

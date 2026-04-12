@@ -1109,172 +1109,98 @@ function addCenterText(text, coords, className) {
 
 
 // --- 繪圖主函式 (最終整理版) ---
-
-function renderChart(mainData, palacesData, agesData, sdrData, centerData, outerRingData, jianChuData) {
-
-clearDynamicData();
-
-if (outerRingData) {
-
-const ringConfig = RADIAL_LAYOUT.outerRing;
-
-for (const palaceId in outerRingData) {
-
-if (ringConfig.palaces.includes(palaceId)) {
-
-const text = outerRingData[palaceId];
-
-const angle = RADIAL_LAYOUT.angles[palaceId];
-
-const angleRad = angle * (Math.PI / 180);
-
-const x = RADIAL_LAYOUT.center.x + ringConfig.radius * Math.cos(angleRad);
-
-const y = RADIAL_LAYOUT.center.y + ringConfig.radius * Math.sin(angleRad);
-
-addEncircledText(text, x, y, 0, 'eight-gates-style', 'highlight-circle');
-
-}
-
-}
-
-}
-
-
-if (centerData) {
-
-addCenterText(centerData.field1, RADIAL_LAYOUT.centerFields.field1, 'center-info-style');
-
-addCenterText(centerData.field2, RADIAL_LAYOUT.centerFields.field2, 'center-info-style');
-
-addCenterText(centerData.field3, RADIAL_LAYOUT.centerFields.field3, 'center-info-style');
-
-addCenterText(centerData.field4, RADIAL_LAYOUT.centerFields.field4, 'center-info-style');
-
-}
-
-// ▼▼▼ 【新增】繪製建除十二神 ▼▼▼
-
-if (jianChuData && jianChuData.length > 0) {
-
-addRotatedRingText(jianChuData, RADIAL_LAYOUT.xingNianRing);
-
-}
-
-
-
-for (const palaceKey in mainData) {
-
-if (!mainData[palaceKey]) continue;
-
-const centerAngle = RADIAL_LAYOUT.angles[palaceKey];
-
-const pData = mainData[palaceKey];
-
-if (centerAngle === undefined || !pData) continue;
-
-const angleLeft = centerAngle - RADIAL_LAYOUT.angleOffset;
-
-const angleCenter = centerAngle;
-
-const angleRight = centerAngle + RADIAL_LAYOUT.angleOffset;
-
-if (pData.lineLeft) {
-
-const getLineLeftClass = (starName) => {
-
-if (typeof starName === 'string' && starName.includes('五福')) {
-
-return 'wu-fu-style';
-
-}
-
-if (starName === '定目') return 'ding-mu-style';
-
-return 'main-info-style';
-
-};
-
-if (pData.lineLeft.fieldA) addRadialText(palaceKey, angleLeft, RADIAL_LAYOUT.radii.lineLeft.fieldA, pData.lineLeft.fieldA, getLineLeftClass(pData.lineLeft.fieldA));
-
-if (pData.lineLeft.fieldB) addRadialText(palaceKey, angleLeft, RADIAL_LAYOUT.radii.lineLeft.fieldB, pData.lineLeft.fieldB, getLineLeftClass(pData.lineLeft.fieldB));
-
-if (pData.lineLeft.fieldG) addRadialText(palaceKey, angleLeft, RADIAL_LAYOUT.radii.lineLeft.fieldG, pData.lineLeft.fieldG, getLineLeftClass(pData.lineLeft.fieldG));
-
-}
-
-if (pData.lineCenter) {
-
-const getLineCenterClass = (starName) => {
-
-if (['君基', '臣基', '民基'].includes(starName)) return 'ji-star-style';
-
-return 'sub-info-style';
-
-};
-
-if (pData.lineCenter.fieldC) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldC, pData.lineCenter.fieldC, getLineCenterClass(pData.lineCenter.fieldC));
-
-if (pData.lineCenter.fieldD) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldD, pData.lineCenter.fieldD, getLineCenterClass(pData.lineCenter.fieldD));
-
-if (pData.lineCenter.fieldC2) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldC2, pData.lineCenter.fieldC2, getLineCenterClass(pData.lineCenter.fieldC2));
-
-if (pData.lineCenter.fieldD2) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldD2, pData.lineCenter.fieldD2, getLineCenterClass(pData.lineCenter.fieldD2));
-
-}
-
-if (pData.lineRight) {
-
-const getLineRightClass = (starName) => {
-
-if (starName === '小遊') return 'xiaoyou-style';
-
-if (starName === '大遊') return 'dayou-style';
-
-if (['天乙', '地乙', '四神', '飛符'].includes(starName)) return 'celestial-messenger-style';
-
-if (starName === '皇恩星') return 'huang-en-style'; return 'deity-style';
-
-};
-
-if (pData.lineRight.fieldE) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldE, pData.lineRight.fieldE, getLineRightClass(pData.lineRight.fieldE));
-
-if (pData.lineRight.fieldF) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldF, pData.lineRight.fieldF, getLineRightClass(pData.lineRight.fieldF));
-
-if (pData.lineRight.fieldE2) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldE2, pData.lineRight.fieldE2, getLineRightClass(pData.lineRight.fieldE2));
-
-if (pData.lineRight.fieldF2) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldF2, pData.lineRight.fieldF2, getLineRightClass(pData.lineRight.fieldF2));
-
-}
-
-
-}
-
-// 繪製其他環圈
-
-addSingleCharRing(palacesData, RADIAL_LAYOUT.lifePalacesRing);
-
-addSdrRing(sdrData, RADIAL_LAYOUT.sdrRing);
-
-
-// ▼▼▼ 繪製月將十二神環圈 ▼▼▼
-
-if (mainData && mainData.yueJiangData) {
-
-addRotatedRingText(mainData.yueJiangData, RADIAL_LAYOUT.yueJiangRing);}
-
-
-
-// ▼▼▼ 繪製貴人十二神環圈 ▼▼▼
-
-if (mainData && mainData.guiRenData) {
-
-addRotatedRingText(mainData.guiRenData, RADIAL_LAYOUT.guiRenRing);}
-
-
-
-
-
+function renderChart(mainData, palacesData, agesData, sdrData, centerData, outerRingData, jianChuData) {    
+    clearDynamicData();
+
+    // 1. 繪製外環 (八門/九宮)
+    if (outerRingData) {
+        const ringConfig = RADIAL_LAYOUT.outerRing;
+        for (const palaceId in outerRingData) {
+            if (ringConfig.palaces.includes(palaceId)) {
+                const text = outerRingData[palaceId];
+                const angle = RADIAL_LAYOUT.angles[palaceId];
+                const angleRad = angle * (Math.PI / 180);
+                const x = RADIAL_LAYOUT.center.x + ringConfig.radius * Math.cos(angleRad);
+                const y = RADIAL_LAYOUT.center.y + ringConfig.radius * Math.sin(angleRad);
+                addEncircledText(text, x, y, 0, 'eight-gates-style', 'highlight-circle');
+            }
+        }
+    }
+    
+    // 2. 繪製中心資訊
+    if (centerData) {
+        addCenterText(centerData.field1, RADIAL_LAYOUT.centerFields.field1, 'center-info-style');
+        addCenterText(centerData.field2, RADIAL_LAYOUT.centerFields.field2, 'center-info-style');
+        addCenterText(centerData.field3, RADIAL_LAYOUT.centerFields.field3, 'center-info-style');
+        addCenterText(centerData.field4, RADIAL_LAYOUT.centerFields.field4, 'center-info-style');
+    }
+
+    // 3. 繪製建除十二神
+    if (jianChuData && jianChuData.length > 0) {
+        addRotatedRingText(jianChuData, RADIAL_LAYOUT.xingNianRing);
+    }
+
+    // 4. 繪製十六宮位星曜
+    for (const palaceKey in mainData) {
+        if (!mainData[palaceKey]) continue;
+        const centerAngle = RADIAL_LAYOUT.angles[palaceKey];
+        const pData = mainData[palaceKey];
+        if (centerAngle === undefined || !pData) continue;
+
+        const angleLeft = centerAngle - RADIAL_LAYOUT.angleOffset;
+        const angleCenter = centerAngle;
+        const angleRight = centerAngle + RADIAL_LAYOUT.angleOffset;
+
+        // --- 左側線 (主星、五福、定目) ---
+        if (pData.lineLeft) {
+            const getLineLeftClass = (starName) => {
+                if (typeof starName === 'string' && starName.includes('五福')) return 'wu-fu-style';
+                if (starName === '定目') return 'ding-mu-style';
+                return 'main-info-style';
+            };
+            if (pData.lineLeft.fieldA) addRadialText(palaceKey, angleLeft, RADIAL_LAYOUT.radii.lineLeft.fieldA, pData.lineLeft.fieldA, getLineLeftClass(pData.lineLeft.fieldA));
+            if (pData.lineLeft.fieldB) addRadialText(palaceKey, angleLeft, RADIAL_LAYOUT.radii.lineLeft.fieldB, pData.lineLeft.fieldB, getLineLeftClass(pData.lineLeft.fieldB));
+            if (pData.lineLeft.fieldG) addRadialText(palaceKey, angleLeft, RADIAL_LAYOUT.radii.lineLeft.fieldG, pData.lineLeft.fieldG, getLineLeftClass(pData.lineLeft.fieldG));
+        }
+
+        // --- 中間線 (基星類) ---
+        if (pData.lineCenter) {
+            const getLineCenterClass = (starName) => {
+                if (['君基', '臣基', '民基'].includes(starName)) return 'ji-star-style';
+                return 'sub-info-style';
+            };
+            if (pData.lineCenter.fieldC) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldC, pData.lineCenter.fieldC, getLineCenterClass(pData.lineCenter.fieldC));
+            if (pData.lineCenter.fieldD) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldD, pData.lineCenter.fieldD, getLineCenterClass(pData.lineCenter.fieldD));
+            if (pData.lineCenter.fieldC2) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldC2, pData.lineCenter.fieldC2, getLineCenterClass(pData.lineCenter.fieldC2));
+            if (pData.lineCenter.fieldD2) addRadialText(palaceKey, angleCenter, RADIAL_LAYOUT.radii.lineCenter.fieldD2, pData.lineCenter.fieldD2, getLineCenterClass(pData.lineCenter.fieldD2));
+        }
+
+        // --- 右側線 (神煞類) ---
+        if (pData.lineRight) {
+            const getLineRightClass = (starName) => {
+                if (starName === '小遊') return 'xiaoyou-style';
+                if (starName === '大遊') return 'dayou-style';
+                if (['天乙', '地乙', '四神', '飛符'].includes(starName)) return 'celestial-messenger-style';
+                if (starName === '皇恩星') return 'huang-en-style'; 
+                return 'deity-style';
+            };
+            if (pData.lineRight.fieldE) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldE, pData.lineRight.fieldE, getLineRightClass(pData.lineRight.fieldE));
+            if (pData.lineRight.fieldF) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldF, pData.lineRight.fieldF, getLineRightClass(pData.lineRight.fieldF));
+            if (pData.lineRight.fieldE2) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldE2, pData.lineRight.fieldE2, getLineRightClass(pData.lineRight.fieldE2));
+            if (pData.lineRight.fieldF2) addRadialText(palaceKey, angleRight, RADIAL_LAYOUT.radii.lineRight.fieldF2, pData.lineRight.fieldF2, getLineRightClass(pData.lineRight.fieldF2));
+        }
+    }
+
+    // 5. 繪製其他環圈 (命宮、月將、貴人等)
+    addSingleCharRing(palacesData, RADIAL_LAYOUT.lifePalacesRing);
+    addSdrRing(sdrData, RADIAL_LAYOUT.sdrRing);
+    
+    if (mainData && mainData.yueJiangData) {
+        addRotatedRingText(mainData.yueJiangData, RADIAL_LAYOUT.yueJiangRing);
+    }
+    if (mainData && mainData.guiRenData) {
+        addRotatedRingText(mainData.guiRenData, RADIAL_LAYOUT.guiRenRing);
+    }
 }
 
 
@@ -2807,153 +2733,110 @@ addRotatedRingText(mainData.guiRenData, RADIAL_LAYOUT.guiRenRing);}
     }
 
     function runCalculation(dataForCalculation, hour, chartType) {
-        const { bureauResult, lookupResult, hourJishu, wuFuResults, yearPillar, monthPillar, dayPillar, hourPillar } = dataForCalculation;
-    
-        // --- 1. 決定要顯示哪些五福星 ---
+    const { bureauResult, lookupResult, hourJishu, wuFuResults, yearPillar, monthPillar, dayPillar, hourPillar } = dataForCalculation;
+
+    // --- 1. 決定要顯示哪些五福星 ---
     const starsToDisplay = [];
     if (wuFuResults.year) starsToDisplay.push(wuFuResults.year);
-    if (chartType === 'month' || chartType === 'day' || chartType === 'hour') {
-        if (wuFuResults.month) starsToDisplay.push(wuFuResults.month);
-    }
-    if (chartType === 'day' || chartType === 'hour') {
-        if (wuFuResults.day) starsToDisplay.push(wuFuResults.day);
-    }
-    if (chartType === 'hour') {
-        if (wuFuResults.hour) starsToDisplay.push(wuFuResults.hour);
-    }
+    if (['month', 'day', 'hour'].includes(chartType) && wuFuResults.month) starsToDisplay.push(wuFuResults.month);
+    if (['day', 'hour'].includes(chartType) && wuFuResults.day) starsToDisplay.push(wuFuResults.day);
+    if (chartType === 'hour' && wuFuResults.hour) starsToDisplay.push(wuFuResults.hour);
 
-    // --- 2. 【核心修正】計算太歲、合神、計神 (依據盤面類型選擇對應的地支) ---
+    // --- 2. 決定核心計算地支與干支 ---
     let targetDeityBranch;
     switch (chartType) {
-        case 'year':
-            targetDeityBranch = yearPillar.charAt(1); // 年盤用年支
-            break;
-        case 'month':
-            targetDeityBranch = monthPillar.charAt(1); // 月盤用月支
-            break;
-        case 'day':
-            targetDeityBranch = dayPillar.charAt(1);   // 日盤用日支
-            break;
-        default: // 'hour'
-            targetDeityBranch = hourPillar.charAt(1);  // 時盤用時支
-            break;
+        case 'year':  targetDeityBranch = yearPillar.charAt(1); break;
+        case 'month': targetDeityBranch = monthPillar.charAt(1); break;
+        case 'day':   targetDeityBranch = dayPillar.charAt(1); break;
+        default:      targetDeityBranch = hourPillar.charAt(1); // 'hour'
     }
 
-        // --- 2. 計算其他所有星曜 ---
-        const deitiesResult = calculateDeities(bureauResult, targetDeityBranch);
-        const suanStarsResult = calculateSuanStars(lookupResult);
-        const xiaoYouResult = calculateXiaoYou(hourJishu);
-        const junJiResult = calculateJunJi(hourJishu);
-        const chenJiResult = calculateChenJi(hourJishu);
-        const minJiResult = calculateMinJi(hourJishu);
-        const tianYiResult = calculateTianYi(hourJishu);
-        const diYiResult = calculateDiYi(hourJishu);
-        const siShenResult = calculateSiShen(hourJishu);
-        const feiFuResult = calculateFeiFu(hourJishu);
-        const daYouResult = calculateDaYou(hourJishu);
-        // ▼▼▼ 【核心修正點】一次取得 繪圖資料(yueJiangData) 和 名稱(currentYueJiangName) ▼▼▼
-        const yueJiangResult = calculateYueJiang(solarLunar.solar2lunar(parseInt(dataForCalculation.birthDate.split('/')[0]), parseInt(dataForCalculation.birthDate.split('/')[1]), parseInt(dataForCalculation.birthDate.split('/')[2]), hour), hourPillar.charAt(1));
-        const yueJiangData = yueJiangResult.ringData;       // 給繪圖用
-        const currentYueJiangName = yueJiangResult.name;    // 給左側顯示用
-        
-        // 計算貴人資料 (用於繪圖) - 注意：貴人依然主要是看日干與時支(或月將)，這裡維持原邏輯，若貴人也有盤面規則需另外告知
-        const guiRenData = calculateGuiRen(dayPillar.charAt(0), hourPillar.charAt(1), yueJiangData);
-        
-        // 【新增】計算吉格（傳入日支判斷支德）
-        const luckyPatterns = calculateLuckyPatterns(yueJiangData, guiRenData, dayPillar.charAt(0), dayPillar.charAt(1));
-        
-        // 計算建除十二神 (維持使用時支，或是依需求修改)
-        const jianChuData = calculateJianChu(hourPillar.charAt(1));
-        
-        const newLifePalacesData = dataForCalculation.arrangedLifePalaces;
-        const newSdrData = calculateSdrPalaces(dataForCalculation, dataForCalculation.direction);
-        const newAgeLimitData = [];
+    const yStem = yearPillar.charAt(0);
+    const dStem = dayPillar.charAt(0);
+    const dBranch = dayPillar.charAt(1);
+
+    // --- 3. 核心星曜與曆法計算 ---
+    const deitiesResult = calculateDeities(bureauResult, targetDeityBranch);
+    const suanStarsResult = calculateSuanStars(lookupResult);
+    const xiaoYouResult = calculateXiaoYou(hourJishu);
+    const junJiResult = calculateJunJi(hourJishu);
+    const chenJiResult = calculateChenJi(hourJishu);
+    const minJiResult = calculateMinJi(hourJishu);
+    const tianYiResult = calculateTianYi(hourJishu);
+    const diYiResult = calculateDiYi(hourJishu);
+    const siShenResult = calculateSiShen(hourJishu);
+    const feiFuResult = calculateFeiFu(hourJishu);
+    const daYouResult = calculateDaYou(hourJishu);
+
+    // 月將與貴人
+    const yueJiangResult = calculateYueJiang(solarLunar.solar2lunar(
+        parseInt(dataForCalculation.birthDate.split('/')[0]), 
+        parseInt(dataForCalculation.birthDate.split('/')[1]), 
+        parseInt(dataForCalculation.birthDate.split('/')[2]), hour), hourPillar.charAt(1));
+    const yueJiangData = yueJiangResult.ringData;
+    const currentYueJiangName = yueJiangResult.name;
+    const guiRenData = calculateGuiRen(dStem, hourPillar.charAt(1), yueJiangData);
     
-        let outerRingData;
-        if (chartType === 'hour') {
-        // 如果是「時盤」，使用時積數規則
+    // 吉格與建除
+    const luckyPatterns = calculateLuckyPatterns(yueJiangData, guiRenData, dStem, dBranch);
+    const jianChuData = calculateJianChu(hourPillar.charAt(1));
+
+    // --- 4. 準備繪圖資料 ---
+    let outerRingData;
+    if (chartType === 'hour') {
         outerRingData = calculateOuterRingData(bureauResult, hourJishu, lookupResult);
-        } else {
-        // 如果是「年盤」、「月盤」或「日盤」，使用我們新增的規則
+    } else {
         const taiYiPalace = lookupResult ? lookupResult.太乙 : null;
         outerRingData = calculateYmdOuterRingData(hourJishu, taiYiPalace);
-        }
-        
-        const { chartData: newMainChartData, centerStars: wuFuCenterStars } = generateMainChartData(
-            lookupResult, deitiesResult, dataForCalculation.suanStarsResult,
-            dataForCalculation.shiWuFuResult, dataForCalculation.xiaoYouResult,
-            dataForCalculation.junJiResult, dataForCalculation.chenJiResult, dataForCalculation.minJiResult,
-            dataForCalculation.tianYiResult, dataForCalculation.diYiResult, dataForCalculation.siShenResult, dataForCalculation.feiFuResult,
-            dataForCalculation.daYouResult, yueJiangData, guiRenData, starsToDisplay
-        );
+    }
 
-        // 補上 mingWuFuResult 的計算 (如果您原本有 calculateMingWuFu 的話，這裡應該要補上，以免報錯)
-    // 假設您在 SECTION 3 有 calculateMingWuFu，這裡加一行：
-        const mingWuFuResult = (typeof calculateMingWuFu === 'function') ? calculateMingWuFu(hourJishu) : null; 
-    // 重新呼叫 generateMainChartData (因為上面那次呼叫 mingWuFuResult 可能是 undefined)
-        const mainChartDataResult = generateMainChartData(
+    // 計算明五福並生成主盤資料 (合併為一次呼叫)
+    const mingWuFuResult = (typeof calculateMingWuFu === 'function') ? calculateMingWuFu(hourJishu) : null; 
+    const mainChartDataResult = generateMainChartData(
         lookupResult, deitiesResult, suanStarsResult,
         dataForCalculation.shiWuFuResult, xiaoYouResult,
         junJiResult, chenJiResult, minJiResult,
         tianYiResult, diYiResult, siShenResult, feiFuResult,
         daYouResult, yueJiangData, guiRenData, starsToDisplay, mingWuFuResult
-        );
-        const newMainChartDataReal = mainChartDataResult.chartData;
-        const wuFuCenterStarsReal = mainChartDataResult.centerStars;
+    );
+    const newMainChartData = mainChartDataResult.chartData;
+    const wuFuCenterStars = mainChartDataResult.centerStars;
 
-        const centerData = {
-        field1: suanStarsResult.centerStars[0] || '',
-        field2: suanStarsResult.centerStars[1] || '',
-        field3: suanStarsResult.centerStars[2] || '',
-        field4: suanStarsResult.centerStars[3] || ''
-        };
-    
-        wuFuCenterStarsReal.forEach(starText => {
-        if (!centerData.field1) centerData.field1 = starText;
-        else if (!centerData.field2) centerData.field2 = starText;
-        else if (!centerData.field3) centerData.field3 = starText;
-        else if (!centerData.field4) centerData.field4 = starText;
-        });
+    // 中心四個欄位
+    const centerData = { field1: '', field2: '', field3: '', field4: '' };
+    const baseCenterStars = suanStarsResult.centerStars || [];
+    baseCenterStars.forEach((s, i) => { if(i < 4) centerData[`field${i+1}`] = s; });
+    wuFuCenterStars.forEach(starText => {
+        for(let i=1; i<=4; i++) { if(!centerData[`field${i}`]) { centerData[`field${i}`] = starText; break; } }
+    });
 
-        renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData, jianChuData); 
+    // 🌟 核心修正：呼叫 renderChart 時不再傳入 huaYaoMap，回歸純文字圓盤
+    renderChart(newMainChartData, dataForCalculation.arrangedLifePalaces, [], calculateSdrPalaces(dataForCalculation, dataForCalculation.direction), centerData, outerRingData, jianChuData); 
 
-        // --- 更新左側摘要文字 (順序已調整) ---
-    
-        // 1. 先顯示月將
-        let outputText = `\n  月將 : <span class="yue-jiang-style">${currentYueJiangName}</span>`;
+    // --- 5. 更新左側摘要文字 ---
+    let outputText = `\n  月將 : <span class="yue-jiang-style">${currentYueJiangName}</span>`;
 
-        // 2. 再顯示吉格
-        if (luckyPatterns.length > 0) {
+    if (luckyPatterns.length > 0) {
         luckyPatterns.forEach(pattern => {
             outputText += `\n  時辰吉格 : <span class="lucky-pattern-style">${pattern}</span>`;
         });
-        }
+    }
 
-        // 3. 【修改】顯示並繪製日柱空亡
-        // 我們先手動計算空亡的地支，因為要拿來畫圖
-        const dayPillarIndex = JIAZI_CYCLE_ORDER.indexOf(dayPillar);
-        if (dayPillarIndex !== -1) {
+    // 空亡計算
+    const dayPillarIndex = JIAZI_CYCLE_ORDER.indexOf(dayPillar);
+    if (dayPillarIndex !== -1) {
         const xunIndex = Math.floor(dayPillarIndex / 10);
-        const kongWangData = KONG_WANG_DATA[xunIndex]; // 取得 {name: '甲子旬', void: '戌亥'}
-        
+        const kongWangData = KONG_WANG_DATA[xunIndex];
         if (kongWangData) {
-            // 1. 加入左側文字
             outputText += `\n  ${kongWangData.name}：空亡在<span class="kong-wang-style">${kongWangData.void}</span>`;
-            
-            // 2. 繪製扇形背景 (將 '戌亥' 拆解為 '戌' 和 '亥')
-            const branch1 = kongWangData.void.charAt(0);
-            const branch2 = kongWangData.void.charAt(1);
-            
-            drawKongWangSector(branch1);
-            drawKongWangSector(branch2);
+            drawKongWangSector(kongWangData.void.charAt(0));
+            drawKongWangSector(kongWangData.void.charAt(1));
         }
-        }
+    }
 
-        // 3. 【移到這裡】最後顯示局數
-        outputText += `\n  局數 : ${bureauResult}`;
-
-        
-        if (lookupResult) {
+    outputText += `\n  局數 : ${bureauResult}`;
+    
+    if (lookupResult) {
         const zhuSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.主算] || '';
         const keSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.客算] || '';
         const dingSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.定算] || '';
@@ -2961,60 +2844,38 @@ addRotatedRingText(mainData.guiRenData, RADIAL_LAYOUT.guiRenRing);}
         outputText += `\n  客算 : ${lookupResult.客算} <span class="suan-attribute-style">(${keSuanAttr})</span>`;
         outputText += `\n  定算 : ${lookupResult.定算} <span class="suan-attribute-style">(${dingSuanAttr})</span>`;
 
-        // 1. 先獲取化曜資料 (假設 yStem, dStem, dBranch 已經在上下文定義好)
-        // 注意：這裡要根據 chartType 決定傳入哪一年的年干
-        const yStem = yearPillar.charAt(0);
-        const dStem = dayPillar.charAt(0);
-        const dBranch = dayPillar.charAt(1);
-    
-        // 呼叫您剛剛修改過、會回傳帶標籤 HTML 的函式
+        // 🌟 保留左側資訊欄的化曜資訊
         const hy = calculateAllHuaYao(yStem, dStem, dBranch);
-
         if (hy) {
-        outputText += `\n\n  --- 化曜資訊 ---`;
-        // 年化曜
-        outputText += `\n  年化：${hy.nianGan.tianYuan} ${hy.nianGan.ganYuan} ${hy.nianGan.fuMu}`;
-        
-        // 日化曜 (合併顯示)
-        let riHua = [
-            hy.riGan.luZhu, hy.riGan.pianLu, hy.riGan.guanXing, 
-            hy.riGan.qiCai, hy.riGan.jiXing, hy.riGan.guiXing, hy.riZhi.fuXing
-        ].filter(s => s !== '無').join(' ');
-        
-        outputText += `\n  日化：${riHua || '無'}`;
+            outputText += `\n\n  --- 化曜資訊 ---`;
+            outputText += `\n  年化：${hy.nianGan.tianYuan} ${hy.nianGan.ganYuan} ${hy.nianGan.fuMu}`;
+            let riHua = [
+                hy.riGan.luZhu, hy.riGan.pianLu, hy.riGan.guanXing, 
+                hy.riGan.qiCai, hy.riGan.jiXing, hy.riGan.guiXing, hy.riZhi.fuXing
+            ].filter(s => s !== '無').join(' ');
+            outputText += `\n  日化：${riHua || '無'}`;
         }
 
-
-        // ▼▼▼ 【新增】呼叫地震格局計算，並插入到文字中 ▼▼▼
         outputText += calculateEarthquakePattern(lookupResult);
 
-        // ▼▼▼ 【核心修正點】使用新的排版邏輯來組合格局文字 ▼▼▼
         const patterns = calculatePatterns(lookupResult, suanStarsResult);
         if (patterns.length > 0) {
-        let patternStrings = [];
-        let lastPalace = '';
-        patterns.forEach(p => {
-            if (p.palace === lastPalace) {
-                // 如果宮位和上一個相同，就省略宮位名稱
-                patternStrings.push(`（${p.text}）`);
-            } else {
-                // 如果是新的宮位，就顯示宮位名稱
-                patternStrings.push(`${p.palace}（${p.text}）`);
-                lastPalace = p.palace; // 記住這個宮位
-            }
-        });
-        outputText += `\n\n  格局 : ${patternStrings.join('、 ')}`;
+            let patternStrings = [];
+            let lastPalace = '';
+            patterns.forEach(p => {
+                if (p.palace === lastPalace) { patternStrings.push(`（${p.text}）`); } 
+                else { patternStrings.push(`${p.palace}（${p.text}）`); lastPalace = p.palace; }
+            });
+            outputText += `\n\n  格局 : ${patternStrings.join('、 ')}`;
         } else {
-        outputText += `\n\n  格局 : 無`;
+            outputText += `\n\n  格局 : 無`;
         }
-        // ▼▼▼ 呼叫太乙陰陽宮位預測 ▼▼▼
+
         outputText += calculateTaiYiPalacePattern(lookupResult);
-
-        // ▼▼▼ 【新增】呼叫歲乙相格計算 (顯示在下一行) ▼▼▼
         outputText += calculateSuiYiXiangGe(lookupResult, deitiesResult);
+    }
 
-        }
-        document.getElementById('calculation-summary').innerHTML = outputText;
+    document.getElementById('calculation-summary').innerHTML = outputText;
     }
 
     calculateBtn.addEventListener('click', () => {

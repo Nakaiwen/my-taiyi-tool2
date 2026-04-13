@@ -28,12 +28,12 @@ body {
     align-items: flex-start; /* 讓兩欄從頂部開始對齊 */
     gap: 20px;               /* 在兩欄之間增加 20px 的間距 */
     width: 100%;
-    max-width: 1200px;       /* 設定整個應用的最大寬度 */
+    max-width: 1100px;       /* 設定整個應用的最大寬度 */
     margin: 0 auto;          /* 讓主容器在頁面中水平置中 */
 }
 
 .controls-column {
-    flex: 0 0 330px;  /* 左側控制欄固定寬度 */
+    flex: 0 0 300px;  /* 左側控制欄固定寬度 */
 }
 
 .plate-column {

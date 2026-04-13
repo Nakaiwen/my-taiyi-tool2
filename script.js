@@ -4872,7 +4872,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     }
 
 
-
     // ▼▼▼ 更新能量趨勢圖的專屬函式 (最終穩定版) ▼▼▼
     let currentChartData = {}; 
     function updateChart() {

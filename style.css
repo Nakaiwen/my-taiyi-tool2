@@ -405,19 +405,20 @@
 
 /* --- 限制圓盤SVG的縮放範圍 --- */
 #taiyi-plate {
-    width: 100%;        /* 基礎寬度為100%，以適應容器 */
-    max-width: 1200px;   /* 限制最大寬度不超過 750px */
-    min-width: 500px;   /* 限制最小寬度不小於 450px */
+    width: 100%;        /* 基礎寬度為100%，會試著填滿右邊的 .plate-column */
+    max-width: 1100px;   /* 🌟 控制 SVG 本身的最大寬度 (調大這個數字，盤面就會跟著變大) */
+    min-width: 500px;   /* 限制最小寬度不小於 500px */
     height: auto;       /* 高度自動，以保持長寬比 */
+    display: block;     /* 避免圖片下方產生多餘的空白 */
 }
 
 /* --- 全新版面配置：左右兩欄式結構 --- */
 .main-container {
     display: flex;           /* 啟用 Flexbox，讓內部元素(欄位)水平排列 */
     align-items: flex-start; /* 讓兩欄從頂部開始對齊 */
-    gap: 20px;               /* 在兩欄之間增加 30px 的間距 */
+    gap: 20px;               /* 在兩欄之間增加 20px 的間距 */
     width: 100%;
-    max-width: 1500px;       /* 設定整個應用的最大寬度 */
+    max-width: 1100px;       /* 🌟 控制整個網頁的最大寬度 (改大這裡) */
     margin: 0 auto;          /* 讓主容器在頁面中水平置中 */
 }
 
@@ -748,12 +749,6 @@
     font-weight: bold;
 }
 
-/* 針對外層容器的保險設定 */
-.main-container, .plate {
-    width: 100%;
-    max-width: 1000px;
-    margin: 0 auto;
-}
 
 #ai-summary-output h6,
 #n8n-ai-output h6 {

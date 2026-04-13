@@ -45,10 +45,11 @@
                             <label for="target-year">分析年份：</label>
                             <input type="number" id="target-year" min="1930" max="2050" style="width: 80px; padding: 6px; font-size: 12px; border-radius: 4px; border: 1px solid #ccc;">
                 </div>
-                <div class="input-row">
-                <button id="switch-to-national-btn" style="margin-left: 10px;">切換太乙國運</button>
-					      <button id="download-pdf-btn" style="margin-left: 20px;" disabled>下載PDF報告</button>
-                <button id="calculate-btn">更新盤面資訊</button>
+                <div id="action-buttons-container">
+                <button id="switch-to-national-btn" class="action-btn">切換太乙國運</button>
+                <button id="calculate-btn" class="action-btn calculate-highlight">更新盤面資訊</button>
+                <button id="download-pdf-btn" class="action-btn" disabled>輸出PDF報告</button>
+                <div class="spacer"></div>
                 </div>
                 <div id="output-area">
                   <div class="output-row" id="jishu-display"> <label>日積數：</label>

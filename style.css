@@ -30,7 +30,6 @@
     /* ▼▼▼ 動畫設定 ▼▼▼ */
     opacity: 0; /* 預設為隱藏 (透明) */
     transition: opacity 1.0s ease-out; /* 設定 1秒 的淡入時間，ease-out 讓結尾更柔和 */
-    /* ▲▲▲ 動畫設定 ▲▲▲ */
     }
 
     /* 新增：當星星要顯示時，加上這個 class */
@@ -270,33 +269,58 @@
 }
 
 
-/* 「更新盤面資訊」按鈕的專屬醒目樣式 */
-#calculate-btn {
-    background-color: #dc6b02; /* 主要顏色 (範例為亮藍色) */
-    border-color: #007bff;
-    color: white;
-    font-weight: bold;
+/* --- ▼▼▼ 按鈕網格排版 (2x2) ▼▼▼ --- */
+#action-buttons-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 兩欄等寬 */
+    gap: 8px;                       /* 按鈕之間的間距 */
+    margin-top: 15px;
+    margin-bottom: 15px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-#calculate-btn:hover {
-    background-color: #be3000; /* 滑鼠移上去時的深色效果 */
-    border-color: #0056b3;
-}
-
-/* 6. 控制「儲存PDF」「切換太乙國運」按鈕的樣式 */
-.input-row button {
+.action-btn {
+    width: 100%;
+    padding: 5px 0;                 /* 稍微增加高度，讓點擊感更好 */
+    font-size: 14px; 
+    font-family: '微軟正黑體', sans-serif; 
+    font-weight: normal; 
+    box-sizing: border-box;
     cursor: pointer;
-    background-color: #0092db;
+    background-color: #0092db;      /* 預設藍色 */
     color: white;
-    border: none; /* 移除非必要的邊框顏色設定 */
+    border: none;
     border-radius: 4px;
-    margin-right: 15px; /* 【新增】讓按鈕自動推到最右邊，更美觀 */
-    padding: 6px 12px;
-    white-space: nowrap; /* <-- 新增這一行，禁止文字換行 */
+    text-align: center;
+    white-space: nowrap; 
+    transition: background-color 0.2s, opacity 0.2s; 
 }
 
-.input-row button:hover {
-    background-color: #0056b3;
+/* 狀態：懸停時變深色 */
+.action-btn:hover:not(:disabled) {
+    background-color: #0056b3; 
+}
+
+/* 狀態：禁用時（PDF還沒產生前）的樣子 */
+.action-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* 「更新盤面資訊」的醒目顏色（橘色系） */
+.calculate-highlight {
+    background-color: #dc6b02;
+}
+
+.calculate-highlight:hover:not(:disabled) {
+    background-color: #b34a00;
+}
+
+/* 空位佔位符，不需要樣式，僅維持網格結構 */
+.spacer {
+    pointer-events: none;
 }
 
 /* ====================================================== */
@@ -382,7 +406,7 @@
 /* --- 限制圓盤SVG的縮放範圍 --- */
 #taiyi-plate {
     width: 100%;        /* 基礎寬度為100%，以適應容器 */
-    max-width: 1000px;   /* 限制最大寬度不超過 750px */
+    max-width: 1200px;   /* 限制最大寬度不超過 750px */
     min-width: 500px;   /* 限制最小寬度不小於 450px */
     height: auto;       /* 高度自動，以保持長寬比 */
 }
@@ -393,7 +417,7 @@
     align-items: flex-start; /* 讓兩欄從頂部開始對齊 */
     gap: 20px;               /* 在兩欄之間增加 30px 的間距 */
     width: 100%;
-    max-width: 1200px;       /* 設定整個應用的最大寬度 */
+    max-width: 1500px;       /* 設定整個應用的最大寬度 */
     margin: 0 auto;          /* 讓主容器在頁面中水平置中 */
 }
 

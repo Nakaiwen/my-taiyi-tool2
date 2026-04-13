@@ -957,6 +957,9 @@ document.addEventListener('DOMContentLoaded', () => {
         '午': 0, '未': -1, '申': 0, '酉': 0, '戌': 0, '亥': 1 
     };
 
+    // ▼▼▼ 補上這行：太乙國運基準數 ▼▼▼
+    const TAI_YI_BASE_JISHU = 10153917;
+
 
 // =================================================================
 //  SECTION 2: SVG 圖盤繪製邏輯 (最終整理版)
@@ -4188,6 +4191,163 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     }
     }
 
+    // ▼▼▼ 【修正版】計算「年積數」與「月積數」 (引入冬至換年邏輯) ▼▼▼
+    function calculateNationalJishu(year, month, day, hour) {
+        // 檢查收到的參數是否有效
+        if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour)) {
+            return {
+                annualJishu: 0, annualBureau: '', annualGanZhi: '',
+                monthlyJishu: 0, monthlyBureau: '', monthlyGanZhi: ''
+            };
+        }
+
+        // --- 【新增】冬至換年邏輯 ---
+        // 1. 取得當年的冬至時間 (termIndex 24 代表冬至)
+        // solarLunar.getTerm 回傳的是該節氣的 timestamp
+        const dongZhiTime = solarLunar.getTerm(year, 24);
+        const currentDate = new Date(year, month - 1, day, hour);
+        
+        // 2. 判斷是否已過冬至
+        // 如果當前時間 >= 冬至，太乙年視為下一年 (year + 1)
+        // 否則維持當年 (year)
+        let taiYiYear = year;
+        if (currentDate.getTime() >= dongZhiTime) {
+            taiYiYear = year + 1;
+        }
+
+        // 3. 計算年積數 (使用 taiYiYear)
+        const annualJishu = TAI_YI_BASE_JISHU + taiYiYear;
+        const annualBureauRem = annualJishu % 72;
+        const annualBureauNum = (annualBureauRem === 0) ? 72 : annualBureauRem;
+        const annualBureau = `陽${annualBureauNum}局`;
+        const annualGanZhiRem = annualJishu % 60;
+        const annualGanZhiIndex = (annualGanZhiRem === 0) ? 59 : annualGanZhiRem - 1;
+        const annualGanZhi = JIAZI_CYCLE_ORDER[annualGanZhiIndex];
+
+        // 4. 精準月積數計算 (使用 taiYiYear 為基準)
+        const lunarDate = solarLunar.solar2lunar(year, month, day, hour);
+        const monthBranch = lunarDate.getMonthInGanZhi().charAt(1);
+        const monthBranchIndex = EARTHLY_BRANCHES.indexOf(monthBranch);
+        
+        // 計算基礎月積數
+        const baseHaiJishu = (TAI_YI_BASE_JISHU + taiYiYear) * 12;
+        const offset = monthBranchIndex - 11; // 子=-11, 亥=0
+        let monthlyJishu = baseHaiJishu + offset;
+
+        // 【邏輯修正】處理子月和丑月的跨年銜接
+        // 情況 A (冬至前): taiYiYear 尚未+1，但月份已是年底的子/丑月，需要 +12 (視為下一年的開端)
+        // 情況 B (冬至後): taiYiYear 已經+1，baseHaiJishu 已經包含了一整年的月份 (12個月)，
+        //                此時子月(-11)會自動對應到新的一年的第一個月，因此不需要再 +12
+        if (taiYiYear === year && (monthBranch === '子' || monthBranch === '丑') && month >= 11) {
+            monthlyJishu += 12;
+        }
+
+        const monthlyBureauRem = monthlyJishu % 72;
+        const monthlyBureauNum = (monthlyBureauRem === 0) ? 72 : monthlyBureauRem;
+        const monthlyBureau = `陽${monthlyBureauNum}局`;
+        const monthlyGanZhiRem = monthlyJishu % 60;
+        const monthlyGanZhiIndex = (monthlyGanZhiRem === 0) ? 59 : monthlyGanZhiRem - 1;
+        const monthlyGanZhi = JIAZI_CYCLE_ORDER[monthlyGanZhiIndex];
+
+        return {
+            annualJishu,
+            annualBureau,
+            annualGanZhi,
+            monthlyJishu,
+            monthlyBureau,
+            monthlyGanZhi
+        };
+    }
+
+    // ▼▼▼ 偵測「流年年盤星曜」對「本命宮位」的觸發感應 (終極修復版) ▼▼▼
+    function getAnnualPalaceActivation(targetYear, natalLifePalaces) {
+    // 1. 計算該年份的國運年積數 (取夏至點作為代表)
+    const national = calculateNationalJishu(targetYear, 6, 22, 12);
+    if (!national) return [];
+
+    const annualJishu = national.annualJishu;
+    const annualBureau = national.annualBureau; 
+    const annualStem = national.annualGanZhi.charAt(0);
+    
+    // 2. 取得該年局所有「固定星曜」與「算數」
+    const annualLookup = lookupBureauData(annualBureau);
+    if (!annualLookup) return [];
+
+    // 3. 計算該年盤的「所有動態星曜」 (這就是之前沒顯示的關鍵！)
+    const annualSuanStars = calculateSuanStars(annualLookup);
+
+    // 建立完整年盤星曜位置字典
+    const annualStarLocations = {
+        '太乙': annualLookup.太乙,
+        '文昌': annualLookup.文昌,
+        '始擊': annualLookup.始擊,
+        '定目': annualLookup.定目,
+        '小遊': calculateXiaoYou(annualJishu),
+        '君基': calculateJunJi(annualJishu),
+        '臣基': calculateChenJi(annualJishu),
+        '民基': calculateMinJi(annualJishu),
+        '天乙': calculateTianYi(annualJishu),
+        '地乙': calculateDiYi(annualJishu),
+        '四神': calculateSiShen(annualJishu),
+        '飛符': calculateFeiFu(annualJishu),
+        '時五福': calculateShiWuFu(annualJishu)
+    };
+    
+    // 併入主大、客大等算星
+    if (annualSuanStars && annualSuanStars.chartStars) {
+        Object.assign(annualStarLocations, annualSuanStars.chartStars);
+    }
+    
+    // 處理算星入中宮的寄宮邏輯
+    if (annualSuanStars && annualSuanStars.centerStars) {
+        annualSuanStars.centerStars.forEach(s => {
+            let hostBranch = null;
+            if (['主大', '主參'].includes(s) && annualLookup.主算 && CENTER_PALACE_JI_GONG_RULES['主算'][annualLookup.主算]) {
+                hostBranch = CENTER_PALACE_JI_GONG_RULES['主算'][annualLookup.主算][s];
+            } else if (['客大', '客參'].includes(s) && annualLookup.客算 && CENTER_PALACE_JI_GONG_RULES['客算'][annualLookup.客算]) {
+                hostBranch = CENTER_PALACE_JI_GONG_RULES['客算'][annualLookup.客算][s];
+            }
+            annualStarLocations[s] = hostBranch || '中';
+        });
+    }
+
+    // 4. 取得流年天干化曜規則
+    const activationRules = NIAN_GAN_HUA_YAO[annualStem]; 
+    if (!activationRules) return [];
+    
+    const activations = [];
+    const cornerMapping = { '乾': '亥', '艮': '寅', '巽': '巳', '坤': '申' };
+
+    // 5. 交叉比對：看年盤星曜落入本命哪個宮位
+    for (const roleKey in activationRules) {
+        const starNames = activationRules[roleKey]; 
+        const roleName = HUA_YAO_ROLE_MAP[roleKey];
+
+        starNames.forEach(starName => {
+            // 從字典中取出該星在年盤的真實位置
+            const annualBranch = annualStarLocations[starName]; 
+            
+            if (annualBranch && annualBranch !== '中') {
+                // 處理寄宮 (艮 -> 寅)
+                const actualBranch = cornerMapping[annualBranch] || annualBranch;
+                const palaceId = BRANCH_TO_PALACE_ID[actualBranch];
+                const palaceIndex = VALID_PALACES_CLOCKWISE.indexOf(palaceId);
+                
+                if (palaceIndex !== -1) {
+                    const natalPalaceName = natalLifePalaces[palaceIndex]; 
+                    activations.push({
+                        starName: starName,
+                        roleName: roleName,
+                        branch: actualBranch,
+                        natalPalace: PALACE_FULL_NAME_MAP[natalPalaceName] || natalPalaceName
+                    });
+                }
+            }
+        });
+    }
+    return activations;
+    }
+
     // ▼▼▼ 從 n8n 獲取 AI 分析結果的專屬函式 (安全修正 + 月份分段版) ▼▼▼
     async function getN8nAnalysis(data) {
     const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/363afd96-b5b8-4ef5-bba4-f06ebbb1e484';
@@ -4986,24 +5146,22 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     // (這個calculateBtn.addEventListener 函式就是工廠老闆, runCalculation是老師傅)
     calculateBtn.addEventListener('click', () => {
-        // ▼▼▼ 新增：在這裡清空並隱藏 AI 輸出區塊，並禁用下載按鈕 ▼▼▼
-        document.getElementById('ai-summary-output').style.display = 'none';
-        document.getElementById('ai-summary-output').innerHTML = '';
-        document.getElementById('n8n-ai-output').style.display = 'none';
-        document.getElementById('n8n-ai-output').innerHTML = '';
-        document.getElementById('download-pdf-btn').disabled = true;
-        // ▲▲▲ 新增結束 ▲▲▲
+    // ▼▼▼ 清空並隱藏 AI 輸出區塊 ▼▼▼
+    document.getElementById('ai-summary-output').style.display = 'none';
+    document.getElementById('ai-summary-output').innerHTML = '';
+    document.getElementById('n8n-ai-output').style.display = 'none';
+    document.getElementById('n8n-ai-output').innerHTML = '';
+    // ▲▲▲ 清空結束 ▲▲▲
 
-        const year = parseInt(document.getElementById('birth-year').value, 10);
-        const targetYearInput = document.getElementById('target-year');
-        const targetYear = parseInt(targetYearInput.value, 10);
+    const year = parseInt(document.getElementById('birth-year').value, 10);
+    const targetYearInput = document.getElementById('target-year');
+    const targetYear = parseInt(targetYearInput.value, 10);
 
-        if (!targetYear || targetYear < 1930 || targetYear > 2050) {
-            alert('請輸入一個介於 1930 到 2050 之間的有效分析年份。');
-            return;
-        }
-        const currentUserAge = targetYear - year + 1; 
-
+    if (!targetYear || targetYear < 1930 || targetYear > 2050) {
+        alert('請輸入一個介於 1930 到 2050 之間的有效分析年份。');
+        return;
+    }
+    const currentUserAge = targetYear - year + 1; 
 
     aiSummaryOutput.style.display = 'none';
     const month = parseInt(document.getElementById('birth-month').value, 10);
@@ -5013,7 +5171,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     const precisionResult = calculateJishuAndBureau(birthDateObject);
 
-    // 步驟 2B: 自動「顯示」計算出的日積數與時積數
     if (precisionResult) {
         dayJishuDisplay.textContent = precisionResult.dayJishu;
         hourJishuDisplay.textContent = precisionResult.hourJishu;
@@ -5023,7 +5180,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     }
 
     const lunarDate = solarLunar.solar2lunar(year, month, day, hour);
-    // 步驟 3B: 執行「雙重」交叉驗證 (結果會顯示在主控台 F12)
+    
     if (precisionResult) {
         console.log("--- 四柱交叉驗證 ---");
         const baziDayPillar = lunarDate.getDayInGanZhi();
@@ -5064,11 +5221,9 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     const lifePalaceId = findPalaceByCounting(lunarDate.getYearInGanZhi().charAt(1), lunarDate.getMonthInGanZhi().charAt(1), lunarDate.getTimeInGanZhi().charAt(1), direction);
     const arrangedLifePalaces = lifePalaceId ? arrangeLifePalaces(lifePalaceId, direction) : [];
 
-
-    // (您把工具都放進了這個工具箱, 然後您把整個工具箱(dataForCalculation)交給了 runCalculation 工人)
     const dataForCalculation = {
         birthDate: `${year}/${month}/${day}`,
-        targetYear: targetYear, // <--- 確保這行存在
+        targetYear: targetYear, 
         gender: document.querySelector('input[name="gender"]:checked').value === 'male' ? '男' : '女',
         yearPillar: lunarDate.getYearInGanZhi(),
         monthPillar: lunarDate.getMonthInGanZhi(),
@@ -5080,7 +5235,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         arrangedLifePalaces: arrangedLifePalaces
     };
 
-    // ▼▼▼ 核心修正點：確保這裡只用新版的單一函式 ▼▼▼
     dataForCalculation.dayMasterInfo = getDayMasterInfo(dataForCalculation.dayPillar.charAt(0));
     dataForCalculation.annualPillar = getAnnualPillar(targetYear);
     dataForCalculation.elementInteraction = analyzeYearlyElementInteraction(dataForCalculation.dayPillar, dataForCalculation.annualPillar);
@@ -5132,8 +5286,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     dataForCalculation.keJiaYears = findKeJiaYears(dataForCalculation);
     dataForCalculation.daYouOverlapResult = findDaYouOverlap(dataForCalculation.daYouZhenXianResult, dataForCalculation.daYouResult);
     
-
-    // 為了準備給 AI 的 prompt，提前計算出所有需要的宮位名稱和分數
     const ageLimitsForAI = arrangeAgeLimits(arrangedLifePalaces);
     const greatLimitScoresForAI = calculateFortuneScores(dataForCalculation.chartModel, arrangedLifePalaces, ageLimitsForAI, hourPillar, dataForCalculation.lookupResult);
     
@@ -5148,7 +5300,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         dataForCalculation.greatLimitAgeRange = ageLimitsForAI[dataForCalculation.currentGreatLimitIndex];
     } else {
         dataForCalculation.currentGreatLimitScore = 0;
-        dataForCalculation.greatLimitAgeRange = '未知'; // 也新增一個預設值
+        dataForCalculation.greatLimitAgeRange = '未知'; 
     }
 
     const ageToAnnualPalaceMapForAI = {};
@@ -5162,13 +5314,62 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     dataForCalculation.annualPalaceId = annualPalaceIdForAI; 
     dataForCalculation.annualPalaceShortName = annualPalaceIdForAI ? arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(annualPalaceIdForAI)] : '未知';
 
-    // ▼▼▼ 在這裡新增「年度綜合總分」的計算 ▼▼▼
     const finalAnnualTrendScore = dataForCalculation.currentGreatLimitScore + (dataForCalculation.annualPalaceScore * 0.7);
     dataForCalculation.annualTrendScore = finalAnnualTrendScore;
 
-    currentChartData = dataForCalculation; // 將所有計算結果存到全域變數
+    currentChartData = dataForCalculation; 
 
+    // --- ▼▼▼ 將主要計算結果渲染到畫面上 ▼▼▼ ---
     runCalculation(dataForCalculation, hour, xingNianData); 
+
+    // --- ▼▼▼ 新增：執行「流年星曜」對「本命宮位」的感應分析並顯示 ▼▼▼ ---
+    const activations = getAnnualPalaceActivation(targetYear, arrangedLifePalaces);
+    const summaryP = document.getElementById('calculation-summary');
+
+    if (activations && activations.length > 0 && summaryP) {
+        const palaceGroups = {};
+        activations.forEach(a => {
+            if (!palaceGroups[a.natalPalace]) palaceGroups[a.natalPalace] = [];
+            palaceGroups[a.natalPalace].push(`${a.starName}(${a.roleName})`);
+        });
+
+        let activationHtml = `\n\n  <strong style="color: #0056b3; font-size: 16px;">【${targetYear} 年度流年感應】:</strong>`;
+        
+        for (const palace in palaceGroups) {
+            const starList = palaceGroups[palace];
+            const isSuperActive = starList.length >= 3; // 三星同宮
+            
+            // 超級感應時使用黃底紅字
+            const style = isSuperActive 
+                ? 'style="color: #d32f2f; font-weight: bold; background-color: #fff9c4; padding: 2px 5px; border-radius: 3px;"' 
+                : 'style="color: #333; font-weight: bold;"';
+
+            activationHtml += `\n  <span ${style}>↳ ${palace}：被 ${starList.join('、')} 同時啟動！</span>`;
+            
+            if (isSuperActive) {
+                activationHtml += `\n    <small style="color: #d32f2f; font-weight: bold; margin-left: 20px;">(＊此宮能量極強，代表該領域今年將有重大突破或變動！)</small>`;
+            }
+        }
+        summaryP.innerHTML += activationHtml;
+    }
+
+    // --- ▼▼▼ 預設的 PDF 導出功能 (印出整個排盤畫面) ▼▼▼ ---
+    const mainContainer = document.querySelector('.main-container');
+    if (mainContainer && !mainContainer.id) {
+        mainContainer.id = 'main-export-area'; 
+    }
+    
+    const downloadBtn = document.getElementById('download-pdf-btn');
+    if (downloadBtn) {
+        downloadBtn.disabled = false; // 解鎖 PDF 按鈕
+        downloadBtn.onclick = function() {
+            generatePdfReport(
+                currentChartData, 
+                'main-export-area', 
+                `${currentChartData.targetYear}年-排盤結果`
+            );
+        };
+    }
     });
 
     // --- 頁面初始化 ---

@@ -1230,22 +1230,112 @@ function drawKongWangSector(palaceBranch) {
     dynamicGroup.insertBefore(pathElement, dynamicGroup.firstChild);
 }
 
+// ▼▼▼ 繪製流年感應扇形並綁定互動事件 (最終修復版) ▼▼▼
+function drawActivationSectors(activations, targetYear) {
+    if (!activations || activations.length === 0) return;
+
+    const tooltip = document.getElementById('taiyi-tooltip');
+    if (!tooltip) {
+        console.error("找不到 #taiyi-tooltip 容器，請確認 HTML 是否有加入！");
+        return;
+    }
+
+    // 1. 將感應結果按照「宮位(地支)」分組
+    const groups = {};
+    activations.forEach(a => {
+        const branch = a.branch; // 例如 '寅'
+        if (!groups[branch]) groups[branch] = [];
+        groups[branch].push(a);
+    });
+
+    // 2. 針對每個有感應的宮位，畫出扇形
+    for (const branch in groups) {
+        const palaceId = BRANCH_TO_PALACE_ID[branch];
+        if (!palaceId) continue;
+
+        let centerAngle = RADIAL_LAYOUT.angles[palaceId];
+        if (centerAngle === undefined) continue;
+
+        // 讀取微調設定 (保持對齊)
+        const manualOffset = KONG_WANG_OFFSET_CONFIG[branch] || 0;
+        centerAngle += manualOffset;
+
+        // 扇形的參數
+        const halfSlice = 11.2; 
+        const startAngle = centerAngle - halfSlice;
+        const endAngle = centerAngle + halfSlice;
+        const innerRadius = 93;  
+        const outerRadius = 352; 
+        const toRad = (deg) => deg * (Math.PI / 180); 
+        
+        // 計算 SVG 路徑的四個頂點
+        const x1 = RADIAL_LAYOUT.center.x + innerRadius * Math.cos(toRad(startAngle));
+        const y1 = RADIAL_LAYOUT.center.y + innerRadius * Math.sin(toRad(startAngle));
+        const x2 = RADIAL_LAYOUT.center.x + outerRadius * Math.cos(toRad(startAngle));
+        const y2 = RADIAL_LAYOUT.center.y + outerRadius * Math.sin(toRad(startAngle));
+        const x3 = RADIAL_LAYOUT.center.x + outerRadius * Math.cos(toRad(endAngle));
+        const y3 = RADIAL_LAYOUT.center.y + outerRadius * Math.sin(toRad(endAngle));
+        const x4 = RADIAL_LAYOUT.center.x + innerRadius * Math.cos(toRad(endAngle));
+        const y4 = RADIAL_LAYOUT.center.y + innerRadius * Math.sin(toRad(endAngle));
+
+        const pathData = `M ${x1} ${y1} L ${x2} ${y2} A ${outerRadius} ${outerRadius} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${innerRadius} ${innerRadius} 0 0 0 ${x1} ${y1} Z`;
+
+        // 建立 SVG path 元素
+        const pathElement = document.createElementNS(SVG_NS, 'path');
+        pathElement.setAttribute('d', pathData);
+        // 設定 Class，這會連接到我們在 CSS 寫的樣式
+        pathElement.setAttribute('class', 'activation-sector star-visible'); 
+        
+        // --- 準備 Tooltip 內容 ---
+        const infoList = groups[branch];
+        const palaceName = infoList[0].natalPalace; // 例如 '官祿宮'
+        // ▼▼▼ 【修改點】：讓 Tooltip 裡的星曜名稱也變成翡翠綠加粗 ▼▼▼
+        const starTextList = infoList.map(i => `<span style="color: #008a00; font-weight: bold;">${i.starName}</span>(${i.roleName})`).join('、');
+        const isSuperActive = infoList.length >= 3;
+
+        let contentHtml = `<strong style="color:#0056b3; font-size:15px;">【${targetYear}年度流年感應】</strong>\n`;
+        contentHtml += `<span style="color:#d32f2f; font-weight:bold;">${palaceName}</span>：被年盤 ${starTextList} 入此宮位引動！`;
+        if (isSuperActive) {
+            contentHtml += `\n<span style="color:#d32f2f; font-size:12px; font-weight:bold;">(＊此宮能量極強，代表該領域今年將有重大突破或變動！)</span>`;
+        }
+
+        // --- 綁定滑鼠互動事件 ---
+        pathElement.addEventListener('mouseenter', () => {
+            tooltip.innerHTML = contentHtml;
+            tooltip.style.display = 'block';
+        });
+
+        pathElement.addEventListener('mousemove', (e) => {
+            // 讓提示框跟著滑鼠走，並保持一點距離以免擋到游標
+            tooltip.style.left = (e.pageX + 15) + 'px';
+            tooltip.style.top = (e.pageY + 15) + 'px';
+        });
+
+        pathElement.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+        });
+
+        // 將扇形畫在 dynamicGroup 的最底層（以免蓋住文字）
+        dynamicGroup.insertBefore(pathElement, dynamicGroup.firstChild);
+    }
+}
+
 // --- 繪圖主函式 (最終整理版) ---
-function renderChart(mainData, palacesData, agesData, sdrData, centerData, outerRingData, xingNianData, yangJiuData, baiLiuData, baiLiuXiaoXianData, daYouZhenXianData, feiLuDaXianData, feiMaDaXianData, feiLuLiuNianData, feiMaLiuNianData, heiFuData) {    
+function renderChart(mainData, palacesData, agesData, sdrData, centerData, outerRingData, xingNianData, yangJiuData, baiLiuData, baiLiuXiaoXianData, daYouZhenXianData, feiLuDaXianData, feiMaDaXianData, feiLuLiuNianData, feiMaLiuNianData, heiFuData, annualActivations, targetYear) {    
     clearDynamicData();
         if (outerRingData) {
-            const ringConfig = RADIAL_LAYOUT.outerRing;
-            for (const palaceId in outerRingData) {
-                if (ringConfig.palaces.includes(palaceId)) {
-                    const text = outerRingData[palaceId];
-                    const angle = RADIAL_LAYOUT.angles[palaceId];
-                    const angleRad = angle * (Math.PI / 180);
-                    const x = RADIAL_LAYOUT.center.x + ringConfig.radius * Math.cos(angleRad);
-                    const y = RADIAL_LAYOUT.center.y + ringConfig.radius * Math.sin(angleRad);
-                    addEncircledText(text, x, y, 0, 'main-info-style', 'highlight-circle');
-                }
+        const ringConfig = RADIAL_LAYOUT.outerRing;
+        for (const palaceId in outerRingData) {
+            if (ringConfig.palaces.includes(palaceId)) {
+                const text = outerRingData[palaceId];
+                const angle = RADIAL_LAYOUT.angles[palaceId];
+                const angleRad = angle * (Math.PI / 180);
+                const x = RADIAL_LAYOUT.center.x + ringConfig.radius * Math.cos(angleRad);
+                const y = RADIAL_LAYOUT.center.y + ringConfig.radius * Math.sin(angleRad);
+                addEncircledText(text, x, y, 0, 'main-info-style', 'highlight-circle');
             }
         }
+    }
         
         if (centerData) {
             addCenterText(centerData.field1, RADIAL_LAYOUT.centerFields.field1, 'center-info-style');
@@ -1544,6 +1634,7 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
             textElement.textContent = text;
             applyStarAnimation(textElement); // <--- 注入動畫
             dynamicGroup.appendChild(textElement);
+    
         });
     }
     // ▼▼▼ 繪製黑符流年 ▼▼▼
@@ -1563,7 +1654,12 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         
         // 3. 呼叫工具函式來繪製
         addRotatedRingText(displayData, ringConfig);
+        
     }
+
+    // ▼▼▼ 新增這行：呼叫我們剛寫好的感應扇形繪製函式 ▼▼▼
+    drawActivationSectors(annualActivations, targetYear);
+
 }
 
 // ▼▼▼ 繪製運勢趨勢圖的函式 (最終穩定版) ▼▼▼
@@ -4829,7 +4925,10 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
              field4: dataForCalculation.suanStarsResult.centerStars[3] || ''
         };
 
-        renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData, xingNianData, yangJiuForDisplay, baiLiuForDisplay, dataForCalculation.baiLiuXiaoXianResult, daYouForDisplay, dataForCalculation.feiLuDaXianResult, dataForCalculation.feiMaDaXianResult, dataForCalculation.feiMaLiuNianResult, dataForCalculation.feiLuLiuNianResult, dataForCalculation.heiFuResult); 
+        // ▼▼▼ 核心新增：計算流年感應資料 ▼▼▼
+        const activations = getAnnualPalaceActivation(dataForCalculation.targetYear, newLifePalacesData);
+
+        renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData, xingNianData, yangJiuForDisplay, baiLiuForDisplay, dataForCalculation.baiLiuXiaoXianResult, daYouForDisplay, dataForCalculation.feiLuDaXianResult, dataForCalculation.feiMaDaXianResult, dataForCalculation.feiMaLiuNianResult, dataForCalculation.feiLuLiuNianResult, dataForCalculation.heiFuResult, activations, dataForCalculation.targetYear); 
 
         // ▼▼▼ 在這裡新增下面這一行 ▼▼▼
         document.getElementById('day-master-info').innerHTML = dataForCalculation.dayMasterInfo;
@@ -5333,7 +5432,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             palaceGroups[a.natalPalace].push(`${a.starName}(${a.roleName})`);
         });
 
-        let activationHtml = `\n\n  <strong style="color: #0056b3; font-size: 16px;">【${targetYear} 年度流年感應】:</strong>`;
+        let activationHtml = `\n\n  <strong style="color: #0056b3; font-size: 16px;">【${targetYear} 年度年干化曜】:</strong>`;
         
         for (const palace in palaceGroups) {
             const starList = palaceGroups[palace];
@@ -5344,10 +5443,11 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
                 ? 'style="color: #d32f2f; font-weight: bold; background-color: #fff9c4; padding: 2px 5px; border-radius: 3px;"' 
                 : 'style="color: #333; font-weight: bold;"';
 
-            activationHtml += `\n  <span ${style}>↳ ${palace}：被 ${starList.join('、')} 同時啟動！</span>`;
+            activationHtml += `\n<span ${style}>  ${palace}：被年盤 ${starList.join('、')} 入此宮位引動！</span>`;
             
             if (isSuperActive) {
-                activationHtml += `\n    <small style="color: #d32f2f; font-weight: bold; margin-left: 20px;">(＊此宮能量極強，代表該領域今年將有重大突破或變動！)</small>`;
+                // 微調了 margin-left 讓排版更對齊
+                activationHtml += `\n<small style="color: #d32f2f; font-weight: bold; margin-left: 10px;">(＊此宮位能量極強，代表該領域今年將有重大突破或變動！)</small>`;
             }
         }
         summaryP.innerHTML += activationHtml;

@@ -1203,8 +1203,8 @@ function drawKongWangSector(palaceBranch) {
     const startAngle = centerAngle - halfSlice;
     const endAngle = centerAngle + halfSlice;
 
-    const innerRadius = 92;  
-    const outerRadius = 280; // 決定扇形到哪裡「結束」(外圈半徑) 
+    const innerRadius = 42;  
+    const outerRadius = 132; // 決定扇形到哪裡「結束」(外圈半徑) 
 
     const toRad = (deg) => deg * (Math.PI / 180); 
     
@@ -1267,8 +1267,8 @@ function drawActivationSectors(activations, targetYear) {
         const halfSlice = 11.2;  // 決定扇形的「寬度/角度」
         const startAngle = centerAngle - halfSlice;
         const endAngle = centerAngle + halfSlice;
-        const innerRadius = 92;  // 決定扇形從哪裡「開始」(內圈半徑) 
-        const outerRadius = 280; // 決定扇形到哪裡「結束」(外圈半徑)
+        const innerRadius = 280;  // 決定扇形從哪裡「開始」(內圈半徑) 
+        const outerRadius = 352; // 決定扇形到哪裡「結束」(外圈半徑)
         const toRad = (deg) => deg * (Math.PI / 180); 
         
         // 計算 SVG 路徑的四個頂點
@@ -1323,8 +1323,147 @@ function drawActivationSectors(activations, targetYear) {
     }
 }
 
+// ▼▼▼ 新增：繪製本命日柱化曜扇形 ▼▼▼
+function drawDayActivationSectors(dayActivations) {
+    if (!dayActivations || dayActivations.length === 0) return;
+    const tooltip = document.getElementById('taiyi-tooltip');
+    if (!tooltip) return;
+
+    const groups = {};
+    dayActivations.forEach(a => {
+        const branch = a.branch;
+        if (!groups[branch]) groups[branch] = [];
+        groups[branch].push(a);
+    });
+
+    for (const branch in groups) {
+        const palaceId = BRANCH_TO_PALACE_ID[branch];
+        if (!palaceId) continue;
+        let centerAngle = RADIAL_LAYOUT.angles[palaceId];
+        if (centerAngle === undefined) continue;
+
+        const manualOffset = KONG_WANG_OFFSET_CONFIG[branch] || 0;
+        centerAngle += manualOffset;
+
+        const halfSlice = 11.2; 
+        const innerRadius = 92;  
+        const outerRadius = 250; 
+        const toRad = (deg) => deg * (Math.PI / 180); 
+        
+        const x1 = RADIAL_LAYOUT.center.x + innerRadius * Math.cos(toRad(centerAngle - halfSlice));
+        const y1 = RADIAL_LAYOUT.center.y + innerRadius * Math.sin(toRad(centerAngle - halfSlice));
+        const x2 = RADIAL_LAYOUT.center.x + outerRadius * Math.cos(toRad(centerAngle - halfSlice));
+        const y2 = RADIAL_LAYOUT.center.y + outerRadius * Math.sin(toRad(centerAngle - halfSlice));
+        const x3 = RADIAL_LAYOUT.center.x + outerRadius * Math.cos(toRad(centerAngle + halfSlice));
+        const y3 = RADIAL_LAYOUT.center.y + outerRadius * Math.sin(toRad(centerAngle + halfSlice));
+        const x4 = RADIAL_LAYOUT.center.x + innerRadius * Math.cos(toRad(centerAngle + halfSlice));
+        const y4 = RADIAL_LAYOUT.center.y + innerRadius * Math.sin(toRad(centerAngle + halfSlice));
+
+        const pathData = `M ${x1} ${y1} L ${x2} ${y2} A ${outerRadius} ${outerRadius} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${innerRadius} ${innerRadius} 0 0 0 ${x1} ${y1} Z`;
+        const pathElement = document.createElementNS(SVG_NS, 'path');
+        pathElement.setAttribute('d', pathData);
+
+        // ▼▼▼ 核心邏輯：判斷是否有凶星 (忌星或鬼星) ▼▼▼
+        const infoList = groups[branch];
+        const hasBadStar = infoList.some(i => i.roleName.includes('忌星') || i.roleName.includes('鬼星'));
+
+        if (hasBadStar) {
+            pathElement.setAttribute('class', 'day-activation-sector-bad star-visible'); // 淡粉紅
+        } else {
+            pathElement.setAttribute('class', 'day-activation-sector-good star-visible'); // 淡天藍
+        }
+        
+        // 準備 Tooltip 內容
+        const palaceName = infoList[0].natalPalace;
+        const starTextList = infoList.map(i => {
+            const isBad = i.roleName.includes('忌星') || i.roleName.includes('鬼星');
+            const color = isBad ? '#d32f2f' : '#0056b3'; // 凶星紅字，吉星藍字
+            return `<span style="color: ${color}; font-weight: bold;">${i.starName}</span>(${i.roleName})`;
+        }).join('、');
+
+        let contentHtml = `<strong style="color:#0056b3; font-size:15px;">【本命日柱化曜】</strong>\n`;
+        contentHtml += `<span style="color:#333; font-weight:bold;">${palaceName}</span>：匯聚 ${starTextList}！`;
+
+        pathElement.addEventListener('mouseenter', () => { tooltip.innerHTML = contentHtml; tooltip.style.display = 'block'; });
+        pathElement.addEventListener('mousemove', (e) => { tooltip.style.left = (e.pageX + 15) + 'px'; tooltip.style.top = (e.pageY + 15) + 'px'; });
+        pathElement.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+        dynamicGroup.insertBefore(pathElement, dynamicGroup.firstChild);
+    }
+}
+
+// ▼▼▼ 新增：繪製流日感應扇形 (填補中圈 200~280，吉凶雙色版) ▼▼▼
+function drawTransitDaySectors(transitActivations, targetMonth, targetDay) {
+    if (!transitActivations || transitActivations.length === 0) return;
+    const tooltip = document.getElementById('taiyi-tooltip');
+    if (!tooltip) return;
+
+    const groups = {};
+    transitActivations.forEach(a => {
+        const branch = a.branch;
+        if (!groups[branch]) groups[branch] = [];
+        groups[branch].push(a);
+    });
+
+    for (const branch in groups) {
+        const palaceId = BRANCH_TO_PALACE_ID[branch];
+        if (!palaceId) continue;
+        let centerAngle = RADIAL_LAYOUT.angles[palaceId];
+        if (centerAngle === undefined) continue;
+
+        const manualOffset = KONG_WANG_OFFSET_CONFIG[branch] || 0;
+        centerAngle += manualOffset;
+
+        const halfSlice = 11.2; 
+        const innerRadius = 250;  
+        const outerRadius = 280;  
+        const toRad = (deg) => deg * (Math.PI / 180); 
+        
+        const x1 = RADIAL_LAYOUT.center.x + innerRadius * Math.cos(toRad(centerAngle - halfSlice));
+        const y1 = RADIAL_LAYOUT.center.y + innerRadius * Math.sin(toRad(centerAngle - halfSlice));
+        const x2 = RADIAL_LAYOUT.center.x + outerRadius * Math.cos(toRad(centerAngle - halfSlice));
+        const y2 = RADIAL_LAYOUT.center.y + outerRadius * Math.sin(toRad(centerAngle - halfSlice));
+        const x3 = RADIAL_LAYOUT.center.x + outerRadius * Math.cos(toRad(centerAngle + halfSlice));
+        const y3 = RADIAL_LAYOUT.center.y + outerRadius * Math.sin(toRad(centerAngle + halfSlice));
+        const x4 = RADIAL_LAYOUT.center.x + innerRadius * Math.cos(toRad(centerAngle + halfSlice));
+        const y4 = RADIAL_LAYOUT.center.y + innerRadius * Math.sin(toRad(centerAngle + halfSlice));
+
+        const pathData = `M ${x1} ${y1} L ${x2} ${y2} A ${outerRadius} ${outerRadius} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${innerRadius} ${innerRadius} 0 0 0 ${x1} ${y1} Z`;
+        const pathElement = document.createElementNS(SVG_NS, 'path');
+        pathElement.setAttribute('d', pathData);
+        
+        // ▼▼▼ 判斷是否含有凶星，並套用對應顏色的 Class ▼▼▼
+        const infoList = groups[branch];
+        const hasBadStar = infoList.some(i => i.roleName.includes('忌星') || i.roleName.includes('鬼星'));
+
+        if (hasBadStar) {
+            pathElement.setAttribute('class', 'transit-activation-sector-bad star-visible');
+        } else {
+            pathElement.setAttribute('class', 'transit-activation-sector-good star-visible');
+        }
+        
+        // 準備 Tooltip 內容 (文字顏色也同步變更)
+        const palaceName = infoList[0].natalPalace;
+        const starTextList = infoList.map(i => {
+            const isBad = i.roleName.includes('忌星') || i.roleName.includes('鬼星');
+            const color = isBad ? '#d32f2f' : '#008080'; // 凶星深紅，吉星深藍綠
+            return `<span style="color: ${color}; font-weight: bold;">${i.starName}</span>(${i.roleName})`;
+        }).join('、');
+
+        const titleColor = hasBadStar ? '#ff69b4' : '#20b2aa'; // 標題顏色對應扇形顏色
+        let contentHtml = `<strong style="color:${titleColor}; font-size:15px;">【${targetMonth}月${targetDay}日 流日推演】</strong>\n`;
+        contentHtml += `<span style="color:#333; font-weight:bold;">${palaceName}</span>：被今日 ${starTextList} 引動！`;
+
+        pathElement.addEventListener('mouseenter', () => { tooltip.innerHTML = contentHtml; tooltip.style.display = 'block'; });
+        pathElement.addEventListener('mousemove', (e) => { tooltip.style.left = (e.pageX + 15) + 'px'; tooltip.style.top = (e.pageY + 15) + 'px'; });
+        pathElement.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+        dynamicGroup.appendChild(pathElement);
+    }
+}
+
 // --- 繪圖主函式 (最終整理版) ---
-function renderChart(mainData, palacesData, agesData, sdrData, centerData, outerRingData, xingNianData, yangJiuData, baiLiuData, baiLiuXiaoXianData, daYouZhenXianData, feiLuDaXianData, feiMaDaXianData, feiLuLiuNianData, feiMaLiuNianData, heiFuData, annualActivations, targetYear) {    
+function renderChart(mainData, palacesData, agesData, sdrData, centerData, outerRingData, xingNianData, yangJiuData, baiLiuData, baiLiuXiaoXianData, daYouZhenXianData, feiLuDaXianData, feiMaDaXianData, feiLuLiuNianData, feiMaLiuNianData, heiFuData, annualActivations, targetYear, dayActivations, transitActivations, transitMonth, transitDay) {    
     clearDynamicData();
         if (outerRingData) {
         const ringConfig = RADIAL_LAYOUT.outerRing;
@@ -1660,8 +1799,14 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         
     }
 
-    // ▼▼▼ 新增這行：呼叫我們剛寫好的感應扇形繪製函式 ▼▼▼
+    // 原本已經有的：呼叫「流年」感應扇形
     drawActivationSectors(annualActivations, targetYear);
+
+    // ▼▼▼ 新增這行：呼叫我們剛寫好的「日柱」化曜扇形 ▼▼▼
+    drawDayActivationSectors(dayActivations);
+
+    // ▼▼▼ 新增這行：呼叫流日扇形 ▼▼▼
+    drawTransitDaySectors(transitActivations, transitMonth, transitDay);
 
 }
 
@@ -4499,6 +4644,113 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return activations;
     }
 
+    // ▼▼▼ 升級版：偵測「本命日干支」化曜 (五福對應盤面「時五福」) ▼▼▼
+    function getNatalDayPalaceActivation(dayPillar, chartModel, arrangedLifePalaces, suanStarsResult, lookupResult) {
+        if (!dayPillar) return [];
+        const dayStem = dayPillar.charAt(0);
+        const dayBranch = dayPillar.charAt(1);
+        const activations = [];
+
+        const findStarFinalPalaceInfo = (starName) => {
+            // 本命盤：遇到化曜規則寫「五福」時，直接去找盤面上的「時五福」
+            const actualStarName = starName === '五福' ? '時五福' : starName;
+            
+            for (const palaceId of VALID_PALACES_CLOCKWISE) {
+                if (chartModel[palaceId]?.stars[actualStarName]) return { branch: PALACE_ID_TO_BRANCH[palaceId], natalPalace: arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(palaceId)] };
+            }
+            for (const cornerId in JI_GONG_MAP) {
+                if (chartModel[cornerId]?.stars[actualStarName]) return { branch: PALACE_ID_TO_BRANCH[JI_GONG_MAP[cornerId]], natalPalace: arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(JI_GONG_MAP[cornerId])] };
+            }
+            if (suanStarsResult?.centerStars.includes(actualStarName)) {
+                const zhuSuan = lookupResult.主算; const keSuan = lookupResult.客算;
+                let hostBranch = null;
+                if (['主大', '主參'].includes(actualStarName) && zhuSuan && CENTER_PALACE_JI_GONG_RULES['主算'][zhuSuan]) hostBranch = CENTER_PALACE_JI_GONG_RULES['主算'][zhuSuan][actualStarName];
+                else if (['客大', '客參'].includes(actualStarName) && keSuan && CENTER_PALACE_JI_GONG_RULES['客算'][keSuan]) hostBranch = CENTER_PALACE_JI_GONG_RULES['客算'][keSuan][actualStarName];
+                if (hostBranch) return { branch: hostBranch, natalPalace: arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(BRANCH_TO_PALACE_ID[hostBranch])] };
+            }
+            return null;
+        };
+
+        const processRules = (rules, type) => {
+            if (!rules) return;
+            for (const roleKey in rules) {
+                const starNames = rules[roleKey];
+                const roleName = HUA_YAO_ROLE_MAP[roleKey];
+                starNames.forEach(starName => {
+                    const info = findStarFinalPalaceInfo(starName);
+                    if (info) activations.push({ type: type, starName: starName, roleName: roleName, branch: info.branch, natalPalace: PALACE_FULL_NAME_MAP[info.natalPalace] || info.natalPalace });
+                });
+            }
+        };
+
+        processRules(RI_GAN_HUA_YAO[dayStem], '日干');
+        processRules(RI_ZHI_HUA_YAO[dayBranch], '日支');
+        return activations;
+    }
+
+    // ▼▼▼ 新增：偵測「流日干支」化曜 (五福對應外來的「日五福」並寄宮) ▼▼▼
+    function getTransitDayPalaceActivation(transitGanZhi, chartModel, arrangedLifePalaces, suanStarsResult, lookupResult, transitDayJishu) {
+        if (!transitGanZhi) return [];
+        const dayStem = transitGanZhi.charAt(0);
+        const dayBranch = transitGanZhi.charAt(1);
+        const activations = [];
+
+        // 1. 計算「流日的日五福」的原始宮位
+        let wuFuBranch = null;
+        if (transitDayJishu) {
+            const wuFuResult = calculateWuFu(transitDayJishu, '日五福');
+            if (wuFuResult) wuFuBranch = wuFuResult.palace;
+        }
+
+        const findStarFinalPalaceInfo = (starName) => {
+            // 流日盤：遇到「五福」時，使用剛剛算出來的「日五福」並套用寄宮規則
+            if (starName === '五福') {
+                if (wuFuBranch) {
+                    const initialPalaceId = BRANCH_TO_PALACE_ID[wuFuBranch];
+                    const actualPalaceId = JI_GONG_MAP[initialPalaceId] || initialPalaceId; // 若在四維卦則套用寄宮
+                    const actualBranch = PALACE_ID_TO_BRANCH[actualPalaceId];
+                    const palaceIndex = VALID_PALACES_CLOCKWISE.indexOf(actualPalaceId);
+                    if (palaceIndex !== -1) {
+                        return { branch: actualBranch, natalPalace: arrangedLifePalaces[palaceIndex] };
+                    }
+                }
+                return null; // 五福處理完畢，直接返回
+            }
+
+            // 其餘星曜維持比對本命盤的邏輯
+            for (const palaceId of VALID_PALACES_CLOCKWISE) {
+                if (chartModel[palaceId]?.stars[starName]) return { branch: PALACE_ID_TO_BRANCH[palaceId], natalPalace: arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(palaceId)] };
+            }
+            for (const cornerId in JI_GONG_MAP) {
+                if (chartModel[cornerId]?.stars[starName]) return { branch: PALACE_ID_TO_BRANCH[JI_GONG_MAP[cornerId]], natalPalace: arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(JI_GONG_MAP[cornerId])] };
+            }
+            if (suanStarsResult?.centerStars.includes(starName)) {
+                const zhuSuan = lookupResult.主算; const keSuan = lookupResult.客算;
+                let hostBranch = null;
+                if (['主大', '主參'].includes(starName) && zhuSuan && CENTER_PALACE_JI_GONG_RULES['主算'][zhuSuan]) hostBranch = CENTER_PALACE_JI_GONG_RULES['主算'][zhuSuan][starName];
+                else if (['客大', '客參'].includes(starName) && keSuan && CENTER_PALACE_JI_GONG_RULES['客算'][keSuan]) hostBranch = CENTER_PALACE_JI_GONG_RULES['客算'][keSuan][starName];
+                if (hostBranch) return { branch: hostBranch, natalPalace: arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(BRANCH_TO_PALACE_ID[hostBranch])] };
+            }
+            return null;
+        };
+
+        const processRules = (rules, type) => {
+            if (!rules) return;
+            for (const roleKey in rules) {
+                const starNames = rules[roleKey];
+                const roleName = HUA_YAO_ROLE_MAP[roleKey];
+                starNames.forEach(starName => {
+                    const info = findStarFinalPalaceInfo(starName);
+                    if (info) activations.push({ type: type, starName: starName, roleName: roleName, branch: info.branch, natalPalace: PALACE_FULL_NAME_MAP[info.natalPalace] || info.natalPalace });
+                });
+            }
+        };
+
+        processRules(RI_GAN_HUA_YAO[dayStem], '流日干');
+        processRules(RI_ZHI_HUA_YAO[dayBranch], '流日支');
+        return activations;
+    }
+
     // ▼▼▼ 從 n8n 獲取 AI 分析結果的專屬函式 (安全修正 + 月份分段版) ▼▼▼
     async function getN8nAnalysis(data) {
     const n8nWebhookUrl = 'https://nakaiwen.app.n8n.cloud/webhook/363afd96-b5b8-4ef5-bba4-f06ebbb1e484';
@@ -4919,7 +5171,6 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     
 
     function populateDateSelectors() {
-        // ▼▼▼ 最小更動：在函式內部最開頭，加上這幾行 ▼▼▼
         const yearSelect = document.getElementById('birth-year');
         const monthSelect = document.getElementById('birth-month');
         const daySelect = document.getElementById('birth-day');
@@ -4931,6 +5182,52 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         for (let i = 1; i <= 31; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; daySelect.appendChild(option); }
         for (let i = 0; i <= 23; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; hourSelect.appendChild(option); }
         document.getElementById('target-year').value = new Date().getFullYear();
+
+        // ▼▼▼ 處理流月、流日下拉選單與 Checkbox 的聯動 ▼▼▼
+        const transitMonthSelect = document.getElementById('transit-month');
+        const transitDaySelect = document.getElementById('transit-day');
+        const showTransitCheckbox = document.getElementById('show-transit-day');
+
+        if (!transitMonthSelect || !transitDaySelect || !showTransitCheckbox) {
+            console.error("【UI 錯誤】找不到流日的 HTML 元素！請檢查 index.html 中的 ID 是否正確且沒有重複。");
+            return;
+        }
+
+        transitMonthSelect.innerHTML = '';
+        transitDaySelect.innerHTML = '';
+
+        for (let i = 1; i <= 12; i++) { 
+            const option = document.createElement('option'); option.value = i; option.textContent = i; 
+            transitMonthSelect.appendChild(option); 
+        }
+        for (let i = 1; i <= 31; i++) { 
+            const option = document.createElement('option'); option.value = i; option.textContent = i; 
+            transitDaySelect.appendChild(option); 
+        }
+
+        // 預設帶入今天的月份與日期
+        const today = new Date();
+        transitMonthSelect.value = today.getMonth() + 1;
+        transitDaySelect.value = today.getDate();
+
+        // ▼▼▼ 新增：預設將「顯示流日」打勾，並解除下拉選單的反灰 ▼▼▼
+        showTransitCheckbox.checked = true;
+        transitMonthSelect.disabled = false;
+        transitDaySelect.disabled = false;
+
+        const calculateBtn = document.getElementById('calculate-btn');
+
+        // 1. 監聽 Checkbox：打勾時解除下拉選單的反灰 (disabled = false)，並自動更新排盤
+        showTransitCheckbox.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            transitMonthSelect.disabled = !isChecked;
+            transitDaySelect.disabled = !isChecked;
+            if (calculateBtn) calculateBtn.click();
+        });
+
+        // 2. 監聽月份與日期：改變日期時，也自動更新排盤
+        transitMonthSelect.addEventListener('change', () => { if(calculateBtn) calculateBtn.click(); });
+        transitDaySelect.addEventListener('change', () => { if(calculateBtn) calculateBtn.click(); });
     }
     
     function prefillTestData() {
@@ -4957,21 +5254,19 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const yueJiangData = calculateYueJiang(lunarDateForYueJiang, dataForCalculation.hourPillar.charAt(1));
         const outerRingData = calculateOuterRingData(bureauResult, dataForCalculation.hourJishu, lookupResult);
         const guiRenData = calculateGuiRen(dataForCalculation.dayPillar.charAt(0), dataForCalculation.hourPillar.charAt(1), yueJiangData);
-        huangEnResult = calculateHuangEn(dataForCalculation.dayPillar.charAt(1));
+        const huangEnResult = calculateHuangEn(dataForCalculation.dayPillar.charAt(1)); // 這裡補上了 const
         const yangJiuForDisplay = findCurrentYangJiuForDisplay(dataForCalculation.yangJiuResult, dataForCalculation.currentUserAge);
         const baiLiuForDisplay = findCurrentBaiLiuForDisplay(dataForCalculation.baiLiuResult, dataForCalculation.currentUserAge);
         const daYouForDisplay = findCurrentAndNextDaYouForDisplay(dataForCalculation.daYouZhenXianResult, dataForCalculation.currentUserAge);
         
-
-
-        // ▼▼▼ 這邊有新增新星都要增加，注意要寫成dataForCalculation，這個函式是「建築師」 ▼▼▼
+        // ▼▼▼ 建築師生成圖表資料 ▼▼▼
         const newMainChartData = generateMainChartData(
             lookupResult,
             dataForCalculation.deitiesResult, dataForCalculation.suanStarsResult,
             dataForCalculation.shiWuFuResult, dataForCalculation.xiaoYouResult,
             dataForCalculation.junJiResult, dataForCalculation.chenJiResult, dataForCalculation.minJiResult,
             dataForCalculation.tianYiResult, dataForCalculation.diYiResult, dataForCalculation.siShenResult, dataForCalculation.feiFuResult,
-            dataForCalculation.daYouResult, yueJiangData, guiRenData, xingNianData, dataForCalculation.huangEnResult);
+            dataForCalculation.daYouResult, yueJiangData, guiRenData, xingNianData, huangEnResult); // 改用區域變數 huangEnResult
 
         const centerData = {
              field1: dataForCalculation.suanStarsResult.centerStars[0] || '',
@@ -4980,29 +5275,37 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
              field4: dataForCalculation.suanStarsResult.centerStars[3] || ''
         };
 
-        // ▼▼▼ 核心新增：計算流年感應資料 ▼▼▼
+        // ▼▼▼ 核心新增：計算感應資料 ▼▼▼
         const activations = getAnnualPalaceActivation(dataForCalculation.targetYear, newLifePalacesData);
+        
+        // 1. 計算【本命日柱】化曜 (不再需要日積數，因為它直接吃盤面上的時五福)
+        const dayActivations = getNatalDayPalaceActivation(dataForCalculation.dayPillar, dataForCalculation.chartModel, newLifePalacesData, dataForCalculation.suanStarsResult, lookupResult);
+        
+        // 2. 計算【流日干支】化曜 (即時換算流日的日積數，給日五福使用)
+        let transitActivations = [];
+        if (dataForCalculation.showTransitDay && dataForCalculation.transitGanZhi) {
+            const transitDateObj = new Date(dataForCalculation.targetYear, dataForCalculation.transitMonth - 1, dataForCalculation.transitDay, 12);
+            const transitDailyValues = calculateDailyValues(transitDateObj);
+            const realTransitDayJishu = transitDailyValues ? (transitDailyValues.dayJishu - 1) : 0;
 
-        renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData, xingNianData, yangJiuForDisplay, baiLiuForDisplay, dataForCalculation.baiLiuXiaoXianResult, daYouForDisplay, dataForCalculation.feiLuDaXianResult, dataForCalculation.feiMaDaXianResult, dataForCalculation.feiMaLiuNianResult, dataForCalculation.feiLuLiuNianResult, dataForCalculation.heiFuResult, activations, dataForCalculation.targetYear); 
+            transitActivations = getTransitDayPalaceActivation(dataForCalculation.transitGanZhi, dataForCalculation.chartModel, newLifePalacesData, dataForCalculation.suanStarsResult, lookupResult, realTransitDayJishu);
+        }
 
-        // ▼▼▼ 在這裡新增下面這一行 ▼▼▼
+        // ▼▼▼ 呼叫繪圖函式 ▼▼▼
+        renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData, xingNianData, yangJiuForDisplay, baiLiuForDisplay, dataForCalculation.baiLiuXiaoXianResult, daYouForDisplay, dataForCalculation.feiLuDaXianResult, dataForCalculation.feiMaDaXianResult, dataForCalculation.feiMaLiuNianResult, dataForCalculation.feiLuLiuNianResult, dataForCalculation.heiFuResult, activations, dataForCalculation.targetYear, 
+        dayActivations, transitActivations, dataForCalculation.transitMonth, dataForCalculation.transitDay); 
+
+        
         document.getElementById('day-master-info').innerHTML = dataForCalculation.dayMasterInfo;
 
-        // ▼▼▼ 新增：在這裡更新空亡資訊的顯示 ▼▼▼
         const kongWangInfoDiv = document.getElementById('kong-wang-info');
         if (kongWangInfoDiv) {
-        if (dataForCalculation.kongWangResult) {
-            // 1. 顯示文字資訊
-            kongWangInfoDiv.innerHTML = `日柱空亡：${dataForCalculation.kongWangResult.join('、 ')}`;
-
-            // 2. 繪製圖形 (直接使用計算好的結果)
-            // dataForCalculation.kongWangResult 是一個陣列，例如 ['戌', '亥']
-            dataForCalculation.kongWangResult.forEach(branch => {
-                drawKongWangSector(branch);
-            });
-        } else {
-            kongWangInfoDiv.innerHTML = '日柱空亡：無法計算';
-        }
+            if (dataForCalculation.kongWangResult) {
+                kongWangInfoDiv.innerHTML = `日柱空亡：${dataForCalculation.kongWangResult.join('、 ')}`;
+                dataForCalculation.kongWangResult.forEach(branch => { drawKongWangSector(branch); });
+            } else {
+                kongWangInfoDiv.innerHTML = '日柱空亡：無法計算';
+            }
         }
 
         document.getElementById('element-interaction-info').innerHTML = formatElementInteractionInfo(dataForCalculation.elementInteraction);
@@ -5011,46 +5314,32 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
         const shenPalaceId = Object.keys(newSdrData).find(k => newSdrData[k].includes('身'));
         const shenPalaceBranch = shenPalaceId ? PALACE_ID_TO_BRANCH[shenPalaceId] : '計算失敗';
-        const huaYaoResults = calculateAllHuaYao(dataForCalculation.yearPillar.charAt(0), dataForCalculation.dayPillar.charAt(0), dataForCalculation.dayPillar.charAt(1));
         const shouQiResult = dataForCalculation.shouQiResult;
         const birthHexagramResult = dataForCalculation.birthHexagramResult;
         const liYeHexagramResult = dataForCalculation.liYeHexagramResult;
         const annualHexagramResult = dataForCalculation.annualHexagramResult;  
     
-        
-        // 2. 按照您想要的順序，重新組合 outputText 字串
-        let outputText = ''; // 先建立一個空字串
+        // ▼▼▼ 組合左側顯示文字 ▼▼▼
+        let outputText = ''; 
         outputText += `  局數 : ${bureauResult}\n  命宮 : ${lifePalaceId ? PALACE_ID_TO_BRANCH[lifePalaceId] + '宮' : '計算失敗'}\n  身宮 : ${shenPalaceBranch}宮`;
         
-
         if (lookupResult) {
-            // 從資料庫中查找每個算數對應的屬性文字
             const zhuSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.主算] || '';
             const keSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.客算] || '';
             const dingSuanAttr = SUAN_ATTRIBUTE_DATA[lookupResult.定算] || '';
-
-            // 在數字後面，加上帶有新 class 的 <span> 標籤來顯示屬性
             outputText += `\n  主算 : ${lookupResult.主算} <span class="suan-attribute-style">(${zhuSuanAttr})</span>`;
             outputText += `\n  客算 : ${lookupResult.客算} <span class="suan-attribute-style">(${keSuanAttr})</span>`;
             outputText += `\n  定算 : ${lookupResult.定算} <span class="suan-attribute-style">(${dingSuanAttr})</span>`;
         }
 
-        // 2. 呼叫新的函式，產生格局資訊，並加到上方
         outputText += formatPatternInfo(dataForCalculation.chartModel, newLifePalacesData);
 
-
-        // 第一行：受氣之宮 (視覺上會在四柱下方)
-        if (shouQiResult) {
-        outputText += `\n\n  受氣之宮 : ${shouQiResult.palace}${shouQiResult.number}`;
-        }
-        if (birthHexagramResult) {
-        outputText += `\n  出生卦 : ${birthHexagramResult.number} ${birthHexagramResult.name} ${birthHexagramResult.symbol}`;
-        }
+        if (shouQiResult) outputText += `\n\n  受氣之宮 : ${shouQiResult.palace}${shouQiResult.number}`;
+        if (birthHexagramResult) outputText += `\n  出生卦 : ${birthHexagramResult.number} ${birthHexagramResult.name} ${birthHexagramResult.symbol}`;
         if (liYeHexagramResult) {
-        const liYeStartAge = dataForCalculation.liYeStartAge;
-        // 如果有計算出歲數，就組合進字串裡，否則留空
-        const ageText = liYeStartAge ? ` (${liYeStartAge}歲開始)` : '';
-        outputText += `\n  立業卦 : ${liYeHexagramResult.number} ${liYeHexagramResult.name} ${liYeHexagramResult.symbol}${ageText}`;
+            const liYeStartAge = dataForCalculation.liYeStartAge;
+            const ageText = liYeStartAge ? ` (${liYeStartAge}歲開始)` : '';
+            outputText += `\n  立業卦 : ${liYeHexagramResult.number} ${liYeHexagramResult.name} ${liYeHexagramResult.symbol}${ageText}`;
         }
         if (annualHexagramResult) {
             const targetYear = dataForCalculation.targetYear; 
@@ -5059,130 +5348,166 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         } 
         const annualChangingHexagramResult = calculateAnnualChangingHexagram(dataForCalculation.annualHexagramResult, dataForCalculation.baiLiuResult, dataForCalculation.currentUserAge);
         if (annualChangingHexagramResult) {
-        outputText += `\n  流年變卦: ${annualChangingHexagramResult.number} ${annualChangingHexagramResult.name} ${annualChangingHexagramResult.symbol}`;
-        outputText += `\n  <span class="hexagram-description-style">↳ ${annualChangingHexagramResult.description}</span>`;
+            outputText += `\n  流年變卦: ${annualChangingHexagramResult.number} ${annualChangingHexagramResult.name} ${annualChangingHexagramResult.symbol}`;
+            outputText += `\n  <span class="hexagram-description-style">↳ ${annualChangingHexagramResult.description}</span>`;
         }
 
-        // ▼▼▼ 月卦資訊 ▼▼▼
         const monthlyHexagramsText = formatMonthlyHexagrams(dataForCalculation.monthlyHexagramsResult, dataForCalculation.targetYear);
-        if (monthlyHexagramsText) {
-        outputText += monthlyHexagramsText;
+        if (monthlyHexagramsText) outputText += monthlyHexagramsText;
+        
+        
+        // ▼▼▼ 1. 輸出【本命日柱化曜】文字 ▼▼▼
+        if (typeof dayActivations !== 'undefined' && dayActivations && dayActivations.length > 0) {
+            const dayGroups = {};
+            dayActivations.forEach(a => {
+                if (!dayGroups[a.natalPalace]) dayGroups[a.natalPalace] = [];
+                const isBad = a.roleName.includes('忌星') || a.roleName.includes('鬼星');
+                const color = isBad ? '#d32f2f' : '#0056b3'; // 凶星紅字，吉星藍字
+                dayGroups[a.natalPalace].push(`<span style="color: ${color}; font-weight: bold;">${a.starName}</span>(${a.roleName})`);
+            });
+
+            outputText += `\n\n  <strong style="color: #008080; font-size: 16px;">【本命日柱化曜】:</strong>`; 
+            for (const palace in dayGroups) {
+                const starList = dayGroups[palace];
+                outputText += `\n  <span style="color: #333; font-weight: bold;">  ${palace}：匯聚 ${starList.join('、')}！</span>`;
+            }
         }
         
+        // ▼▼▼ 2. 輸出【年干化曜】文字 ▼▼▼
+        if (activations && activations.length > 0) {
+            const palaceGroups = {};
+            activations.forEach(a => {
+                if (!palaceGroups[a.natalPalace]) palaceGroups[a.natalPalace] = [];
+                palaceGroups[a.natalPalace].push(`${a.starName}(${a.roleName})`);
+            });
+
+            outputText += `\n\n  <strong style="color: #0056b3; font-size: 16px;">【${dataForCalculation.targetYear} 年度年干化曜】:</strong>`;
+            for (const palace in palaceGroups) {
+                const starList = palaceGroups[palace];
+                const isSuperActive = starList.length >= 3; 
+                const style = isSuperActive 
+                    ? 'style="color: #d32f2f; font-weight: bold; background-color: #fff9c4; padding: 2px 5px; border-radius: 3px;"' 
+                    : 'style="color: #333; font-weight: bold;"';
+
+                outputText += `\n<span ${style}>  ${palace}：被年盤 ${starList.join('、')} 入此宮位引動！</span>`;
+                if (isSuperActive) {
+                    outputText += `\n<small style="color: #d32f2f; font-weight: bold; margin-left: 10px;">(＊此宮位能量極強，代表該領域今年將有重大突破或變動！)</small>`;
+                }
+            }
+        }
+
+        // ▼▼▼ 3. 輸出【流日推演】文字 ▼▼▼
+        if (typeof transitActivations !== 'undefined' && transitActivations && transitActivations.length > 0) {
+            const transitGroups = {};
+            transitActivations.forEach(a => {
+                if (!transitGroups[a.natalPalace]) transitGroups[a.natalPalace] = [];
+                // 區分吉凶星文字顏色
+                const isBad = a.roleName.includes('忌星') || a.roleName.includes('鬼星');
+                const color = isBad ? '#d32f2f' : '#008080'; // 凶星深紅，吉星深藍綠
+                transitGroups[a.natalPalace].push(`<span style="color: ${color}; font-weight: bold;">${a.starName}</span>(${a.roleName})`);
+            });
+
+            // 標題改用沉穩的灰藍色底色，讓整體報告看起來更有質感
+            outputText += `\n\n  <strong style="color: #fff; background-color: #607d8b; font-weight: 800; font-size: 15px; padding: 3px 6px; border-radius: 4px;">【${dataForCalculation.transitMonth}月${dataForCalculation.transitDay}日 流日推演】:</strong>`;
+        }
+
+        // ▼▼▼ 一次性渲染所有文字到畫面上 ▼▼▼
         const summaryP = document.getElementById('calculation-summary');
         summaryP.innerHTML = outputText;
         
-        // --- 更新下方資訊區，現在只顯示星曜強旺和化曜 ---
+        // --- 更新下方資訊區 ---
         const starStrengthInfoDiv = document.getElementById('star-strength-info');
-        if (starStrengthInfoDiv) {
-        starStrengthInfoDiv.innerHTML = formatBottomInfoBox(dataForCalculation.chartModel, newLifePalacesData, newSdrData, dataForCalculation.gender);
-        }
+        if (starStrengthInfoDiv) starStrengthInfoDiv.innerHTML = formatBottomInfoBox(dataForCalculation.chartModel, newLifePalacesData, newSdrData, dataForCalculation.gender);
         
-        // 解厄建議區塊 ▼▼▼
         const remedyInfoDiv = document.getElementById('remedy-info');
-        if (remedyInfoDiv) {
-        remedyInfoDiv.innerHTML = formatRemedyInfo(dataForCalculation.remedySuggestions, newLifePalacesData, newSdrData);
-        }
-        // 強旺建議區塊 ▼▼▼
+        if (remedyInfoDiv) remedyInfoDiv.innerHTML = formatRemedyInfo(dataForCalculation.remedySuggestions, newLifePalacesData, newSdrData);
+        
         const strengthInfoDiv = document.getElementById('strength-info');
-        if (strengthInfoDiv) {
-        strengthInfoDiv.innerHTML = formatStrengthInfo(dataForCalculation.strengthSuggestions, newLifePalacesData, newSdrData);
-        }
+        if (strengthInfoDiv) strengthInfoDiv.innerHTML = formatStrengthInfo(dataForCalculation.strengthSuggestions, newLifePalacesData, newSdrData);
 
-        // ▼▼▼ 更新：現在這裡只負責觸發預設的圖表更新 ▼▼▼
-        document.querySelector('input[name="chart-mode"][value="mingGong"]').checked = true; // 預設選中命宮
+        document.querySelector('input[name="chart-mode"][value="mingGong"]').checked = true; 
         updateChart(); 
 
-        // 命宮補充：檢查是否為女性命盤
         if (dataForCalculation.gender === '女') {
-        const lifePalaceShortName = '命';
-        const lifePalaceFullName = '命宮';
-        const lifePalaceIndex = newLifePalacesData.indexOf(lifePalaceShortName);
-        
-        if (lifePalaceIndex !== -1) {
-            const lifePalaceId = VALID_PALACES_CLOCKWISE[lifePalaceIndex];
-            const palaceBranch = PALACE_ID_TO_BRANCH[lifePalaceId];
+            const lifePalaceShortName = '命';
+            const lifePalaceFullName = '命宮';
+            const lifePalaceIndex = newLifePalacesData.indexOf(lifePalaceShortName);
             
-            // 2. 重新計算一次「命宮」最終會顯示哪些星曜 (包含所有借宮邏輯)
-            let allStarsInLifePalace = [...Object.values(dataForCalculation.chartModel[lifePalaceId].stars)];
-            const guestPalaceId = Object.keys(JI_GONG_MAP).find(key => JI_GONG_MAP[key] === lifePalaceId);
-            if (guestPalaceId && dataForCalculation.chartModel[guestPalaceId]) {
-                allStarsInLifePalace.push(...Object.values(dataForCalculation.chartModel[guestPalaceId].stars));
-            }
-            let coreStarsInLifePalace = allStarsInLifePalace.filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name) && star.name !== '皇恩星');
-            if (coreStarsInLifePalace.length === 0) {
-                const oppositePalaceId = OPPOSITE_PALACE_MAP[lifePalaceId];
-                if (oppositePalaceId && dataForCalculation.chartModel[oppositePalaceId]) {
-                    coreStarsInLifePalace = Object.values(dataForCalculation.chartModel[oppositePalaceId].stars).filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name) && star.name !== '皇恩星');
+            if (lifePalaceIndex !== -1) {
+                const lifePalaceId = VALID_PALACES_CLOCKWISE[lifePalaceIndex];
+                const palaceBranch = PALACE_ID_TO_BRANCH[lifePalaceId];
+                
+                let allStarsInLifePalace = [...Object.values(dataForCalculation.chartModel[lifePalaceId].stars)];
+                const guestPalaceId = Object.keys(JI_GONG_MAP).find(key => JI_GONG_MAP[key] === lifePalaceId);
+                if (guestPalaceId && dataForCalculation.chartModel[guestPalaceId]) {
+                    allStarsInLifePalace.push(...Object.values(dataForCalculation.chartModel[guestPalaceId].stars));
                 }
-            }
-            if (coreStarsInLifePalace.length === 0) {
-                const trinePartners = SAN_HE_MAP[palaceBranch];
-                if (trinePartners) {
-                    let trineStars = [];
-                    trinePartners.forEach(partnerBranch => {
-                        const partnerPalaceId = BRANCH_TO_PALACE_ID[partnerBranch];
-                        if (partnerPalaceId && dataForCalculation.chartModel[partnerPalaceId]) {
-                            trineStars.push(...Object.values(dataForCalculation.chartModel[partnerPalaceId].stars));
-                        }
-                    });
-                    coreStarsInLifePalace = trineStars.filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name) && star.name !== '皇恩星');
+                let coreStarsInLifePalace = allStarsInLifePalace.filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name) && star.name !== '皇恩星');
+                if (coreStarsInLifePalace.length === 0) {
+                    const oppositePalaceId = OPPOSITE_PALACE_MAP[lifePalaceId];
+                    if (oppositePalaceId && dataForCalculation.chartModel[oppositePalaceId]) {
+                        coreStarsInLifePalace = Object.values(dataForCalculation.chartModel[oppositePalaceId].stars).filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name) && star.name !== '皇恩星');
+                    }
                 }
-            }
-
-            // 3. 找到下方資訊區中，已經畫好的「命宮」區塊
-            const palaceBlocks = document.querySelectorAll('.palace-info-block');
-            palaceBlocks.forEach(block => {
-                const titleElement = block.querySelector('strong');
-                if (titleElement && titleElement.textContent.startsWith(lifePalaceFullName)) {
-                    
-                    // 4. 為命宮中的每一顆星，加上女性專屬的描述
-                    coreStarsInLifePalace.forEach(star => {
-                        const description = STAR_PALACE_DESCRIPTIONS_FEMALE[star.name]?.[lifePalaceFullName];
-                        if (description && description !== '待完成') {
-                            const starEntry = Array.from(block.querySelectorAll('.star-entry')).find(entry => entry.textContent.startsWith(star.name));
-                            if (starEntry) {
-                                const femaleDescSpan = document.createElement('span');
-                                femaleDescSpan.className = 'star-palace-description-female';
-                                femaleDescSpan.innerHTML = `${description}`;
-                                starEntry.appendChild(femaleDescSpan);
+                if (coreStarsInLifePalace.length === 0) {
+                    const trinePartners = SAN_HE_MAP[palaceBranch];
+                    if (trinePartners) {
+                        let trineStars = [];
+                        trinePartners.forEach(partnerBranch => {
+                            const partnerPalaceId = BRANCH_TO_PALACE_ID[partnerBranch];
+                            if (partnerPalaceId && dataForCalculation.chartModel[partnerPalaceId]) {
+                                trineStars.push(...Object.values(dataForCalculation.chartModel[partnerPalaceId].stars));
                             }
-                        }
-                    });
+                        });
+                        coreStarsInLifePalace = trineStars.filter(star => !EXCLUDED_STARS_FROM_ANALYSIS.includes(star.name) && star.name !== '皇恩星');
+                    }
                 }
-            });
-        }
+
+                const palaceBlocks = document.querySelectorAll('.palace-info-block');
+                palaceBlocks.forEach(block => {
+                    const titleElement = block.querySelector('strong');
+                    if (titleElement && titleElement.textContent.startsWith(lifePalaceFullName)) {
+                        coreStarsInLifePalace.forEach(star => {
+                            const description = STAR_PALACE_DESCRIPTIONS_FEMALE[star.name]?.[lifePalaceFullName];
+                            if (description && description !== '待完成') {
+                                const starEntry = Array.from(block.querySelectorAll('.star-entry')).find(entry => entry.textContent.startsWith(star.name));
+                                if (starEntry) {
+                                    const femaleDescSpan = document.createElement('span');
+                                    femaleDescSpan.className = 'star-palace-description-female';
+                                    femaleDescSpan.innerHTML = `${description}`;
+                                    starEntry.appendChild(femaleDescSpan);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
         }
 
-        // 祿馬交馳：呼叫新的分析引擎
         const luMaResults = findLuMaJiaoChiYears(dataForCalculation);
-        // 祿馬交馳：將結果顯示在新的 div 中
         const luMaInfoDiv = document.getElementById('luma-info');
         if (luMaInfoDiv) {
-        let html = '<strong>祿馬交馳年份：</strong>';
-        let found = false;
-        
-        if (luMaResults.threeWay.length > 0) {
-            html += `<br>三合（行年+祿+馬）：${luMaResults.threeWay.join('歲、')}歲`;
-            found = true;
-        }
-        if (luMaResults.twoWay.length > 0) {
-            html += `<br>雙合（祿+馬）：${luMaResults.twoWay.join('歲、')}歲`;
-            found = true;
-        }   
-        if (!found) {
-            html += ' 此盤無';
-        }
-        
-        luMaInfoDiv.innerHTML = html;
+            let html = '<strong>祿馬交馳年份：</strong>';
+            let found = false;
+            
+            if (luMaResults.threeWay.length > 0) {
+                html += `<br>三合（行年+祿+馬）：${luMaResults.threeWay.join('歲、')}歲`;
+                found = true;
+            }
+            if (luMaResults.twoWay.length > 0) {
+                html += `<br>雙合（祿+馬）：${luMaResults.twoWay.join('歲、')}歲`;
+                found = true;
+            }   
+            if (!found) {
+                html += ' 此盤無';
+            }
+            luMaInfoDiv.innerHTML = html;
         }
 
-        // 科甲年份：呼叫格式化函式並顯示結果
         const kejiaYearsInfoDiv = document.getElementById('kejia-years-info');
         if (kejiaYearsInfoDiv) {
             kejiaYearsInfoDiv.innerHTML = formatKeJiaYearsInfo(dataForCalculation.keJiaYears);
         }
-
     }
 
 
@@ -5300,232 +5625,282 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     // (這個calculateBtn.addEventListener 函式就是工廠老闆, runCalculation是老師傅)
     calculateBtn.addEventListener('click', () => {
-    // ▼▼▼ 清空並隱藏 AI 輸出區塊 ▼▼▼
-    document.getElementById('ai-summary-output').style.display = 'none';
-    document.getElementById('ai-summary-output').innerHTML = '';
-    document.getElementById('n8n-ai-output').style.display = 'none';
-    document.getElementById('n8n-ai-output').innerHTML = '';
-    // ▲▲▲ 清空結束 ▲▲▲
+        // ▼▼▼ 清空並隱藏 AI 輸出區塊 ▼▼▼
+        document.getElementById('ai-summary-output').style.display = 'none';
+        document.getElementById('ai-summary-output').innerHTML = '';
+        document.getElementById('n8n-ai-output').style.display = 'none';
+        document.getElementById('n8n-ai-output').innerHTML = '';
+        // ▲▲▲ 清空結束 ▲▲▲
 
-    const year = parseInt(document.getElementById('birth-year').value, 10);
-    const targetYearInput = document.getElementById('target-year');
-    const targetYear = parseInt(targetYearInput.value, 10);
+        const year = parseInt(document.getElementById('birth-year').value, 10);
+        const targetYearInput = document.getElementById('target-year');
+        const targetYear = parseInt(targetYearInput.value, 10);
 
-    if (!targetYear || targetYear < 1930 || targetYear > 2050) {
-        alert('請輸入一個介於 1930 到 2050 之間的有效分析年份。');
-        return;
-    }
-    const currentUserAge = targetYear - year + 1; 
+        if (!targetYear || targetYear < 1930 || targetYear > 2050) {
+            alert('請輸入一個介於 1930 到 2050 之間的有效分析年份。');
+            return;
+        }
+        const currentUserAge = targetYear - year + 1; 
 
-    aiSummaryOutput.style.display = 'none';
-    const month = parseInt(document.getElementById('birth-month').value, 10);
-    const day = parseInt(document.getElementById('birth-day').value, 10);
-    const hour = parseInt(document.getElementById('birth-hour').value, 10);
-    const birthDateObject = new Date(year, month - 1, day, hour);
+        // ▼▼▼ 核心新增：抓取流日選單資料並計算流日干支 ▼▼▼
+        const showTransitDayElement = document.getElementById('show-transit-day');
+        const showTransitDay = showTransitDayElement ? showTransitDayElement.checked : false;
+        const transitMonth = parseInt(document.getElementById('transit-month').value, 10);
+        const transitDay = parseInt(document.getElementById('transit-day').value, 10);
 
-    const precisionResult = calculateJishuAndBureau(birthDateObject);
-
-    if (precisionResult) {
-        dayJishuDisplay.textContent = precisionResult.dayJishu;
-        hourJishuDisplay.textContent = precisionResult.hourJishu;
-    } else {
-        dayJishuDisplay.textContent = '計算失敗';
-        hourJishuDisplay.textContent = '計算失敗';
-    }
-
-    const lunarDate = solarLunar.solar2lunar(year, month, day, hour);
-    
-    if (precisionResult) {
-        console.log("--- 四柱交叉驗證 ---");
-        const baziDayPillar = lunarDate.getDayInGanZhi();
-        console.log("日柱 (solar-lunar.js):", baziDayPillar);
-        console.log("日柱 (基準點推算):", precisionResult.dayPillar);
-        if (baziDayPillar === precisionResult.dayPillar) {
-            console.log("✅ 日柱驗證通過！");
-        } else { console.error("❌ 日柱驗證失敗！"); }
+        let transitGanZhi = null; 
         
-        const baziHourPillar = lunarDate.getTimeInGanZhi();
-        console.log("時柱 (solar-lunar.js):", baziHourPillar);
-        console.log("時柱 (時積數反推):", precisionResult.validatedHourPillar);
-        if (baziHourPillar === precisionResult.validatedHourPillar) {
-            console.log("✅ 時柱驗證通過！");
-        } else { console.error("❌ 時柱驗證失敗！"); }
-        console.log("--------------------");
-    }
+        if (showTransitDay && !isNaN(transitMonth) && !isNaN(transitDay)) {
+            // 使用 solarLunar 把公曆轉成農曆/干支，預設中午 12 點以確保取得當日正確干支
+            const transitDateData = solarLunar.solar2lunar(targetYear, transitMonth, transitDay, 12); 
+            
+            // ▼▼▼ 破案關鍵：修正抓取干支的語法 ▼▼▼
+            transitGanZhi = transitDateData.getDayInGanZhi(); 
+            
+            console.log(`【流日推演啟動】選擇日期：${targetYear}年 ${transitMonth}月 ${transitDay}日`);
+            console.log(`【流日推演啟動】該日干支：${transitGanZhi}`); // 按F12可以在主控台看到確實抓到了！
+        }
+        // ▲▲▲ 流日處理結束 ▲▲▲
 
-    const yearPillar = lunarDate.getYearInGanZhi();
-    const monthPillar = lunarDate.getMonthInGanZhi();
-    const dayPillar = lunarDate.getDayInGanZhi();
-    const hourPillar = lunarDate.getTimeInGanZhi();
-    
-    document.getElementById('year-pillar-stem').textContent = yearPillar.charAt(0);
-    document.getElementById('year-pillar-branch').textContent = yearPillar.charAt(1);
-    document.getElementById('month-pillar-stem').textContent = monthPillar.charAt(0);
-    document.getElementById('month-pillar-branch').textContent = monthPillar.charAt(1);
-    document.getElementById('day-pillar-stem').textContent = dayPillar.charAt(0);
-    document.getElementById('day-pillar-branch').textContent = dayPillar.charAt(1);
-    document.getElementById('hour-pillar-stem').textContent = hourPillar.charAt(0);
-    document.getElementById('hour-pillar-branch').textContent = hourPillar.charAt(1);
-    
-    const startAge = currentUserAge - 20;
-    const endAge = currentUserAge + 40;
-    const yearStemForDirection = lunarDate.getYearInGanZhi().charAt(0);
-    const genderForDirection = document.querySelector('input[name="gender"]:checked').value === 'male' ? '男' : '女';
-    const direction = determineDirection(yearStemForDirection, genderForDirection);
-    const lifePalaceId = findPalaceByCounting(lunarDate.getYearInGanZhi().charAt(1), lunarDate.getMonthInGanZhi().charAt(1), lunarDate.getTimeInGanZhi().charAt(1), direction);
-    const arrangedLifePalaces = lifePalaceId ? arrangeLifePalaces(lifePalaceId, direction) : [];
+        const month = parseInt(document.getElementById('birth-month').value, 10);
+        const day = parseInt(document.getElementById('birth-day').value, 10);
+        const hour = parseInt(document.getElementById('birth-hour').value, 10);
+        const birthDateObject = new Date(year, month - 1, day, hour);
 
-    const dataForCalculation = {
-        birthDate: `${year}/${month}/${day}`,
-        targetYear: targetYear, 
-        gender: document.querySelector('input[name="gender"]:checked').value === 'male' ? '男' : '女',
-        yearPillar: lunarDate.getYearInGanZhi(),
-        monthPillar: lunarDate.getMonthInGanZhi(),
-        dayPillar: lunarDate.getDayInGanZhi(),
-        hourPillar: lunarDate.getTimeInGanZhi(),
-        dayJishu: precisionResult ? precisionResult.dayJishu : 0,
-        hourJishu: precisionResult ? precisionResult.hourJishu : 0,
-        currentUserAge: currentUserAge,
-        arrangedLifePalaces: arrangedLifePalaces
-    };
+        const precisionResult = calculateJishuAndBureau(birthDateObject);
 
-    dataForCalculation.dayMasterInfo = getDayMasterInfo(dataForCalculation.dayPillar.charAt(0));
-    dataForCalculation.annualPillar = getAnnualPillar(targetYear);
-    dataForCalculation.elementInteraction = analyzeYearlyElementInteraction(dataForCalculation.dayPillar, dataForCalculation.annualPillar);
-    const bureauResult = precisionResult ? precisionResult.calculatedBureau : '計算失敗';
-    const lookupResult = lookupBureauData(bureauResult);
+        if (precisionResult) {
+            dayJishuDisplay.textContent = precisionResult.dayJishu;
+            hourJishuDisplay.textContent = precisionResult.hourJishu;
+        } else {
+            dayJishuDisplay.textContent = '計算失敗';
+            hourJishuDisplay.textContent = '計算失敗';
+        }
 
-    dataForCalculation.dayMasterData = getDayMasterData(dataForCalculation.dayPillar.charAt(0));
-    dataForCalculation.dayMasterInfo = getDayMasterInfo(dataForCalculation.dayMasterData);
-    dataForCalculation.kongWangResult = calculateKongWang(dataForCalculation.dayPillar);
-    dataForCalculation.bureauResult = bureauResult;
-    dataForCalculation.lookupResult = lookupResult;
-    dataForCalculation.deitiesResult = calculateDeities(bureauResult, dataForCalculation.hourPillar.charAt(1));
-    dataForCalculation.suanStarsResult = calculateSuanStars(lookupResult);
-    dataForCalculation.shiWuFuResult = calculateShiWuFu(dataForCalculation.hourJishu);
-    dataForCalculation.xiaoYouResult = calculateXiaoYou(dataForCalculation.hourJishu);
-    dataForCalculation.junJiResult = calculateJunJi(dataForCalculation.hourJishu);
-    dataForCalculation.chenJiResult = calculateChenJi(dataForCalculation.hourJishu);
-    dataForCalculation.minJiResult = calculateMinJi(dataForCalculation.hourJishu);
-    dataForCalculation.tianYiResult = calculateTianYi(dataForCalculation.hourJishu);
-    dataForCalculation.diYiResult = calculateDiYi(dataForCalculation.hourJishu);
-    dataForCalculation.siShenResult = calculateSiShen(dataForCalculation.hourJishu);
-    dataForCalculation.feiFuResult = calculateFeiFu(dataForCalculation.hourJishu);
-    dataForCalculation.daYouResult = calculateDaYou(dataForCalculation.hourJishu);
-    const xingNianData = calculateXingNian(dataForCalculation.gender, startAge, endAge); 
-    dataForCalculation.huangEnResult = calculateHuangEn(dataForCalculation.dayPillar.charAt(1));
-    dataForCalculation.shouQiResult = calculateShouQi(dataForCalculation.dayPillar, dataForCalculation.hourPillar);
-    dataForCalculation.birthHexagramResult = calculateBirthHexagram(dataForCalculation.yearPillar, dataForCalculation.monthPillar, dataForCalculation.dayPillar, dataForCalculation.hourPillar);
-    dataForCalculation.liYeHexagramResult = calculateLiYeHexagram(dataForCalculation.shouQiResult.palace, dataForCalculation.birthHexagramResult);
-    dataForCalculation.annualHexagramResult = calculateAnnualHexagram(dataForCalculation.birthHexagramResult, dataForCalculation.currentUserAge);    
-    dataForCalculation.baiLiuXiaoXianResult = calculateBaiLiuXiaoXian(dataForCalculation.shouQiResult, dataForCalculation.gender, dataForCalculation.currentUserAge);
-    dataForCalculation.feiLuDaXianResult = calculateFeiLuDaXian(dataForCalculation.yearPillar.charAt(0), dataForCalculation.currentUserAge);
-    dataForCalculation.feiMaDaXianResult = calculateFeiMaDaXian(dataForCalculation.yearPillar.charAt(0), dataForCalculation.currentUserAge);
-    dataForCalculation.feiLuLiuNianResult = calculateFeiLuLiuNian(dataForCalculation.yearPillar.charAt(0), dataForCalculation.dayPillar.charAt(0), dataForCalculation.gender, dataForCalculation.currentUserAge, arrangedLifePalaces);
-    dataForCalculation.feiMaLiuNianResult = calculateFeiMaLiuNian(dataForCalculation.hourPillar.charAt(0), dataForCalculation.dayPillar.charAt(0), dataForCalculation.gender, dataForCalculation.currentUserAge, dataForCalculation.arrangedLifePalaces);
-    dataForCalculation.heiFuResult = calculateHeiFu(dataForCalculation.hourPillar.charAt(0), dataForCalculation.currentUserAge);
-    dataForCalculation.liYeStartAge = calculateLiYeStartAge(dataForCalculation.birthHexagramResult);
-    dataForCalculation.baiLiuResult = calculateBaiLiuLimit(dataForCalculation.shouQiResult, dataForCalculation.gender);
-    dataForCalculation.annualChangingHexagramResult = calculateAnnualChangingHexagram(dataForCalculation.annualHexagramResult, dataForCalculation.baiLiuResult, dataForCalculation.currentUserAge);
-    dataForCalculation.monthlyHexagramsResult = calculateMonthlyHexagrams(dataForCalculation.annualHexagramResult?.number);
-    dataForCalculation.chartModel = buildChartModel(dataForCalculation);
-    dataForCalculation.annualHuaYaoInfo = analyzeAnnualHuaYaoPalaces(dataForCalculation.annualPillar.charAt(0), dataForCalculation.chartModel, arrangedLifePalaces, dataForCalculation.lookupResult, dataForCalculation.suanStarsResult);
-    dataForCalculation.tenGodsAnalysis = analyzeTenGods(dataForCalculation.dayMasterData, dataForCalculation.annualPillar);
-    dataForCalculation.tianKeDiChongYears = findTianKeDiChongYears(dataForCalculation.dayPillar, new Date().getFullYear(), 2050);
-    dataForCalculation.yangJiuResult = calculateYangJiu(dataForCalculation.monthPillar.charAt(0), dataForCalculation.gender);
-    dataForCalculation.daYouZhenXianResult = calculateDaYouZhenXian(dataForCalculation.hourPillar.charAt(1));
-    dataForCalculation.chartModel = buildChartModel(dataForCalculation);
-    dataForCalculation.remedySuggestions = analyzeRemedySuggestions(dataForCalculation.chartModel, dataForCalculation.arrangedLifePalaces);
-    dataForCalculation.strengthSuggestions = analyzeStrengthSuggestions(dataForCalculation.chartModel);
-    dataForCalculation.keJiaYears = findKeJiaYears(dataForCalculation);
-    dataForCalculation.daYouOverlapResult = findDaYouOverlap(dataForCalculation.daYouZhenXianResult, dataForCalculation.daYouResult);
-    
-    const ageLimitsForAI = arrangeAgeLimits(arrangedLifePalaces);
-    const greatLimitScoresForAI = calculateFortuneScores(dataForCalculation.chartModel, arrangedLifePalaces, ageLimitsForAI, hourPillar, dataForCalculation.lookupResult);
-    
-    dataForCalculation.currentGreatLimitIndex = ageLimitsForAI.findIndex(range => {
-        if (!range) return false;
-        const [start, end] = range.split('-').map(Number);
-        return currentUserAge >= start && currentUserAge <= end;
-    });
+        const lunarDate = solarLunar.solar2lunar(year, month, day, hour);
+        
+        if (precisionResult) {
+            console.log("--- 四柱交叉驗證 ---");
+            const baziDayPillar = lunarDate.getDayInGanZhi();
+            console.log("日柱 (solar-lunar.js):", baziDayPillar);
+            console.log("日柱 (基準點推算):", precisionResult.dayPillar);
+            if (baziDayPillar === precisionResult.dayPillar) {
+                console.log("✅ 日柱驗證通過！");
+            } else { console.error("❌ 日柱驗證失敗！"); }
+            
+            const baziHourPillar = lunarDate.getTimeInGanZhi();
+            console.log("時柱 (solar-lunar.js):", baziHourPillar);
+            console.log("時柱 (時積數反推):", precisionResult.validatedHourPillar);
+            if (baziHourPillar === precisionResult.validatedHourPillar) {
+                console.log("✅ 時柱驗證通過！");
+            } else { console.error("❌ 時柱驗證失敗！"); }
+            console.log("--------------------");
+        }
 
-    if (dataForCalculation.currentGreatLimitIndex !== -1) {
-        dataForCalculation.currentGreatLimitScore = greatLimitScoresForAI[dataForCalculation.currentGreatLimitIndex];
-        dataForCalculation.greatLimitAgeRange = ageLimitsForAI[dataForCalculation.currentGreatLimitIndex];
-    } else {
-        dataForCalculation.currentGreatLimitScore = 0;
-        dataForCalculation.greatLimitAgeRange = '未知'; 
-    }
+        const yearPillar = lunarDate.getYearInGanZhi();
+        const monthPillar = lunarDate.getMonthInGanZhi();
+        const dayPillar = lunarDate.getDayInGanZhi();
+        const hourPillar = lunarDate.getTimeInGanZhi();
+        
+        document.getElementById('year-pillar-stem').textContent = yearPillar.charAt(0);
+        document.getElementById('year-pillar-branch').textContent = yearPillar.charAt(1);
+        document.getElementById('month-pillar-stem').textContent = monthPillar.charAt(0);
+        document.getElementById('month-pillar-branch').textContent = monthPillar.charAt(1);
+        document.getElementById('day-pillar-stem').textContent = dayPillar.charAt(0);
+        document.getElementById('day-pillar-branch').textContent = dayPillar.charAt(1);
+        document.getElementById('hour-pillar-stem').textContent = hourPillar.charAt(0);
+        document.getElementById('hour-pillar-branch').textContent = hourPillar.charAt(1);
+        
+        const startAge = currentUserAge - 20;
+        const endAge = currentUserAge + 40;
+        const yearStemForDirection = lunarDate.getYearInGanZhi().charAt(0);
+        const genderForDirection = document.querySelector('input[name="gender"]:checked').value === 'male' ? '男' : '女';
+        const direction = determineDirection(yearStemForDirection, genderForDirection);
+        const lifePalaceId = findPalaceByCounting(lunarDate.getYearInGanZhi().charAt(1), lunarDate.getMonthInGanZhi().charAt(1), lunarDate.getTimeInGanZhi().charAt(1), direction);
+        const arrangedLifePalaces = lifePalaceId ? arrangeLifePalaces(lifePalaceId, direction) : [];
 
-    const ageToAnnualPalaceMapForAI = {};
-    const fullXingNianDataForAI = calculateXingNian(dataForCalculation.gender, 1, 120);
-    Object.keys(fullXingNianDataForAI).forEach(palaceId => {
-        fullXingNianDataForAI[palaceId].ages.forEach(age => { ageToAnnualPalaceMapForAI[age] = palaceId; });
-    });
+        // 將所有資料打包，準備送給老師傅 (包含我們剛剛抓到的流日資訊)
+        const dataForCalculation = {
+            userName: document.getElementById('user-name').value, // 加上這行，存擋才會記住名字
+            birthHour: hour, // 加上這行，存擋才會記住幾點出生
+            birthDate: `${year}/${month}/${day}`,
+            targetYear: targetYear, 
+            showTransitDay: showTransitDay,     // 是否啟用流日
+            transitGanZhi: transitGanZhi,       // 算出來的流日干支
+            transitMonth: transitMonth,
+            transitDay: transitDay,
+            gender: document.querySelector('input[name="gender"]:checked').value === 'male' ? '男' : '女',
+            yearPillar: lunarDate.getYearInGanZhi(),
+            monthPillar: lunarDate.getMonthInGanZhi(),
+            dayPillar: lunarDate.getDayInGanZhi(),
+            hourPillar: lunarDate.getTimeInGanZhi(),
+            dayJishu: precisionResult ? precisionResult.dayJishu : 0,
+            hourJishu: precisionResult ? precisionResult.hourJishu : 0,
+            currentUserAge: currentUserAge,
+            arrangedLifePalaces: arrangedLifePalaces
+        };
 
-    dataForCalculation.annualPalaceScore = calculateFullAnnualPalaceScore(currentUserAge, dataForCalculation.chartModel, dataForCalculation);
-    const annualPalaceIdForAI = ageToAnnualPalaceMapForAI[currentUserAge];
-    dataForCalculation.annualPalaceId = annualPalaceIdForAI; 
-    dataForCalculation.annualPalaceShortName = annualPalaceIdForAI ? arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(annualPalaceIdForAI)] : '未知';
+        dataForCalculation.dayMasterInfo = getDayMasterInfo(dataForCalculation.dayPillar.charAt(0));
+        dataForCalculation.annualPillar = getAnnualPillar(targetYear);
+        dataForCalculation.elementInteraction = analyzeYearlyElementInteraction(dataForCalculation.dayPillar, dataForCalculation.annualPillar);
+        const bureauResult = precisionResult ? precisionResult.calculatedBureau : '計算失敗';
+        const lookupResult = lookupBureauData(bureauResult);
 
-    const finalAnnualTrendScore = dataForCalculation.currentGreatLimitScore + (dataForCalculation.annualPalaceScore * 0.7);
-    dataForCalculation.annualTrendScore = finalAnnualTrendScore;
-
-    currentChartData = dataForCalculation; 
-
-    // --- ▼▼▼ 將主要計算結果渲染到畫面上 ▼▼▼ ---
-    runCalculation(dataForCalculation, hour, xingNianData); 
-
-    // --- ▼▼▼ 新增：執行「流年星曜」對「本命宮位」的感應分析並顯示 ▼▼▼ ---
-    const activations = getAnnualPalaceActivation(targetYear, arrangedLifePalaces);
-    const summaryP = document.getElementById('calculation-summary');
-
-    if (activations && activations.length > 0 && summaryP) {
-        const palaceGroups = {};
-        activations.forEach(a => {
-            if (!palaceGroups[a.natalPalace]) palaceGroups[a.natalPalace] = [];
-            palaceGroups[a.natalPalace].push(`${a.starName}(${a.roleName})`);
+        dataForCalculation.dayMasterData = getDayMasterData(dataForCalculation.dayPillar.charAt(0));
+        dataForCalculation.dayMasterInfo = getDayMasterInfo(dataForCalculation.dayMasterData);
+        dataForCalculation.kongWangResult = calculateKongWang(dataForCalculation.dayPillar);
+        dataForCalculation.bureauResult = bureauResult;
+        dataForCalculation.lookupResult = lookupResult;
+        dataForCalculation.deitiesResult = calculateDeities(bureauResult, dataForCalculation.hourPillar.charAt(1));
+        dataForCalculation.suanStarsResult = calculateSuanStars(lookupResult);
+        dataForCalculation.shiWuFuResult = calculateShiWuFu(dataForCalculation.hourJishu);
+        dataForCalculation.xiaoYouResult = calculateXiaoYou(dataForCalculation.hourJishu);
+        dataForCalculation.junJiResult = calculateJunJi(dataForCalculation.hourJishu);
+        dataForCalculation.chenJiResult = calculateChenJi(dataForCalculation.hourJishu);
+        dataForCalculation.minJiResult = calculateMinJi(dataForCalculation.hourJishu);
+        dataForCalculation.tianYiResult = calculateTianYi(dataForCalculation.hourJishu);
+        dataForCalculation.diYiResult = calculateDiYi(dataForCalculation.hourJishu);
+        dataForCalculation.siShenResult = calculateSiShen(dataForCalculation.hourJishu);
+        dataForCalculation.feiFuResult = calculateFeiFu(dataForCalculation.hourJishu);
+        dataForCalculation.daYouResult = calculateDaYou(dataForCalculation.hourJishu);
+        const xingNianData = calculateXingNian(dataForCalculation.gender, startAge, endAge); 
+        dataForCalculation.huangEnResult = calculateHuangEn(dataForCalculation.dayPillar.charAt(1));
+        dataForCalculation.shouQiResult = calculateShouQi(dataForCalculation.dayPillar, dataForCalculation.hourPillar);
+        dataForCalculation.birthHexagramResult = calculateBirthHexagram(dataForCalculation.yearPillar, dataForCalculation.monthPillar, dataForCalculation.dayPillar, dataForCalculation.hourPillar);
+        dataForCalculation.liYeHexagramResult = calculateLiYeHexagram(dataForCalculation.shouQiResult.palace, dataForCalculation.birthHexagramResult);
+        dataForCalculation.annualHexagramResult = calculateAnnualHexagram(dataForCalculation.birthHexagramResult, dataForCalculation.currentUserAge);    
+        dataForCalculation.baiLiuXiaoXianResult = calculateBaiLiuXiaoXian(dataForCalculation.shouQiResult, dataForCalculation.gender, dataForCalculation.currentUserAge);
+        dataForCalculation.feiLuDaXianResult = calculateFeiLuDaXian(dataForCalculation.yearPillar.charAt(0), dataForCalculation.currentUserAge);
+        dataForCalculation.feiMaDaXianResult = calculateFeiMaDaXian(dataForCalculation.yearPillar.charAt(0), dataForCalculation.currentUserAge);
+        dataForCalculation.feiLuLiuNianResult = calculateFeiLuLiuNian(dataForCalculation.yearPillar.charAt(0), dataForCalculation.dayPillar.charAt(0), dataForCalculation.gender, dataForCalculation.currentUserAge, arrangedLifePalaces);
+        dataForCalculation.feiMaLiuNianResult = calculateFeiMaLiuNian(dataForCalculation.hourPillar.charAt(0), dataForCalculation.dayPillar.charAt(0), dataForCalculation.gender, dataForCalculation.currentUserAge, dataForCalculation.arrangedLifePalaces);
+        dataForCalculation.heiFuResult = calculateHeiFu(dataForCalculation.hourPillar.charAt(0), dataForCalculation.currentUserAge);
+        dataForCalculation.liYeStartAge = calculateLiYeStartAge(dataForCalculation.birthHexagramResult);
+        dataForCalculation.baiLiuResult = calculateBaiLiuLimit(dataForCalculation.shouQiResult, dataForCalculation.gender);
+        dataForCalculation.annualChangingHexagramResult = calculateAnnualChangingHexagram(dataForCalculation.annualHexagramResult, dataForCalculation.baiLiuResult, dataForCalculation.currentUserAge);
+        dataForCalculation.monthlyHexagramsResult = calculateMonthlyHexagrams(dataForCalculation.annualHexagramResult?.number);
+        dataForCalculation.chartModel = buildChartModel(dataForCalculation);
+        dataForCalculation.annualHuaYaoInfo = analyzeAnnualHuaYaoPalaces(dataForCalculation.annualPillar.charAt(0), dataForCalculation.chartModel, arrangedLifePalaces, dataForCalculation.lookupResult, dataForCalculation.suanStarsResult);
+        dataForCalculation.tenGodsAnalysis = analyzeTenGods(dataForCalculation.dayMasterData, dataForCalculation.annualPillar);
+        dataForCalculation.tianKeDiChongYears = findTianKeDiChongYears(dataForCalculation.dayPillar, new Date().getFullYear(), 2050);
+        dataForCalculation.yangJiuResult = calculateYangJiu(dataForCalculation.monthPillar.charAt(0), dataForCalculation.gender);
+        dataForCalculation.daYouZhenXianResult = calculateDaYouZhenXian(dataForCalculation.hourPillar.charAt(1));
+        dataForCalculation.chartModel = buildChartModel(dataForCalculation);
+        dataForCalculation.remedySuggestions = analyzeRemedySuggestions(dataForCalculation.chartModel, dataForCalculation.arrangedLifePalaces);
+        dataForCalculation.strengthSuggestions = analyzeStrengthSuggestions(dataForCalculation.chartModel);
+        dataForCalculation.keJiaYears = findKeJiaYears(dataForCalculation);
+        dataForCalculation.daYouOverlapResult = findDaYouOverlap(dataForCalculation.daYouZhenXianResult, dataForCalculation.daYouResult);
+        
+        const ageLimitsForAI = arrangeAgeLimits(arrangedLifePalaces);
+        const greatLimitScoresForAI = calculateFortuneScores(dataForCalculation.chartModel, arrangedLifePalaces, ageLimitsForAI, hourPillar, dataForCalculation.lookupResult);
+        
+        dataForCalculation.currentGreatLimitIndex = ageLimitsForAI.findIndex(range => {
+            if (!range) return false;
+            const [start, end] = range.split('-').map(Number);
+            return currentUserAge >= start && currentUserAge <= end;
         });
 
-        let activationHtml = `\n\n  <strong style="color: #0056b3; font-size: 16px;">【${targetYear} 年度年干化曜】:</strong>`;
-        
-        for (const palace in palaceGroups) {
-            const starList = palaceGroups[palace];
-            const isSuperActive = starList.length >= 3; // 三星同宮
-            
-            // 超級感應時使用黃底紅字
-            const style = isSuperActive 
-                ? 'style="color: #d32f2f; font-weight: bold; background-color: #fff9c4; padding: 2px 5px; border-radius: 3px;"' 
-                : 'style="color: #333; font-weight: bold;"';
-
-            activationHtml += `\n<span ${style}>  ${palace}：被年盤 ${starList.join('、')} 入此宮位引動！</span>`;
-            
-            if (isSuperActive) {
-                // 微調了 margin-left 讓排版更對齊
-                activationHtml += `\n<small style="color: #d32f2f; font-weight: bold; margin-left: 10px;">(＊此宮位能量極強，代表該領域今年將有重大突破或變動！)</small>`;
-            }
+        if (dataForCalculation.currentGreatLimitIndex !== -1) {
+            dataForCalculation.currentGreatLimitScore = greatLimitScoresForAI[dataForCalculation.currentGreatLimitIndex];
+            dataForCalculation.greatLimitAgeRange = ageLimitsForAI[dataForCalculation.currentGreatLimitIndex];
+        } else {
+            dataForCalculation.currentGreatLimitScore = 0;
+            dataForCalculation.greatLimitAgeRange = '未知'; 
         }
-        summaryP.innerHTML += activationHtml;
+
+        const ageToAnnualPalaceMapForAI = {};
+        const fullXingNianDataForAI = calculateXingNian(dataForCalculation.gender, 1, 120);
+        Object.keys(fullXingNianDataForAI).forEach(palaceId => {
+            fullXingNianDataForAI[palaceId].ages.forEach(age => { ageToAnnualPalaceMapForAI[age] = palaceId; });
+        });
+
+        dataForCalculation.annualPalaceScore = calculateFullAnnualPalaceScore(currentUserAge, dataForCalculation.chartModel, dataForCalculation);
+        const annualPalaceIdForAI = ageToAnnualPalaceMapForAI[currentUserAge];
+        dataForCalculation.annualPalaceId = annualPalaceIdForAI; 
+        dataForCalculation.annualPalaceShortName = annualPalaceIdForAI ? arrangedLifePalaces[VALID_PALACES_CLOCKWISE.indexOf(annualPalaceIdForAI)] : '未知';
+
+        const finalAnnualTrendScore = dataForCalculation.currentGreatLimitScore + (dataForCalculation.annualPalaceScore * 0.7);
+        dataForCalculation.annualTrendScore = finalAnnualTrendScore;
+
+        currentChartData = dataForCalculation; 
+
+        // --- ▼▼▼ 將主要計算結果渲染到畫面上 ▼▼▼ ---
+        // 注意：剛剛的流年感應文字，老師傅裡面已經寫好了，所以這裡不用再重複寫！
+        runCalculation(dataForCalculation, hour, xingNianData); 
+
+        // --- ▼▼▼ 預設的 PDF 導出功能 (印出整個排盤畫面) ▼▼▼ ---
+        const mainContainer = document.querySelector('.main-container');
+        if (mainContainer && !mainContainer.id) {
+            mainContainer.id = 'main-export-area'; 
+        }
+        
+        const downloadBtn = document.getElementById('download-pdf-btn');
+        if (downloadBtn) {
+            downloadBtn.disabled = false; // 解鎖 PDF 按鈕
+            downloadBtn.onclick = function() {
+                generatePdfReport(
+                    currentChartData, 
+                    'main-export-area', 
+                    `${currentChartData.targetYear}年-排盤結果`
+                );
+            };
+        }
+    });
+
+    //  ▼▼▼ 就在這裡貼上「命盤存擋」與「命盤讀取」的邏輯 ▼▼▼
+    const saveDataBtn = document.getElementById('save-data-btn');
+    const loadDataBtn = document.getElementById('load-data-btn');
+    const fileInput = document.getElementById('file-input');
+
+    // --- 1. 命盤存擋：將當前資料下載為 JSON 檔 ---
+    if (saveDataBtn) {
+        saveDataBtn.addEventListener('click', () => {
+            if (!currentChartData || Object.keys(currentChartData).length === 0) {
+                alert('請先進行排盤，產生資料後再存擋。');
+                return;
+            }
+            const dataStr = JSON.stringify(currentChartData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const name = document.getElementById('user-name').value || '未命名';
+            const year = currentChartData.targetYear || '未知';
+            const link = document.createElement('a');
+            link.href = url; link.download = `太乙命盤-${name}-${year}年.json`;
+            link.click(); URL.revokeObjectURL(url);
+        });
     }
 
-    // --- ▼▼▼ 預設的 PDF 導出功能 (印出整個排盤畫面) ▼▼▼ ---
-    const mainContainer = document.querySelector('.main-container');
-    if (mainContainer && !mainContainer.id) {
-        mainContainer.id = 'main-export-area'; 
+    // --- 2. 命盤讀取：上傳 JSON 檔並自動填表排盤 ---
+    if (loadDataBtn && fileInput) {
+        loadDataBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    // 自動填回 UI 欄位
+                    if (importedData.userName) document.getElementById('user-name').value = importedData.userName;
+                    if (importedData.targetYear) document.getElementById('target-year').value = importedData.targetYear;
+                    if (importedData.birthDate) {
+                        const [y, m, d] = importedData.birthDate.split('/');
+                        document.getElementById('birth-year').value = y;
+                        document.getElementById('birth-month').value = m;
+                        document.getElementById('birth-day').value = d;
+                    }
+                    if (importedData.birthHour !== undefined) document.getElementById('birth-hour').value = importedData.birthHour;
+                    if (importedData.gender === '男') document.getElementById('gender-male').checked = true;
+                    else document.getElementById('gender-female').checked = true;
+
+                    alert('資料讀取成功！即時更新盤面...');
+                    if (calculateBtn) calculateBtn.click(); // 自動按一下更新按鈕
+                } catch (err) { alert("檔案格式不正確，無法讀取。"); }
+                fileInput.value = '';
+            };
+            reader.readAsText(file);
+        });
     }
-    
-    const downloadBtn = document.getElementById('download-pdf-btn');
-    if (downloadBtn) {
-        downloadBtn.disabled = false; // 解鎖 PDF 按鈕
-        downloadBtn.onclick = function() {
-            generatePdfReport(
-                currentChartData, 
-                'main-export-area', 
-                `${currentChartData.targetYear}年-排盤結果`
-            );
-        };
-    }
-    });
 
     // --- 頁面初始化 ---
 populateDateSelectors();

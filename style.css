@@ -338,6 +338,19 @@
     pointer-events: none;
 }
 
+/* 流日選單被禁用時的樣式 */
+.transit-selects select:disabled {
+    background-color: #f5f5f5;
+    color: #a0a0a0;
+    cursor: not-allowed;
+}
+
+/* 讓下拉選單在可用時有滑鼠指標 */
+.transit-selects select:not(:disabled) {
+    cursor: pointer;
+    background-color: #fff;
+}
+
 /* ====================================================== */
 /* 結果顯示區 (Output Area) 相關樣式                     */
 /* ====================================================== */
@@ -830,10 +843,68 @@
     cursor: pointer;      /* 滑鼠移上去變成手指圖示，提示可互動 */
 }
 
+/* ▼▼▼ 本命日柱化曜扇形背景 (吉星/凶星區分) ▼▼▼ */
+/* 吉星：淡天藍色 */
+.day-activation-sector-good {
+    fill: #73eba9;
+    fill-opacity: 0.3;
+    stroke: none;
+    pointer-events: all;
+    transition: fill-opacity 0.3s ease, fill 0.3s ease;
+    cursor: pointer;
+}
+.day-activation-sector-good:hover {
+    fill-opacity: 0.6;
+    fill: #fae671;       /* 變成金色，讓反饋更強烈 */
+}
+
+/* 凶星 (忌星/鬼星)：淡粉紅色 */
+.day-activation-sector-bad {
+    fill: #f9b89f;
+    fill-opacity: 0.3;
+    stroke: none;
+    pointer-events: all;
+    transition: fill-opacity 0.3s ease, fill 0.3s ease;
+    cursor: pointer;
+}
+.day-activation-sector-bad:hover {
+    fill-opacity: 0.6;
+    fill: #fae671;       /* 變成金色，讓反饋更強烈 */
+}
+
 /* 當滑鼠懸停在扇形上時的變化 */
 .activation-sector:hover {
     fill-opacity: 0.6;    /* 變不透明一點 */
-    fill: #ffe137;       /* 變成金色，讓反饋更強烈 */
+    fill: #fae671;       /* 變成金色，讓反饋更強烈 */
+}
+
+/* ▼▼▼ 流日推演扇形背景 (中圈：吉凶雙色) ▼▼▼ */
+/* 吉星：藍綠色 */
+.transit-activation-sector-good {
+    fill: #20b2aa;       /* 漂亮的藍綠色 (LightSeaGreen) */
+    fill-opacity: 0.3;
+    stroke: none;        /* 拿掉虛線框 */
+    pointer-events: all;
+    transition: fill-opacity 0.3s ease, fill 0.3s ease;
+    cursor: pointer;
+}
+.transit-activation-sector-good:hover {
+    fill-opacity: 0.6;
+    fill: #fae671;       /* 變成金色，讓反饋更強烈 */
+}
+
+/* 凶星 (忌星/鬼星)：桃紅色 */
+.transit-activation-sector-bad {
+    fill: #f97070;       /* 亮眼的桃紅色 (HotPink) */
+    fill-opacity: 0.3;
+    stroke: none;        /* 拿掉虛線框 */
+    pointer-events: all;
+    transition: fill-opacity 0.3s ease, fill 0.3s ease;
+    cursor: pointer;
+}
+.transit-activation-sector-bad:hover {
+    fill-opacity: 0.6;
+    fill: #fae671;       /* 變成金色，讓反饋更強烈 */
 }
 
 /* ▼▼▼ 浮動提示框 (Tooltip) 的樣式 ▼▼▼ */

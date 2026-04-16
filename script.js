@@ -960,6 +960,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ▼▼▼ 補上這行：太乙國運基準數 ▼▼▼
     const TAI_YI_BASE_JISHU = 10153917;
 
+    // ▼▼▼ 五福星的宮位順序 ▼▼▼
+    const WU_FU_ORDER = ['乾', '艮', '巽', '坤', '中'];
+
 
 // =================================================================
 //  SECTION 2: SVG 圖盤繪製邏輯 (最終整理版)
@@ -4355,93 +4358,145 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         };
     }
 
-    // ▼▼▼ 偵測「流年年盤星曜」對「本命宮位」的觸發感應 (終極修復版) ▼▼▼
-    function getAnnualPalaceActivation(targetYear, natalLifePalaces) {
-    // 1. 計算該年份的國運年積數 (取夏至點作為代表)
-    const national = calculateNationalJishu(targetYear, 6, 22, 12);
-    if (!national) return [];
+    // ▼▼▼ 【修正版V3】通用五福星計算 (修正月五福亥月基準倒推) ▼▼▼
+    function calculateWuFu(jishuInput, namePrefix) {
+        if (jishuInput === null || jishuInput === undefined) return null;
 
-    const annualJishu = national.annualJishu;
-    const annualBureau = national.annualBureau; 
-    const annualStem = national.annualGanZhi.charAt(0);
-    
-    // 2. 取得該年局所有「固定星曜」與「算數」
-    const annualLookup = lookupBureauData(annualBureau);
-    if (!annualLookup) return [];
+        const WU_FU_BASE_JISHU = 423007;
+        const CYCLE = 225;
+        const UNITS_PER_PALACE = 45;
+        let finalJishu; 
+        let remainder;
 
-    // 3. 計算該年盤的「所有動態星曜」 (這就是之前沒顯示的關鍵！)
-    const annualSuanStars = calculateSuanStars(annualLookup);
+        switch (namePrefix) {
+            case '年五福':
+                // jishuInput 這裡傳入的是 taiYiYear (太乙年)
+                finalJishu = WU_FU_BASE_JISHU + jishuInput; 
+                remainder = Number(finalJishu) % CYCLE;
+                break;
 
-    // 建立完整年盤星曜位置字典
-    const annualStarLocations = {
-        '太乙': annualLookup.太乙,
-        '文昌': annualLookup.文昌,
-        '始擊': annualLookup.始擊,
-        '定目': annualLookup.定目,
-        '小遊': calculateXiaoYou(annualJishu),
-        '君基': calculateJunJi(annualJishu),
-        '臣基': calculateChenJi(annualJishu),
-        '民基': calculateMinJi(annualJishu),
-        '天乙': calculateTianYi(annualJishu),
-        '地乙': calculateDiYi(annualJishu),
-        '四神': calculateSiShen(annualJishu),
-        '飛符': calculateFeiFu(annualJishu),
-        '時五福': calculateShiWuFu(annualJishu)
-    };
-    
-    // 併入主大、客大等算星
-    if (annualSuanStars && annualSuanStars.chartStars) {
-        Object.assign(annualStarLocations, annualSuanStars.chartStars);
-    }
-    
-    // 處理算星入中宮的寄宮邏輯
-    if (annualSuanStars && annualSuanStars.centerStars) {
-        annualSuanStars.centerStars.forEach(s => {
-            let hostBranch = null;
-            if (['主大', '主參'].includes(s) && annualLookup.主算 && CENTER_PALACE_JI_GONG_RULES['主算'][annualLookup.主算]) {
-                hostBranch = CENTER_PALACE_JI_GONG_RULES['主算'][annualLookup.主算][s];
-            } else if (['客大', '客參'].includes(s) && annualLookup.客算 && CENTER_PALACE_JI_GONG_RULES['客算'][annualLookup.客算]) {
-                hostBranch = CENTER_PALACE_JI_GONG_RULES['客算'][annualLookup.客算][s];
-            }
-            annualStarLocations[s] = hostBranch || '中';
-        });
-    }
+            case '月五福':
+                const { taiYiYear, monthBranch, isYearEnd } = jishuInput;
+                const baseJishuForHai = (WU_FU_BASE_JISHU + taiYiYear) * 12;
+                let baseRemainder = baseJishuForHai % CYCLE;
+                if (baseRemainder === 0) baseRemainder = CYCLE;
 
-    // 4. 取得流年天干化曜規則
-    const activationRules = NIAN_GAN_HUA_YAO[annualStem]; 
-    if (!activationRules) return [];
-    
-    const activations = [];
-    const cornerMapping = { '乾': '亥', '艮': '寅', '巽': '巳', '坤': '申' };
-
-    // 5. 交叉比對：看年盤星曜落入本命哪個宮位
-    for (const roleKey in activationRules) {
-        const starNames = activationRules[roleKey]; 
-        const roleName = HUA_YAO_ROLE_MAP[roleKey];
-
-        starNames.forEach(starName => {
-            // 從字典中取出該星在年盤的真實位置
-            const annualBranch = annualStarLocations[starName]; 
-            
-            if (annualBranch && annualBranch !== '中') {
-                // 處理寄宮 (艮 -> 寅)
-                const actualBranch = cornerMapping[annualBranch] || annualBranch;
-                const palaceId = BRANCH_TO_PALACE_ID[actualBranch];
-                const palaceIndex = VALID_PALACES_CLOCKWISE.indexOf(palaceId);
-                
-                if (palaceIndex !== -1) {
-                    const natalPalaceName = natalLifePalaces[palaceIndex]; 
-                    activations.push({
-                        starName: starName,
-                        roleName: roleName,
-                        branch: actualBranch,
-                        natalPalace: PALACE_FULL_NAME_MAP[natalPalaceName] || natalPalaceName
-                    });
+                let branchIndex = EARTHLY_BRANCHES.indexOf(monthBranch);
+                if (isYearEnd && (monthBranch === '子' || monthBranch === '丑')) {
+                    branchIndex += 12;
                 }
-            }
-        });
+
+                const haiIndex = 11;
+                const diff = haiIndex - branchIndex;
+                remainder = baseRemainder - diff;
+                
+                while (remainder <= 0) remainder += CYCLE;
+                while (remainder > CYCLE) remainder -= CYCLE;
+                break;
+
+            default:
+                remainder = Number(jishuInput) % CYCLE;
+                break;
+        }
+
+        if (remainder === 0) remainder = CYCLE;
+
+        const palaceIndex = Math.floor((remainder - 1) / UNITS_PER_PALACE);
+        const palaceName = (palaceIndex < WU_FU_ORDER.length) ? WU_FU_ORDER[palaceIndex] : null;
+
+        if (!palaceName) return null;
+
+        const finalSubNumber = (remainder - 1) % UNITS_PER_PALACE + 1;
+
+        return {
+            palace: palaceName,
+            text: `${namePrefix}${finalSubNumber}`
+        };
     }
-    return activations;
+
+    // ▼▼▼ 偵測「流年年盤星曜」對「本命宮位」的觸發感應 (專精版 + 年五福修正) ▼▼▼
+    function getAnnualPalaceActivation(targetYear, natalLifePalaces) {
+        const national = calculateNationalJishu(targetYear, 6, 22, 12);
+        if (!national) return [];
+
+        const annualJishu = national.annualJishu;
+        const annualBureau = national.annualBureau; 
+        const annualStem = national.annualGanZhi.charAt(0);
+        
+        const annualLookup = lookupBureauData(annualBureau);
+        if (!annualLookup) return [];
+
+        const annualSuanStars = calculateSuanStars(annualLookup);
+
+        // ▼▼▼ 新增：計算真正的「太乙年」與「年五福」 ▼▼▼
+        const taiYiYear = annualJishu - TAI_YI_BASE_JISHU;
+        const annualWuFuResult = calculateWuFu(taiYiYear, '年五福');
+
+        // 建立完整年盤星曜位置字典
+        const annualStarLocations = {
+            '太乙': annualLookup.太乙,
+            '文昌': annualLookup.文昌,
+            '始擊': annualLookup.始擊,
+            '定目': annualLookup.定目,
+            '小遊': calculateXiaoYou(annualJishu),
+            '君基': calculateJunJi(annualJishu),
+            '臣基': calculateChenJi(annualJishu),
+            '民基': calculateMinJi(annualJishu),
+            '天乙': calculateTianYi(annualJishu),
+            '地乙': calculateDiYi(annualJishu),
+            '四神': calculateSiShen(annualJishu),
+            '飛符': calculateFeiFu(annualJishu),
+            // ▼▼▼ 核心修正：讓資料庫中的 '時五福' 綁定到「年五福」算出來的宮位 ▼▼▼
+            '時五福': annualWuFuResult ? annualWuFuResult.palace : null 
+        };
+        
+        if (annualSuanStars && annualSuanStars.chartStars) {
+            Object.assign(annualStarLocations, annualSuanStars.chartStars);
+        }
+        
+        if (annualSuanStars && annualSuanStars.centerStars) {
+            annualSuanStars.centerStars.forEach(s => {
+                let hostBranch = null;
+                if (['主大', '主參'].includes(s) && annualLookup.主算 && CENTER_PALACE_JI_GONG_RULES['主算'][annualLookup.主算]) {
+                    hostBranch = CENTER_PALACE_JI_GONG_RULES['主算'][annualLookup.主算][s];
+                } else if (['客大', '客參'].includes(s) && annualLookup.客算 && CENTER_PALACE_JI_GONG_RULES['客算'][annualLookup.客算]) {
+                    hostBranch = CENTER_PALACE_JI_GONG_RULES['客算'][annualLookup.客算][s];
+                }
+                annualStarLocations[s] = hostBranch || '中';
+            });
+        }
+
+        const activationRules = NIAN_GAN_HUA_YAO[annualStem]; 
+        if (!activationRules) return [];
+        
+        const activations = [];
+        const cornerMapping = { '乾': '亥', '艮': '寅', '巽': '巳', '坤': '申' };
+
+        for (const roleKey in activationRules) {
+            const starNames = activationRules[roleKey]; 
+            const roleName = HUA_YAO_ROLE_MAP[roleKey];
+
+            starNames.forEach(starName => {
+                const annualBranch = annualStarLocations[starName]; 
+                
+                if (annualBranch && annualBranch !== '中') {
+                    const actualBranch = cornerMapping[annualBranch] || annualBranch;
+                    const palaceId = BRANCH_TO_PALACE_ID[actualBranch];
+                    const palaceIndex = VALID_PALACES_CLOCKWISE.indexOf(palaceId);
+                    
+                    if (palaceIndex !== -1) {
+                        const natalPalaceName = natalLifePalaces[palaceIndex]; 
+                        activations.push({
+                            starName: starName === '時五福' ? '五福' : starName, // 讓顯示文字變漂亮
+                            roleName: roleName,
+                            branch: actualBranch,
+                            natalPalace: PALACE_FULL_NAME_MAP[natalPalaceName] || natalPalaceName
+                        });
+                    }
+                }
+            });
+        }
+        return activations;
     }
 
     // ▼▼▼ 從 n8n 獲取 AI 分析結果的專屬函式 (安全修正 + 月份分段版) ▼▼▼

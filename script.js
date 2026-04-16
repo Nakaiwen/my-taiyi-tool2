@@ -1203,8 +1203,8 @@ function drawKongWangSector(palaceBranch) {
     const startAngle = centerAngle - halfSlice;
     const endAngle = centerAngle + halfSlice;
 
-    const innerRadius = 93;  
-    const outerRadius = 352; 
+    const innerRadius = 92;  
+    const outerRadius = 280; // 決定扇形到哪裡「結束」(外圈半徑) 
 
     const toRad = (deg) => deg * (Math.PI / 180); 
     
@@ -1264,11 +1264,11 @@ function drawActivationSectors(activations, targetYear) {
         centerAngle += manualOffset;
 
         // 扇形的參數
-        const halfSlice = 11.2; 
+        const halfSlice = 11.2;  // 決定扇形的「寬度/角度」
         const startAngle = centerAngle - halfSlice;
         const endAngle = centerAngle + halfSlice;
-        const innerRadius = 93;  
-        const outerRadius = 352; 
+        const innerRadius = 92;  // 決定扇形從哪裡「開始」(內圈半徑) 
+        const outerRadius = 280; // 決定扇形到哪裡「結束」(外圈半徑)
         const toRad = (deg) => deg * (Math.PI / 180); 
         
         // 計算 SVG 路徑的四個頂點

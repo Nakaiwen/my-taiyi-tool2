@@ -5356,59 +5356,61 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         if (monthlyHexagramsText) outputText += monthlyHexagramsText;
         
         
-        // ▼▼▼ 1. 輸出【本命日柱化曜】文字 ▼▼▼
+        // 1. 處理【本命日柱化曜】 (縮小間距版)
         if (typeof dayActivations !== 'undefined' && dayActivations && dayActivations.length > 0) {
             const dayGroups = {};
             dayActivations.forEach(a => {
                 if (!dayGroups[a.natalPalace]) dayGroups[a.natalPalace] = [];
                 const isBad = a.roleName.includes('忌星') || a.roleName.includes('鬼星');
-                const color = isBad ? '#d32f2f' : '#0056b3'; // 凶星紅字，吉星藍字
+                const color = isBad ? '#d32f2f' : '#0056b3';
                 dayGroups[a.natalPalace].push(`<span style="color: ${color}; font-weight: bold;">${a.starName}</span>(${a.roleName})`);
             });
 
-            outputText += `\n\n  <strong style="color: #008080; font-size: 16px;">【本命日柱化曜】:</strong>`; 
+            outputText += `\n\n<div style="margin-top: 10px; line-height: 1.4;"><strong style="color: #008080; font-size: 15px;">【本命日柱化曜】：</strong>`;
             for (const palace in dayGroups) {
-                const starList = dayGroups[palace];
-                outputText += `\n  <span style="color: #333; font-weight: bold;">  ${palace}：匯聚 ${starList.join('、')}！</span>`;
+                outputText += `\n<span style="display: block; padding-left: 15px; margin-top: 2px; font-size: 14px;">${palace}：${dayGroups[palace].join('、')}</span>`;
             }
+            outputText += `</div>`;
         }
-        
-        // ▼▼▼ 2. 輸出【年干化曜】文字 ▼▼▼
+
+        // 2. 處理【年度年干化曜】 (縮小間距版)
         if (activations && activations.length > 0) {
             const palaceGroups = {};
             activations.forEach(a => {
                 if (!palaceGroups[a.natalPalace]) palaceGroups[a.natalPalace] = [];
-                palaceGroups[a.natalPalace].push(`${a.starName}(${a.roleName})`);
+                const isBad = a.roleName.includes('忌星') || a.roleName.includes('鬼星');
+                const color = isBad ? '#d32f2f' : '#0056b3';
+                palaceGroups[a.natalPalace].push(`<span style="color: ${color}; font-weight: bold;">${a.starName}</span>(${a.roleName})`);
             });
 
-            outputText += `\n\n  <strong style="color: #0056b3; font-size: 16px;">【${dataForCalculation.targetYear} 年度年干化曜】:</strong>`;
+            outputText += `\n\n<div style="margin-top: 10px; line-height: 1.4;"><strong style="color: #0056b3; font-size: 15px;">【${dataForCalculation.targetYear} 年度年干化曜】：</strong>`;
             for (const palace in palaceGroups) {
                 const starList = palaceGroups[palace];
                 const isSuperActive = starList.length >= 3; 
-                const style = isSuperActive 
-                    ? 'style="color: #d32f2f; font-weight: bold; background-color: #fff9c4; padding: 2px 5px; border-radius: 3px;"' 
-                    : 'style="color: #333; font-weight: bold;"';
-
-                outputText += `\n<span ${style}>  ${palace}：被年盤 ${starList.join('、')} 入此宮位引動！</span>`;
+                outputText += `\n<span style="display: block; padding-left: 15px; margin-top: 2px; font-size: 14px;">${palace}：被引動 ${starList.join('、')}</span>`;
                 if (isSuperActive) {
-                    outputText += `\n<small style="color: #d32f2f; font-weight: bold; margin-left: 10px;">(＊此宮位能量極強，代表該領域今年將有重大突破或變動！)</small>`;
+                    outputText += `\n<span style="display: block; padding-left: 15px; color: #d32f2f; font-size: 12px; font-weight: bold;">＊此宮能量強旺，有重大變動！</span>`;
                 }
             }
+            outputText += `</div>`;
         }
 
-        // ▼▼▼ 3. 輸出【流日推演】文字 ▼▼▼
+        // 3. 處理【流日推演】 (緊湊色塊版)
         if (typeof transitActivations !== 'undefined' && transitActivations && transitActivations.length > 0) {
             const transitGroups = {};
             transitActivations.forEach(a => {
                 if (!transitGroups[a.natalPalace]) transitGroups[a.natalPalace] = [];
-                // 區分吉凶星文字顏色
                 const isBad = a.roleName.includes('忌星') || a.roleName.includes('鬼星');
-                const color = isBad ? '#d32f2f' : '#008080'; // 凶星深紅，吉星深藍綠
+                const color = isBad ? '#d32f2f' : '#0056b3';
                 transitGroups[a.natalPalace].push(`<span style="color: ${color}; font-weight: bold;">${a.starName}</span>(${a.roleName})`);
             });
 
-            // 標題改用沉穩的灰藍色底色，讓整體報告看起來更有質感
-            outputText += `\n\n  <strong style="color: #fff; background-color: #607d8b; font-weight: 800; font-size: 15px; padding: 3px 6px; border-radius: 4px;">【${dataForCalculation.transitMonth}月${dataForCalculation.transitDay}日 流日推演】:</strong>`;
+            outputText += `\n\n<div style="margin-top: 12px; padding: 5px 8px; background-color: #f8f9fa; border-left: 4px solid #ff8c00; border-radius: 3px; line-height: 1.4;">`;
+            outputText += `<strong style="color: #e67e22; font-size: 15px;">【${dataForCalculation.transitMonth}/${dataForCalculation.transitDay} 流日推演】：</strong>`;
+            for (const palace in transitGroups) {
+                outputText += `\n<span style="display: block; padding-left: 5px; margin-top: 2px; font-size: 14px;">${palace}：被引動 ${transitGroups[palace].join('、')}</span>`;
+            }
+            outputText += `</div>`;
         }
 
         // ▼▼▼ 一次性渲染所有文字到畫面上 ▼▼▼

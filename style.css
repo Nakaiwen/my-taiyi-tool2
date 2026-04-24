@@ -925,3 +925,1655 @@
     white-space: pre-wrap; /* 讓 \n 能正常換行 */
     max-width: 280px;
 }
+/* ====================================================== */
+/* V1 Redesign: 東方命理 × 水墨留白 × 現代 Landing Page       */
+/* ====================================================== */
+:root {
+  --bg: #f7f1e6;
+  --bg-deep: #efe4d0;
+  --paper: #fffaf0;
+  --paper-strong: #fffdf6;
+  --ink: #26352b;
+  --ink-soft: #3f5043;
+  --muted: #6f7568;
+  --green: #51684f;
+  --green-dark: #354838;
+  --green-light: #73856f;
+  --gold: #b99a5d;
+  --gold-soft: #e8dcc1;
+  --line: #ded1b7;
+  --shadow: 0 22px 55px rgba(65, 50, 28, 0.12);
+  --shadow-soft: 0 12px 30px rgba(65, 50, 28, 0.08);
+  --radius-lg: 28px;
+  --radius-md: 20px;
+  --radius-sm: 14px;
+  --font-body: 'BiauKaiWeb', 'Noto Serif TC', 'Songti TC', 'PMingLiU', serif;
+  --font-ui: 'Noto Sans TC', 'Microsoft JhengHei', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  display: block !important;
+  margin: 0;
+  padding: 0 !important;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(185, 154, 93, 0.12), transparent 30%),
+    radial-gradient(circle at 88% 6%, rgba(81, 104, 79, 0.10), transparent 28%),
+    linear-gradient(180deg, #fbf7ed 0%, var(--bg) 45%, #f5ead8 100%);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -2;
+  opacity: 0.48;
+  background-image:
+    linear-gradient(rgba(153, 130, 88, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(153, 130, 88, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 10% 82%, rgba(38, 53, 43, 0.11), transparent 24%),
+    radial-gradient(circle at 82% 72%, rgba(185, 154, 93, 0.09), transparent 26%);
+  background-size: 36px 36px, 36px 36px, 100% 100%, 100% 100%;
+}
+
+body::after {
+  content: "太乙";
+  position: fixed;
+  right: -80px;
+  top: 34%;
+  font-size: 150px;
+  letter-spacing: 0.18em;
+  color: rgba(185, 154, 93, 0.055);
+  writing-mode: vertical-rl;
+  z-index: -1;
+  pointer-events: none;
+}
+
+a { color: inherit; text-decoration: none; }
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(1180px, calc(100% - 36px));
+  margin: 14px auto 0;
+  padding: 12px 14px 12px 16px;
+  border: 1px solid rgba(222, 209, 183, 0.75);
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.82);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 30px rgba(83, 64, 33, 0.08);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  color: var(--gold);
+  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(232,220,193,0.45));
+  font-size: 18px;
+}
+
+.brand-text { font-size: 18px; letter-spacing: 0.06em; }
+
+.site-nav {
+  display: flex;
+  gap: clamp(14px, 2.5vw, 34px);
+  align-items: center;
+  color: #4d574c;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.site-nav a {
+  position: relative;
+  padding: 8px 0;
+}
+
+.site-nav a::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 0;
+  height: 1px;
+  background: var(--gold);
+  transform: translateX(-50%);
+  transition: width 0.25s ease;
+}
+
+.site-nav a:hover::after { width: 100%; }
+
+.nav-cta,
+.primary-cta,
+.ghost-cta,
+#ai-summary-controls button,
+#get-monthly-ai-btn,
+#test-n8n-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+}
+
+.nav-cta,
+.primary-cta {
+  color: #fffaf0;
+  background: linear-gradient(135deg, var(--green), var(--green-dark));
+  border: 1px solid rgba(53, 72, 56, 0.12);
+  box-shadow: 0 12px 28px rgba(53, 72, 56, 0.18);
+}
+
+.nav-cta { padding: 12px 22px; font-size: 14px; }
+.primary-cta { padding: 15px 24px; font-size: 15px; }
+
+.ghost-cta {
+  padding: 15px 22px;
+  color: var(--green-dark);
+  background: rgba(255, 250, 240, 0.58);
+  border: 1px solid rgba(185, 154, 93, 0.45);
+}
+
+.nav-cta:hover,
+.primary-cta:hover,
+.ghost-cta:hover,
+.action-btn:hover:not(:disabled),
+#ai-summary-controls button:hover { transform: translateY(-2px); }
+
+.landing-page {
+  width: min(1180px, calc(100% - 36px));
+  margin: 0 auto;
+}
+
+.hero-section {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
+  gap: clamp(28px, 5vw, 72px);
+  align-items: center;
+  min-height: 620px;
+  padding: 72px 10px 58px;
+}
+
+.hero-section::before {
+  content: "";
+  position: absolute;
+  left: -8vw;
+  bottom: 24px;
+  width: 58vw;
+  height: 220px;
+  opacity: 0.26;
+  background:
+    radial-gradient(ellipse at 20% 70%, rgba(38,53,43,0.30), transparent 40%),
+    radial-gradient(ellipse at 46% 68%, rgba(38,53,43,0.22), transparent 36%),
+    radial-gradient(ellipse at 72% 74%, rgba(38,53,43,0.14), transparent 30%);
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.ink-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.ink-orb-left {
+  left: 28%;
+  bottom: 110px;
+  width: 96px;
+  height: 96px;
+  background: radial-gradient(circle, rgba(220, 191, 134, 0.38), rgba(220, 191, 134, 0.02) 68%);
+}
+.ink-orb-right {
+  right: 4%;
+  top: 88px;
+  width: 180px;
+  height: 180px;
+  border: 1px solid rgba(185, 154, 93, 0.20);
+  opacity: 0.45;
+}
+
+.hero-copy { position: relative; z-index: 1; }
+.eyebrow {
+  margin: 0 0 18px;
+  color: var(--gold);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.23em;
+  text-transform: uppercase;
+}
+
+.hero-copy h1 {
+  margin: 0;
+  color: var(--green-dark);
+  font-size: clamp(42px, 5.8vw, 76px);
+  line-height: 1.22;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.hero-desc {
+  max-width: 560px;
+  margin: 24px 0 0;
+  color: #566254;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  line-height: 2;
+  letter-spacing: 0.04em;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 34px;
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+.hero-badges span {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid rgba(222, 209, 183, 0.8);
+  border-radius: 999px;
+  color: #647062;
+  background: rgba(255, 250, 240, 0.52);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.hero-visual { position: relative; z-index: 1; }
+.device-frame {
+  border: 1px solid rgba(64, 57, 40, 0.18);
+  border-radius: 26px;
+  padding: 16px 16px 22px;
+  background: linear-gradient(180deg, rgba(37,39,38,0.96), rgba(18,20,20,0.98));
+  box-shadow: 0 32px 70px rgba(38, 38, 35, 0.24);
+}
+.device-topbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 24px;
+  padding-left: 6px;
+}
+.device-topbar span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.22);
+}
+.preview-card {
+  display: grid;
+  grid-template-columns: 0.72fr 1fr;
+  gap: 18px;
+  min-height: 290px;
+  padding: 28px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 78% 30%, rgba(185,154,93,0.10), transparent 28%),
+    linear-gradient(135deg, #fffaf0 0%, #f6eddd 100%);
+  overflow: hidden;
+}
+.preview-info p {
+  margin: 0 0 18px;
+  color: var(--ink);
+  font-weight: 700;
+}
+.preview-pillars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.preview-pillars span {
+  display: grid;
+  place-items: center;
+  min-height: 62px;
+  border: 1px solid rgba(185, 154, 93, 0.28);
+  border-radius: 12px;
+  color: #276193;
+  background: rgba(255,255,255,0.55);
+  font-size: 22px;
+  line-height: 1.2;
+}
+.preview-info ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #667063;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 2;
+}
+.mini-plate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-self: center;
+  aspect-ratio: 1;
+  min-width: 230px;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 0deg, rgba(81,104,79,0.08), rgba(185,154,93,0.20), rgba(99,123,105,0.12), rgba(185,154,93,0.10), rgba(81,104,79,0.08));
+  border: 1px solid rgba(38,53,43,0.22);
+}
+.mini-plate::before,
+.mini-plate::after {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  border: 1px dashed rgba(38,53,43,0.24);
+}
+.mini-plate::after { inset: 28%; border-style: solid; opacity: 0.55; }
+.ring { position: absolute; border-radius: 50%; border: 1px solid rgba(38,53,43,0.16); }
+.ring-1 { inset: 5%; }
+.ring-2 { inset: 18%; }
+.ring-3 { inset: 40%; }
+.plate-center {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(255,250,240,0.86);
+  color: var(--gold);
+  font-weight: 800;
+}
+.preview-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+  color: rgba(255,250,240,0.82);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  text-align: center;
+}
+.preview-tabs span {
+  padding: 10px 8px;
+  border: 1px solid rgba(255,250,240,0.12);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+}
+
+.features-section,
+.story-section,
+.tool-section,
+.final-cta-section {
+  position: relative;
+  padding: 42px 0;
+}
+
+.section-heading {
+  display: grid;
+  grid-template-columns: minmax(40px, 1fr) auto minmax(40px, 1fr);
+  gap: 18px;
+  align-items: center;
+  margin: 0 auto 26px;
+  color: var(--green-dark);
+  text-align: center;
+}
+.section-heading h2 {
+  margin: 0;
+  font-size: clamp(26px, 3vw, 36px);
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+.section-heading span {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+}
+.feature-card,
+.story-panel,
+.tool-workspace,
+.final-cta-section {
+  border: 1px solid rgba(222, 209, 183, 0.82);
+  background: rgba(255, 250, 240, 0.72);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(10px);
+}
+.feature-card {
+  min-height: 220px;
+  padding: 28px 24px;
+  border-radius: var(--radius-md);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow);
+  border-color: rgba(185, 154, 93, 0.72);
+}
+.feature-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(81,104,79,0.25);
+  border-radius: 50%;
+  color: var(--green);
+  background: rgba(255,255,255,0.5);
+  font-size: 24px;
+}
+.feature-card h3 {
+  margin: 0 0 12px;
+  color: var(--ink);
+  font-size: 19px;
+  letter-spacing: 0.06em;
+}
+.feature-card p {
+  margin: 0;
+  color: #697266;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.9;
+}
+
+.story-panel {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 36px;
+  align-items: center;
+  padding: clamp(28px, 4vw, 52px);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.story-preview {
+  position: relative;
+  min-height: 300px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 72% 44%, rgba(185,154,93,0.10), transparent 26%),
+    linear-gradient(135deg, rgba(255,255,255,0.72), rgba(247,241,230,0.62));
+  border: 1px solid rgba(222,209,183,0.78);
+  padding: 30px;
+}
+.story-preview::after {
+  content: "";
+  position: absolute;
+  right: -46px;
+  top: 50%;
+  width: 230px;
+  height: 230px;
+  border-radius: 50%;
+  border: 28px solid rgba(81,104,79,0.07);
+  transform: translateY(-50%);
+}
+.story-line {
+  width: 72%;
+  height: 12px;
+  margin: 18px 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(81,104,79,0.22), rgba(185,154,93,0.12));
+}
+.story-line.short { width: 48%; }
+.story-mock {
+  position: relative;
+  z-index: 2;
+  max-width: 320px;
+  margin-top: 42px;
+  padding: 24px;
+  border-radius: 20px;
+  background: rgba(255,250,240,0.82);
+  border: 1px solid rgba(185,154,93,0.30);
+  box-shadow: var(--shadow-soft);
+}
+.story-mock strong { color: var(--green-dark); font-size: 22px; }
+.story-mock p { color: var(--muted); font-family: var(--font-ui); line-height: 1.8; }
+.story-copy h2,
+.final-cta-section h2 {
+  margin: 0 0 18px;
+  color: var(--green-dark);
+  font-size: clamp(28px, 3.4vw, 44px);
+  line-height: 1.45;
+  letter-spacing: 0.08em;
+}
+.story-copy p,
+.final-cta-section p,
+.tool-intro {
+  color: #626c60;
+  font-family: var(--font-ui);
+  line-height: 2;
+  letter-spacing: 0.03em;
+}
+.check-list {
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+  color: #526055;
+  font-family: var(--font-ui);
+  line-height: 2;
+}
+.check-list li {
+  position: relative;
+  padding-left: 30px;
+  margin: 7px 0;
+}
+.check-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 2px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: #fffaf0;
+  background: var(--green);
+  font-size: 12px;
+}
+.tool-intro {
+  max-width: 760px;
+  margin: -12px auto 26px;
+  text-align: center;
+}
+
+/* Tool Workspace Overrides */
+.tool-workspace.main-container {
+  display: grid !important;
+  grid-template-columns: minmax(250px, 0.62fr) minmax(680px, 1.38fr) !important;
+  align-items: start !important;
+  gap: 6px !important;
+  width: 100% !important;
+  max-width: 1380px !important;
+  margin: 0 auto !important;
+  padding: 20px !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+.controls-column {
+  flex: initial !important;
+  width: 100% !important;
+}
+.input-container,
+.info-box,
+#output-area,
+#fortune-chart-container,
+#chart-controls,
+#ai-summary-controls,
+#ai-summary-output,
+#n8n-ai-output {
+  border: 1px solid rgba(222, 209, 183, 0.80) !important;
+  background: rgba(255, 253, 246, 0.78) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 22px rgba(65,50,28,0.06) !important;
+}
+
+.input-container {
+  position: sticky;
+  top: 92px;
+  padding: 16px !important;
+}
+.input-container::before {
+  content: "基本資料與分析設定";
+  display: block;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(222,209,183,0.85);
+  color: var(--green-dark);
+  font-size: 19px;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+.input-row {
+  align-items: center !important;
+  gap: 6px !important;
+  margin-bottom: 10px !important;
+  font-family: var(--font-ui) !important;
+}
+.input-row label {
+  width: 76px !important;
+  color: #526055 !important;
+  font-size: 14px !important;
+  text-align: right !important;
+}
+.input-row input[type="text"],
+.input-row input[type="number"],
+.input-row select,
+.input-row input:not([type="radio"]):not([type="checkbox"]) {
+  min-height: 34px !important;
+  padding: 6px 8px !important;
+  border: 1px solid rgba(185, 154, 93, 0.38) !important;
+  border-radius: 10px !important;
+  background: rgba(255, 250, 240, 0.92) !important;
+  color: var(--ink) !important;
+  font-family: var(--font-ui) !important;
+  font-size: 13px !important;
+  outline: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.input-row input:focus,
+.input-row select:focus {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 3px rgba(185,154,93,0.14) !important;
+}
+.controls-group {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(222,209,183,0.72);
+}
+.action-btn {
+  min-height: 42px !important;
+  padding: 10px 13px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 250, 240, 0.7) !important;
+  border: 1px solid rgba(185,154,93,0.42) !important;
+  color: var(--green-dark) !important;
+  font-family: var(--font-ui) !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  box-shadow: none !important;
+}
+.action-btn.calculate-highlight,
+#calculate-btn {
+  background: linear-gradient(135deg, var(--green), var(--green-dark)) !important;
+  color: #fffaf0 !important;
+  border-color: rgba(53, 72, 56, 0.20) !important;
+  box-shadow: 0 10px 24px rgba(53,72,56,0.16) !important;
+}
+.action-btn:disabled {
+  background: rgba(218, 211, 196, 0.55) !important;
+  color: rgba(83,89,78,0.6) !important;
+  cursor: not-allowed !important;
+}
+#output-area {
+  margin-top: 18px !important;
+  padding: 16px !important;
+  color: var(--ink) !important;
+  font-family: var(--font-body) !important;
+}
+#output-title {
+  color: var(--green-dark) !important;
+  border-bottom: 1px solid rgba(222,209,183,0.9) !important;
+  font-size: 20px !important;
+}
+.pillar-char,
+#day-jishu-display,
+#hour-jishu-display {
+  color: #276193 !important;
+}
+#calculation-summary {
+  border-top: 1px solid rgba(222,209,183,0.9) !important;
+  color: #4d5a50 !important;
+  line-height: 1.8 !important;
+}
+
+.tool-workspace > .plate-column {
+  min-width: 0;
+  padding: 12px !important;
+  border: 1px solid rgba(222,209,183,0.82);
+  border-radius: 24px;
+  background: rgba(255,250,240,0.58);
+  box-shadow: var(--shadow-soft);
+}
+#taiyi-plate {
+  width: 100% !important;
+  max-width: 920px !important;
+  min-width: 0 !important;
+  margin: 0 auto 12px !important;
+  border-radius: 50%;
+  filter: drop-shadow(0 14px 20px rgba(65,50,28,0.10));
+}
+.info-box {
+  margin-top: 12px !important;
+  padding: 14px 16px !important;
+  color: #3f4a42 !important;
+  font-family: var(--font-ui) !important;
+  font-size: 14px !important;
+  line-height: 1.65 !important;
+}
+#chart-controls {
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+}
+#chart-controls label {
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255,250,240,0.7);
+  border: 1px solid rgba(222,209,183,0.6);
+  color: var(--green-dark);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+#fortune-chart-container {
+  height: 320px !important;
+  max-width: 100% !important;
+}
+#ai-summary-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+#ai-summary-controls button,
+#get-monthly-ai-btn,
+#test-n8n-ai-btn {
+  min-height: 42px;
+  padding: 12px 18px !important;
+  border: 1px solid rgba(53,72,56,0.18) !important;
+  background: linear-gradient(135deg, var(--green), var(--green-dark)) !important;
+  color: #fffaf0 !important;
+  box-shadow: 0 10px 24px rgba(53,72,56,0.14) !important;
+}
+#test-n8n-ai-btn { background: linear-gradient(135deg, #607b5d, #3f5a43) !important; }
+#ai-summary-output h3,
+#n8n-ai-output h3 {
+  color: var(--green-dark) !important;
+  border-bottom-color: rgba(222,209,183,0.9) !important;
+}
+
+.final-cta-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 42px 0 34px;
+  padding: 36px clamp(24px, 4vw, 50px);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.final-cta-section::after {
+  content: "";
+  width: 160px;
+  height: 160px;
+  position: absolute;
+  right: -52px;
+  bottom: -62px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(185,154,93,0.18), transparent 65%);
+}
+.final-cta-section h2 { font-size: clamp(26px, 3vw, 38px); }
+.final-cta-section p { margin: 0; }
+
+.site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: min(1180px, calc(100% - 36px));
+  margin: 0 auto 26px;
+  padding: 18px 4px 8px;
+  color: #7a7b70;
+  border-top: 1px solid rgba(185,154,93,0.28);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+.site-footer nav { display: flex; gap: 18px; }
+.site-footer a:hover { color: var(--green-dark); }
+
+#taiyi-tooltip {
+  border-radius: 12px !important;
+  border: 1px solid rgba(185,154,93,0.35) !important;
+  background: rgba(255,250,240,0.94) !important;
+  box-shadow: var(--shadow-soft) !important;
+  color: var(--ink) !important;
+  font-family: var(--font-ui) !important;
+}
+
+@media (max-width: 1080px) {
+  .site-nav { display: none; }
+  .hero-section { grid-template-columns: 1fr; min-height: auto; padding-top: 56px; }
+  .hero-visual { max-width: 720px; width: 100%; margin: 0 auto; }
+  .feature-grid { grid-template-columns: repeat(2, 1fr); }
+  .story-panel { grid-template-columns: 1fr; }
+  .tool-workspace.main-container { grid-template-columns: 1fr !important; }
+  .input-container { position: static; }
+}
+
+@media (max-width: 720px) {
+  .site-header { width: min(100% - 20px, 1180px); margin-top: 10px; border-radius: 22px; }
+  .brand-text { font-size: 15px; }
+  .brand-mark { width: 32px; height: 32px; }
+  .nav-cta { display: none; }
+  .landing-page { width: min(100% - 20px, 1180px); }
+  .hero-section { padding: 42px 0 32px; }
+  .hero-copy h1 { font-size: 40px; }
+  .hero-desc { font-size: 15px; line-height: 1.9; }
+  .primary-cta,
+  .ghost-cta { width: 100%; padding: 14px 18px; }
+  .preview-card { grid-template-columns: 1fr; padding: 20px; }
+  .mini-plate { min-width: 220px; width: 78%; margin: 0 auto; }
+  .preview-tabs { grid-template-columns: repeat(2, 1fr); }
+  .feature-grid { grid-template-columns: 1fr; }
+  .feature-card { min-height: auto; }
+  .story-panel { padding: 20px; }
+  .story-preview { min-height: 250px; padding: 18px; }
+  .tool-workspace.main-container { padding: 12px !important; border-radius: 22px !important; }
+  .input-container { padding: 16px !important; }
+  .input-row { flex-wrap: wrap; align-items: flex-start !important; }
+  .input-row label { width: 100% !important; text-align: left !important; margin-right: 0 !important; }
+  .input-row input[type="text"],
+  .input-row input[type="number"],
+  .input-row select { flex: 1 1 auto; }
+  #action-buttons-row1,
+  #action-buttons-row2 { flex-direction: column; }
+  .tool-workspace > .plate-column { padding: 12px !important; }
+  #fortune-chart-container { height: 280px !important; padding: 12px !important; }
+  .final-cta-section { flex-direction: column; align-items: flex-start; }
+  .site-footer { flex-direction: column; align-items: flex-start; width: min(100% - 20px, 1180px); }
+  .site-footer nav { flex-wrap: wrap; }
+}
+
+@media print {
+  body { background: #fff !important; }
+  .site-header,
+  .hero-section,
+  .features-section,
+  .story-section,
+  .final-cta-section,
+  .site-footer,
+  .tool-intro,
+  .section-heading { display: none !important; }
+  .landing-page,
+  .tool-section { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+  .tool-workspace.main-container { display: flex !important; box-shadow: none !important; border: none !important; background: transparent !important; }
+}
+
+
+/* ====================================================== */
+/* V1.1 工具頁獨立版：移除首頁段落後的工具頁調整          */
+/* ====================================================== */
+
+.tool-only-page {
+  display: block !important;
+}
+
+.tool-page {
+  width: min(1180px, calc(100% - 36px));
+  margin: 0 auto;
+  padding: 42px 0 18px;
+}
+
+.tool-section-standalone {
+  padding-top: 0 !important;
+}
+
+.tool-title-heading {
+  margin-top: 10px;
+  margin-bottom: 16px;
+}
+
+.section-heading h1 {
+  margin: 0;
+  color: var(--green-dark);
+  font-size: clamp(40px, 5vw, 68px);
+  line-height: 1.16;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+}
+
+.tool-section-standalone .tool-intro {
+  max-width: 760px;
+  margin: 0 auto 28px;
+  font-size: 17px;
+}
+
+.tool-footer {
+  margin-top: 18px !important;
+}
+
+@media (max-width: 720px) {
+  .tool-page {
+    width: min(100% - 20px, 1180px);
+    padding-top: 28px;
+  }
+
+  .section-heading h1 {
+    font-size: 42px;
+    letter-spacing: 0.12em;
+  }
+
+  .tool-section-standalone .tool-intro {
+    font-size: 15px;
+    line-height: 1.9;
+  }
+}
+
+/* V1.2：性別欄位微調，讓 radio 圈圈與男女文字更緊密 */
+.gender-row {
+  gap: 8px !important;
+}
+
+.gender-row > label {
+  margin-right: 0 !important;
+}
+
+.gender-options {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.gender-option {
+  width: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: var(--ink) !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  text-align: left !important;
+  cursor: pointer;
+}
+
+.gender-option input[type="radio"] {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 15px !important;
+  height: 15px !important;
+  accent-color: var(--green-dark);
+}
+
+.gender-option span {
+  display: inline-block;
+  transform: translateY(0.5px);
+}
+
+
+/* ====================================================== */
+/* V1.3 Layout Tuning: larger plate, narrower input panel  */
+/* ====================================================== */
+.tool-workspace.main-container {
+  grid-template-columns: minmax(250px, 0.62fr) minmax(680px, 1.38fr) !important;
+  max-width: 1380px !important;
+  gap: 18px !important;
+}
+.tool-workspace > .controls-column {
+  max-width: 330px !important;
+}
+.tool-workspace > .plate-column {
+  padding: 12px !important;
+}
+#taiyi-plate {
+  max-width: 920px !important;
+  width: min(100%, 940px) !important;
+}
+.input-container {
+  padding: 16px !important;
+}
+.input-container::before {
+  font-size: 19px !important;
+}
+.input-row label {
+  width: 76px !important;
+}
+.input-row {
+  gap: 6px !important;
+  margin-bottom: 10px !important;
+}
+.input-row input[type="text"],
+.input-row input[type="number"],
+.input-row select,
+.input-row input:not([type="radio"]):not([type="checkbox"]) {
+  min-height: 34px !important;
+  padding: 6px 8px !important;
+}
+
+@media (max-width: 1100px) {
+  .tool-workspace.main-container {
+    grid-template-columns: 1fr !important;
+    max-width: 960px !important;
+  }
+  .tool-workspace > .controls-column {
+    max-width: none !important;
+  }
+  #taiyi-plate {
+    max-width: 820px !important;
+  }
+}
+
+/* ====================================================== */
+/* V1.4 Layout Tuning: balanced between V1.2 and V1.3      */
+/* 左側欄位比 V1.3 稍寬，右側命盤仍比 V1.2 大             */
+/* ====================================================== */
+.tool-workspace.main-container {
+  grid-template-columns: minmax(290px, 0.76fr) minmax(600px, 1.24fr) !important;
+  max-width: 1280px !important;
+  gap: 20px !important;
+}
+.tool-workspace > .controls-column {
+  max-width: 380px !important;
+}
+.tool-workspace > .plate-column {
+  padding: 15px !important;
+}
+#taiyi-plate {
+  max-width: 860px !important;
+  width: min(100%, 860px) !important;
+}
+.input-container {
+  padding: 18px !important;
+}
+.input-container::before {
+  font-size: 20px !important;
+  letter-spacing: 0.07em !important;
+}
+.input-row {
+  gap: 7px !important;
+  margin-bottom: 11px !important;
+}
+.input-row label {
+  width: 84px !important;
+}
+.input-row input[type="text"],
+.input-row input[type="number"],
+.input-row select,
+.input-row input:not([type="radio"]):not([type="checkbox"]) {
+  min-height: 35px !important;
+  padding: 7px 9px !important;
+}
+
+@media (max-width: 1100px) {
+  .tool-workspace.main-container {
+    grid-template-columns: 1fr !important;
+    max-width: 960px !important;
+  }
+  .tool-workspace > .controls-column {
+    max-width: none !important;
+  }
+  #taiyi-plate {
+    max-width: 820px !important;
+  }
+}
+
+
+/* ====================================================== */
+/* V1.5：西元生日欄位美化與防止超出框線                   */
+/* ====================================================== */
+.birth-date-row {
+  align-items: flex-start !important;
+}
+
+.birth-date-row > label {
+  padding-top: 8px !important;
+  flex: 0 0 84px !important;
+}
+
+.date-select-group {
+  display: grid !important;
+  grid-template-columns: minmax(78px, 1.2fr) minmax(62px, 0.9fr) minmax(62px, 0.9fr) !important;
+  gap: 8px !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.date-select-unit {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+  color: var(--muted, #6f7568) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+}
+
+.date-select-unit select {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+
+.date-select-unit span {
+  flex: 0 0 auto !important;
+  line-height: 1 !important;
+}
+
+@media (max-width: 1080px) {
+  .date-select-group {
+    grid-template-columns: minmax(88px, 1.25fr) minmax(66px, 1fr) minmax(66px, 1fr) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .birth-date-row > label {
+    flex-basis: 100% !important;
+    width: 100% !important;
+    padding-top: 0 !important;
+  }
+
+  .date-select-group {
+    width: 100% !important;
+    grid-template-columns: minmax(105px, 1.25fr) minmax(76px, 1fr) minmax(76px, 1fr) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .date-select-group {
+    grid-template-columns: 1fr !important;
+  }
+
+  .date-select-unit select {
+    max-width: none !important;
+  }
+}
+
+/* ====================================================== */
+/* V1.6：縮小左右欄間距，將空間留給右側太乙圓盤           */
+/* ====================================================== */
+.tool-workspace.main-container {
+  gap: 12px !important;
+}
+
+.tool-workspace > .plate-column {
+  padding: 12px !important;
+}
+
+#taiyi-plate {
+  max-width: 880px !important;
+  width: min(100%, 880px) !important;
+}
+
+@media (max-width: 1100px) {
+  .tool-workspace.main-container {
+    gap: 18px !important;
+  }
+}
+
+/* ====================================================== */
+/* V1.8：實際縮小中間欄距，將空間明確讓給右側太乙圓盤     */
+/* 以 V1.6 為基礎：左欄寬度不變，只縮小 gap 與放大右盤     */
+/* ====================================================== */
+.tool-workspace.main-container {
+  gap: 8px !important;
+}
+
+.tool-workspace > .controls-column {
+  max-width: 380px !important;
+}
+
+.tool-workspace > .plate-column {
+  padding: 10px !important;
+}
+
+#taiyi-plate {
+  max-width: 900px !important;
+  width: min(100%, 900px) !important;
+}
+
+@media (max-width: 1100px) {
+  .tool-workspace.main-container {
+    gap: 18px !important;
+  }
+  #taiyi-plate {
+    max-width: 820px !important;
+    width: min(100%, 820px) !important;
+  }
+}
+
+
+/* V1.9: user requested tighter columns and 920px plate */
+.tool-workspace.main-container { gap: 6px !important; }
+#taiyi-plate { max-width: 920px !important; }
+
+/* ====================================================== */
+/* V1.11：左側資訊區調整為 410px                         */
+/* 說明：依使用者指定，將左側資訊區由 V1.10 的 430px 回調 */
+/* 為 410px，保留左右 gap 與右側圓盤設定。               */
+/* ====================================================== */
+.tool-workspace.main-container {
+  grid-template-columns: 410px minmax(0, 1fr) !important;
+  gap: 6px !important;
+  max-width: 1280px !important;
+}
+
+.tool-workspace > .controls-column {
+  max-width: 410px !important;
+  width: 410px !important;
+}
+
+.tool-workspace > .plate-column {
+  padding: 10px !important;
+}
+
+#taiyi-plate {
+  max-width: 900px !important;
+  width: min(100%, 900px) !important;
+}
+
+@media (max-width: 1100px) {
+  .tool-workspace.main-container {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+    max-width: 960px !important;
+  }
+
+  .tool-workspace > .controls-column {
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  #taiyi-plate {
+    max-width: 820px !important;
+    width: min(100%, 820px) !important;
+  }
+}
+
+/* ====================================================== */
+/* V1.12：開始排盤標題字級與太乙國運「開始國運排盤」一致 */
+/* ====================================================== */
+.section-heading h1 {
+  font-size: clamp(30px, 4vw, 48px) !important;
+  letter-spacing: .14em !important;
+  line-height: 1.18 !important;
+}
+
+@media (max-width: 720px) {
+  .section-heading h1 {
+    font-size: clamp(28px, 9vw, 42px) !important;
+  }
+}
+
+/* ======================================================
+   V1.13：統一按鈕 hover 陰影效果
+   讓太乙人道命法的按鈕互動感與太乙國運一致
+   ====================================================== */
+.action-btn {
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease !important;
+}
+
+.action-btn:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  background: rgba(255, 250, 240, 0.96) !important;
+  border-color: rgba(185, 154, 93, 0.65) !important;
+  box-shadow: 0 10px 20px rgba(38, 53, 43, 0.08) !important;
+}
+
+.action-btn.calculate-highlight:hover:not(:disabled),
+#calculate-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--green-dark), #243428) !important;
+  color: #fffaf0 !important;
+  box-shadow: 0 14px 26px rgba(53, 72, 56, 0.18) !important;
+}
+
+#ai-summary-controls button {
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease !important;
+}
+
+#ai-summary-controls button:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 20px rgba(38, 53, 43, 0.08) !important;
+}
+
+/* ====================================================== */
+/* V1.14：移除左側結果區「流日推演」淡藍／淡灰底框        */
+/* ====================================================== */
+#calculation-summary div[style*="流日推演"],
+#calculation-summary div[style*="background-color: #f8f9fa"],
+#calculation-summary div[style*="background-color:#f8f9fa"],
+#calculation-summary div[style*="border-left: 4px solid #ff8c00"],
+#calculation-summary div[style*="border-left:4px solid #ff8c00"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-left: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin-top: 12px !important;
+}
+
+/* ======================================================
+   V1.15：標題區位置與太乙國運對齊
+   讓「開始排盤」與「開始國運排盤」起始高度一致
+   ====================================================== */
+.tool-page {
+  width: min(1380px, calc(100% - 28px)) !important;
+  padding: 36px 0 30px !important;
+}
+
+.tool-section-standalone {
+  padding-top: 4px !important;
+}
+
+.tool-title-heading,
+.section-heading.tool-title-heading {
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.tool-section-standalone .tool-intro {
+  margin: 0 auto 26px !important;
+}
+
+@media (max-width: 720px) {
+  .tool-page {
+    width: min(100% - 20px, 1380px) !important;
+    padding-top: 24px !important;
+  }
+}
+
+
+/* ======================================================
+   V1.16：PDF 報告美化版
+   將「輸出PDF報告」改為正式報告書排版，而非單純截取操作畫面
+   ====================================================== */
+#pdf-report-layout {
+  position: fixed;
+  left: -99999px;
+  top: 0;
+  width: 900px;
+  padding: 34px 38px 42px;
+  background:
+    radial-gradient(circle at top right, rgba(185, 154, 93, .16), transparent 32%),
+    linear-gradient(180deg, #fffaf0 0%, #f7f1e6 100%);
+  color: #26352b;
+  font-family: 'BiauKaiWeb', 'Noto Serif TC', serif;
+  box-sizing: border-box;
+  line-height: 1.72;
+}
+
+#pdf-report-layout * {
+  box-sizing: border-box;
+}
+
+.pdf-cover {
+  min-height: 250px;
+  padding: 36px 34px;
+  border: 1px solid rgba(185, 154, 93, .5);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(255, 250, 240, .94), rgba(247, 241, 230, .84)),
+    radial-gradient(circle at 85% 20%, rgba(81, 104, 79, .12), transparent 34%);
+  box-shadow: 0 18px 42px rgba(38, 53, 43, .08);
+  margin-bottom: 24px;
+  page-break-inside: avoid;
+}
+
+.pdf-kicker {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(185, 154, 93, .55);
+  color: #7f6638;
+  font-family: Georgia, serif;
+  font-size: 11px;
+  letter-spacing: .16em;
+  margin-bottom: 16px;
+}
+
+.pdf-cover h1 {
+  margin: 0 0 12px;
+  color: #26352b;
+  font-size: 34px;
+  letter-spacing: .08em;
+  line-height: 1.25;
+}
+
+.pdf-cover p {
+  max-width: 620px;
+  margin: 0;
+  color: #6f7568;
+  font-size: 16px;
+}
+
+.pdf-cover-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 28px;
+}
+
+.pdf-cover-meta span {
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .68);
+  border: 1px solid rgba(222, 209, 183, .8);
+  color: #354838;
+  font-size: 13px;
+}
+
+.pdf-section {
+  margin: 0 0 18px;
+  padding: 22px 24px;
+  border-radius: 22px;
+  background: rgba(255, 250, 240, .92);
+  border: 1px solid rgba(222, 209, 183, .88);
+  box-shadow: 0 10px 28px rgba(38, 53, 43, .055);
+  page-break-inside: auto;
+}
+
+.pdf-section.pdf-no-break,
+.pdf-no-break {
+  page-break-inside: avoid;
+}
+
+.pdf-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  color: #354838;
+  font-size: 20px;
+  letter-spacing: .08em;
+  border-bottom: 1px solid rgba(185, 154, 93, .35);
+  padding-bottom: 10px;
+}
+
+.pdf-section h2::before {
+  content: '';
+  width: 8px;
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #b99a5d, #51684f);
+}
+
+.pdf-section-body {
+  font-size: 14px;
+  color: #26352b;
+}
+
+.pdf-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pdf-info-card {
+  min-height: 58px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .72);
+  border: 1px solid rgba(222, 209, 183, .82);
+}
+
+.pdf-info-card span {
+  display: block;
+  margin-bottom: 4px;
+  color: #8a7a58;
+  font-size: 12px;
+  letter-spacing: .08em;
+}
+
+.pdf-info-card strong {
+  display: block;
+  color: #26352b;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pdf-result-grid {
+  margin-top: 14px;
+}
+
+#pdf-report-layout #bazi-pillars-container {
+  display: flex !important;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px auto 14px;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(247, 241, 230, .64);
+  border: 1px solid rgba(222, 209, 183, .72);
+}
+
+#pdf-report-layout .pillar {
+  width: 72px;
+  min-height: 110px;
+  border-radius: 16px;
+  background: #fffdf7;
+  border: 1px solid rgba(185, 154, 93, .45);
+  box-shadow: none;
+}
+
+#pdf-report-layout .pillar-title {
+  color: #7f6638;
+  font-size: 13px;
+}
+
+#pdf-report-layout .pillar-char {
+  color: #26352b;
+  font-size: 23px;
+}
+
+.pdf-plate-frame,
+.pdf-chart-frame {
+  text-align: center;
+  border-radius: 20px;
+  background: #fffdf7;
+  border: 1px solid rgba(222, 209, 183, .82);
+  padding: 14px;
+  overflow: hidden;
+}
+
+.pdf-plate-frame img {
+  display: block;
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.pdf-chart-frame img {
+  display: block;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+#pdf-report-layout .info-box,
+#pdf-report-layout #calculation-summary,
+#pdf-report-layout #star-strength-info,
+#pdf-report-layout #luma-info,
+#pdf-report-layout #kejia-years-info,
+#pdf-report-layout #strength-info,
+#pdf-report-layout #remedy-info,
+#pdf-report-layout #ai-summary-output,
+#pdf-report-layout #n8n-ai-output {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: #26352b !important;
+}
+
+#pdf-report-layout h3,
+#pdf-report-layout h4 {
+  color: #354838;
+  margin: 12px 0 8px;
+}
+
+#pdf-report-layout p {
+  margin: 0 0 9px;
+}
+
+#pdf-report-layout ul,
+#pdf-report-layout ol {
+  margin: 8px 0 8px 22px;
+  padding: 0;
+}
+
+.pdf-compact {
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.pdf-ai-section {
+  background: rgba(255, 255, 255, .74);
+}
+
+.pdf-muted {
+  color: #7d8278;
+  font-size: 13px;
+}
+
+.pdf-footer-note {
+  margin-top: 18px;
+  padding: 14px 18px;
+  color: #7d8278;
+  text-align: center;
+  font-size: 12px;
+  border-top: 1px solid rgba(185, 154, 93, .35);
+}
+
+
+/* ======================================================
+   V1.17 PDF 字型錯誤修正
+   - PDF 報告輸出時避免依賴 jsPDF 直接載入本機 ttf
+   - 以畫面渲染後截圖方式輸出，保留視覺並避免 file:// CORS
+====================================================== */
+.pdf-exporting,
+.pdf-exporting * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.pdf-report-layout {
+    font-family: 'BiauKaiWeb', 'Noto Serif TC', 'PMingLiU', 'MingLiU', serif;
+}
+
+
+/* V1.18：PDF 產生流程改用 window.jspdf.jsPDF，避免 jsPDF 全域名稱錯誤。 */
+
+
+/* V1.19：PDF 分頁安全留白，降低文字被切頁裁切的機率。 */
+.pdf-exporting {
+    padding-bottom: 48px;
+}

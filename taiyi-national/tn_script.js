@@ -3015,7 +3015,8 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
         dataForCalculation.feiFuResult = calculateFeiFu(dataForCalculation.hourJishu);
         dataForCalculation.daYouResult = calculateDaYou(dataForCalculation.hourJishu)
         
-        runCalculation(dataForCalculation, hour, chartType); 
+        runCalculation(dataForCalculation, hour, chartType);
+        setTimeout(() => { applyPlateFontForPdfExport(); }, 60); 
     });
 
     // --- 按鈕與頁面初始化 ---
@@ -3024,9 +3025,154 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
             window.location.href = '../index.html';
         });
     }
-    savePdfBtn.addEventListener('click', () => {
-        window.print();
-    });
+    
+    
+    function applyPlateFontForPdfExport() {
+        const plate = document.getElementById('taiyi-plate');
+        if (!plate) return;
+
+        // V8：PDF 匯出時優先使用楷體，避免 SVG 文字被替換成儷宋體。
+        const fontStack = "'BiauKaiWeb', 'KaiTi', 'PMingLiU', 'MingLiU', serif";
+        plate.style.fontFamily = fontStack;
+        plate.setAttribute('font-family', fontStack);
+
+        if (document.fonts && document.fonts.load) {
+            try {
+                document.fonts.load('16px BiauKaiWeb');
+                document.fonts.load('16px KaiTi');
+                document.fonts.load('16px BiauKaiWeb');
+            } catch (e) {}
+        }
+
+        plate.querySelectorAll('text, tspan, .dynamic-text, [class*="-style"]').forEach(el => {
+            el.style.fontFamily = fontStack;
+            el.setAttribute('font-family', fontStack);
+
+            const existingStyle = el.getAttribute('style') || '';
+            const cleanedStyle = existingStyle
+                .replace(/font-family\s*:[^;]+;?/gi, '')
+                .trim();
+
+            el.setAttribute('style', `${cleanedStyle}; font-family:${fontStack} !important;`);
+        });
+    }
+
+async function exportNationalPlatePdf() {
+        const exportElement = document.querySelector('.main-container.tool-workspace') || document.querySelector('.main-container');
+        if (!exportElement) {
+            alert('找不到要輸出的國運盤內容。');
+            return;
+        }
+
+        const originalText = savePdfBtn ? savePdfBtn.textContent : '';
+
+        try {
+            if (savePdfBtn) {
+                savePdfBtn.disabled = true;
+                savePdfBtn.textContent = 'PDF產生中...';
+            }
+
+            const JsPDFConstructor = window.jspdf && window.jspdf.jsPDF;
+            if (!JsPDFConstructor) {
+                throw new Error('jsPDF 尚未載入，請確認 tn_index.html 已載入 jspdf.umd.min.js。');
+            }
+            if (typeof html2canvas === 'undefined') {
+                throw new Error('html2canvas 尚未載入，請確認 tn_index.html 已載入 html2canvas.min.js。');
+            }
+
+            exportElement.classList.add('pdf-exporting');
+
+            applyPlateFontForPdfExport();
+
+            if (document.fonts && document.fonts.ready) {
+                try { await document.fonts.load('16px DFKai-SB'); await document.fonts.load('16px KaiTi'); await document.fonts.load('16px BiauKaiWeb'); await document.fonts.ready; } catch (e) {}
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const canvas = await html2canvas(exportElement, {
+                scale: 2,
+                useCORS: false,
+                allowTaint: true,
+                backgroundColor: '#f7f1e8',
+                logging: false,
+                windowWidth: Math.max(exportElement.scrollWidth, 1000)
+            });
+
+            const pdf = new JsPDFConstructor('p', 'mm', 'a4');
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            const margin = 8;
+            const usableWidth = pageWidth - margin * 2;
+            const usableHeight = pageHeight - margin * 2;
+
+            const imgWidth = usableWidth;
+            const pxPerMm = canvas.width / imgWidth;
+            const safeBottomMm = 10;
+            const pageSliceHeightPx = Math.floor((usableHeight - safeBottomMm) * pxPerMm);
+
+            const pageCanvas = document.createElement('canvas');
+            const pageCtx = pageCanvas.getContext('2d');
+            pageCanvas.width = canvas.width;
+
+            let renderedHeight = 0;
+            let pageIndex = 0;
+
+            while (renderedHeight < canvas.height) {
+                const sliceHeight = Math.min(pageSliceHeightPx, canvas.height - renderedHeight);
+                pageCanvas.height = sliceHeight;
+
+                pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+                pageCtx.drawImage(
+                    canvas,
+                    0,
+                    renderedHeight,
+                    canvas.width,
+                    sliceHeight,
+                    0,
+                    0,
+                    canvas.width,
+                    sliceHeight
+                );
+
+                const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.96);
+                const pageImgHeightMm = sliceHeight / pxPerMm;
+
+                if (pageIndex > 0) pdf.addPage();
+                pdf.addImage(pageImgData, 'JPEG', margin, margin, imgWidth, pageImgHeightMm);
+
+                renderedHeight += sliceHeight;
+                pageIndex++;
+            }
+
+            const year = (document.getElementById('birth-year') && document.getElementById('birth-year').value) || new Date().getFullYear();
+            const month = (document.getElementById('birth-month') && document.getElementById('birth-month').value) || '';
+            const day = (document.getElementById('birth-day') && document.getElementById('birth-day').value) || '';
+            const chartTypeInput = document.querySelector('input[name="chart-type"]:checked');
+            const chartTypeMap = { year: '年盤', month: '月盤', day: '日盤', hour: '時盤' };
+            const chartLabel = chartTypeInput ? (chartTypeMap[chartTypeInput.value] || '國運盤') : '國運盤';
+
+            const fileName = `小六太乙-太乙國運-${year}年${month ? month + '月' : ''}${day ? day + '日' : ''}-${chartLabel}`
+                .replace(/[\\/:*?"<>|]/g, '')
+                .replace(/\s+/g, '');
+
+            pdf.save(`${fileName}.pdf`);
+        } catch (error) {
+            console.error('產生國運盤PDF時發生錯誤:', error);
+            alert(`產生 PDF 時發生錯誤：${error.message || error}\n\n請確認頁面已完成排盤後再試一次。`);
+        } finally {
+            exportElement.classList.remove('pdf-exporting');
+            if (savePdfBtn) {
+                savePdfBtn.disabled = false;
+                savePdfBtn.textContent = originalText || '輸出盤面PDF';
+            }
+        }
+    }
+
+if (savePdfBtn) {
+        savePdfBtn.addEventListener('click', exportNationalPlatePdf);
+    }
 
     // ▼▼▼ 【新增】每月吉時表導出功能 ▼▼▼
     const luckyTableBtn = document.getElementById('lucky-table-btn');
@@ -3516,5 +3662,6 @@ function renderChart(mainData, palacesData, agesData, sdrData, centerData, outer
     prefillTestData();
     setTimeout(() => {
         calculateBtn.click();
+        setTimeout(() => { applyPlateFontForPdfExport(); }, 120);
     }, 10);
 });

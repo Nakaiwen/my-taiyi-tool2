@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex"> 
     <meta name="google" content="notranslate">
-    <title>我的太乙人道命法排盤工具</title>
+    <title>開始排盤｜太乙人道命法排盤工具</title>
+    <meta name="description" content="輸入基本資料後更新盤面，系統會同步產生命盤、限例資訊、趨勢圖與 AI 解說區塊。">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -13,9 +14,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 </head>
-<body>
+<body class="tool-only-page">
 
-    <div class="main-container">
+    <main id="top" class="tool-page">
+        <section id="tool" class="tool-section tool-section-standalone">
+            <div class="section-heading tool-title-heading">
+                <span></span>
+                <h1>開始排盤</h1>
+                <span></span>
+            </div>
+            <p class="tool-intro">輸入基本資料後更新盤面，系統會同步產生命盤、限例資訊、趨勢圖與 AI 解說區塊。</p>
+
+    <div class="main-container tool-workspace">
 
         <div class="controls-column">
             
@@ -24,22 +34,39 @@
                         <label for="user-name">姓名：</label>
                         <input type="text" id="user-name" placeholder="請輸入姓名" style="width: 150px; padding: 6px; font-size: 12px; border-radius: 4px; border: 1px solid #ccc;">
                     </div>
-                <div class="input-row">
+                <div class="input-row birth-date-row">
                     <label for="birth-year">西元生日：</label>
-                    <select id="birth-year"></select> 年
-                    <select id="birth-month"></select> 月
-                    <select id="birth-day"></select> 日
+                    <div class="date-select-group" aria-label="西元生日">
+                        <span class="date-select-unit">
+                            <select id="birth-year"></select>
+                            <span>年</span>
+                        </span>
+                        <span class="date-select-unit">
+                            <select id="birth-month"></select>
+                            <span>月</span>
+                        </span>
+                        <span class="date-select-unit">
+                            <select id="birth-day"></select>
+                            <span>日</span>
+                        </span>
+                    </div>
                 </div>
                 <div class="input-row">
                     <label for="birth-hour">出生時間：</label>
                     <select id="birth-hour"></select> 時
                 </div>
-                <div class="input-row">
-                    <label for="gender-male">性別：</label>
-                    <input type="radio" id="gender-male" name="gender" value="male" checked>
-                    <label for="gender-male" class="radio-label">男</label>
-                    <input type="radio" id="gender-female" name="gender" value="female">
-                    <label for="gender-female" class="radio-label">女</label>
+                <div class="input-row gender-row">
+                    <label>性別：</label>
+                    <div class="gender-options" role="radiogroup" aria-label="性別">
+                        <label class="gender-option" for="gender-male">
+                            <input type="radio" id="gender-male" name="gender" value="male" checked>
+                            <span>男</span>
+                        </label>
+                        <label class="gender-option" for="gender-female">
+                            <input type="radio" id="gender-female" name="gender" value="female">
+                            <span>女</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="input-row">
                 <label for="target-year">分析年份：</label>
@@ -495,6 +522,16 @@
 
 </div>
 </div>
+        </section>
+    </main>
+
+    <footer id="footer" class="site-footer tool-footer">
+        <div>太乙人道命法排盤工具</div>
+        <nav aria-label="頁尾導覽">
+            <a href="#tool">回到開始排盤</a>
+        </nav>
+    </footer>
+
     <script src="lib/solar-lunar.js"></script>
     <script src="script.js"></script>
     <div id="taiyi-tooltip"></div>

@@ -2,24 +2,46 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="robots" content="noindex"> <meta name="google" content="notranslate">
-    <title>我的太乙式國運排盤工具</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="google" content="notranslate">
+    <title>開始國運排盤｜太乙式國運排盤工具</title>
+    <meta name="description" content="輸入基準時間後更新盤面，系統會同步產生太乙國運盤、積數、干支資訊與吉時表。">
     <link rel="stylesheet" href="tn_style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  
-   
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
+<body class="tool-only-page national-tool-page">
 
-    <div class="main-container">
+    <main id="top" class="tool-page">
+        <section id="tool" class="tool-section tool-section-standalone">
+            <div class="section-heading tool-title-heading">
+                <span></span>
+                <h1>開始國運排盤</h1>
+                <span></span>
+            </div>
+            <p class="tool-intro">輸入基準時間後更新盤面，系統會同步產生太乙國運盤、積數、干支資訊與吉時表。</p>
+
+            <div class="main-container tool-workspace">
 
     <div class="controls-column">
             
       <div class="input-container">
-        <div class="input-row">
+        <div class="input-row birth-date-row">
         <label for="birth-year">基準時間：</label>
-        <select id="birth-year"></select> 年
-        <select id="birth-month"></select> 月
-        <select id="birth-day"></select> 日
+        <div class="date-select-group" aria-label="基準時間">
+            <span class="date-select-unit">
+                <select id="birth-year"></select>
+                <span>年</span>
+            </span>
+            <span class="date-select-unit">
+                <select id="birth-month"></select>
+                <span>月</span>
+            </span>
+            <span class="date-select-unit">
+                <select id="birth-day"></select>
+                <span>日</span>
+            </span>
+        </div>
         </div>
       <div class="input-row">
       <label for="birth-hour">時間：</label>
@@ -29,16 +51,26 @@
       <label for="timezone-select">時區：</label>
       <select id="timezone-select"></select>
 </div>
-    <div class="input-row">
+    <div class="input-row chart-type-row">
         <label>盤面：</label>
-        <input type="radio" id="chart-type-year" name="chart-type" value="year">
-        <label for="chart-type-year" class="radio-label">年盤</label>
-        <input type="radio" id="chart-type-month" name="chart-type" value="month">
-        <label for="chart-type-month" class="radio-label">月盤</label>
-        <input type="radio" id="chart-type-day" name="chart-type" value="day">
-        <label for="chart-type-day" class="radio-label">日盤</label>
-        <input type="radio" id="chart-type-hour" name="chart-type" value="hour" checked>
-        <label for="chart-type-hour" class="radio-label">時盤</label>
+        <div class="chart-type-options" role="radiogroup" aria-label="盤面類型">
+            <label class="chart-type-option" for="chart-type-year">
+                <input type="radio" id="chart-type-year" name="chart-type" value="year">
+                <span>年盤</span>
+            </label>
+            <label class="chart-type-option" for="chart-type-month">
+                <input type="radio" id="chart-type-month" name="chart-type" value="month">
+                <span>月盤</span>
+            </label>
+            <label class="chart-type-option" for="chart-type-day">
+                <input type="radio" id="chart-type-day" name="chart-type" value="day">
+                <span>日盤</span>
+            </label>
+            <label class="chart-type-option" for="chart-type-hour">
+                <input type="radio" id="chart-type-hour" name="chart-type" value="hour" checked>
+                <span>時盤</span>
+            </label>
+        </div>
     </div>
             <div id="action-buttons-container">
             <button id="switch-to-personal-btn" class="action-btn">切換太乙命法</button>
@@ -475,6 +507,17 @@
 
 </div>
 </div>
+        </section>
+    </main>
+
+    <footer class="site-footer tool-footer">
+        <p>太乙式國運排盤工具｜以古法星盤觀時局節奏</p>
+    </footer>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <script src="lib/solar-lunar.js"></script>
     <script src="tn_script.js"></script>
 

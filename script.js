@@ -4869,35 +4869,357 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
     // ▼▼▼ PDF 報告生成引擎 (v9 - 通用版) ▼▼▼
     async function generatePdfReport(data, elementId, reportTitle) {
-        const reportElement = document.getElementById(elementId); // <--- 修正點 1: 使用傳入的 ID
+    const exportElement = document.getElementById(elementId);
+    if (!exportElement) {
+        alert('找不到要輸出的報告內容。');
+        return;
+    }
+
+    const downloadBtn = document.getElementById('download-pdf-btn');
+    const originalBtnText = downloadBtn ? downloadBtn.textContent : '';
+
+    try {
+        if (downloadBtn) {
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = 'PDF產生中...';
+        }
+
+        const JsPDFConstructor = window.jspdf && window.jspdf.jsPDF;
+        if (!JsPDFConstructor) {
+            throw new Error('jsPDF 尚未載入，請確認 index.html 已載入 jspdf.umd.min.js。');
+        }
+
+        exportElement.classList.add('pdf-exporting');
+
+        if (document.fonts && document.fonts.ready) {
+            try { await document.fonts.ready; } catch (e) {}
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 350));
+
+        const canvas = await html2canvas(exportElement, {
+            scale: 2,
+            useCORS: false,
+            allowTaint: true,
+            backgroundColor: '#f7f1e8',
+            logging: false,
+            windowWidth: Math.max(exportElement.scrollWidth, 1000)
+        });
+
+        const pdf = new JsPDFConstructor('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        const margin = 8;
+        const usableWidth = pageWidth - margin * 2;
+        const usableHeight = pageHeight - margin * 2;
+
+        const imgWidth = usableWidth;
+        const pxPerMm = canvas.width / imgWidth;
+
+        // V1.19 修正：
+        // V1.18 直接用 A4 可用高度切圖，若切點剛好落在文字行中間，就會出現「文字被分頁切掉」。
+        // 這裡把每頁切片高度縮短，並在頁尾保留安全緩衝，避免切在文字上。
+        const safeBottomMm = 10;
+        const pageSliceHeightPx = Math.floor((usableHeight - safeBottomMm) * pxPerMm);
+
+        const pageCanvas = document.createElement('canvas');
+        const pageCtx = pageCanvas.getContext('2d');
+        pageCanvas.width = canvas.width;
+
+        let renderedHeight = 0;
+        let pageIndex = 0;
+
+        while (renderedHeight < canvas.height) {
+            const sliceHeight = Math.min(pageSliceHeightPx, canvas.height - renderedHeight);
+            pageCanvas.height = sliceHeight;
+
+            pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+            pageCtx.drawImage(
+                canvas,
+                0,
+                renderedHeight,
+                canvas.width,
+                sliceHeight,
+                0,
+                0,
+                canvas.width,
+                sliceHeight
+            );
+
+            const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.96);
+            const pageImgHeightMm = sliceHeight / pxPerMm;
+
+            if (pageIndex > 0) pdf.addPage();
+            pdf.addImage(pageImgData, 'JPEG', margin, margin, imgWidth, pageImgHeightMm);
+
+            renderedHeight += sliceHeight;
+            pageIndex++;
+        }
+
+        const nameInput = document.getElementById('user-name');
+        const rawName = nameInput && nameInput.value ? nameInput.value.trim() : '';
+        const reportName = rawName || '命主';
+
+        const yearInput = document.getElementById('target-year');
+        const rawYear = yearInput && yearInput.value ? yearInput.value.trim() : '';
+        const reportYear = rawYear || new Date().getFullYear();
+
+        const fileName = `小六太乙-${reportName}-${reportYear}年運勢報告`
+            .replace(/[\\/:*?"<>|]/g, '')
+            .replace(/\s+/g, '');
+
+        pdf.save(`${fileName}.pdf`);
+    } catch (error) {
+        console.error('產生PDF時發生錯誤:', error);
+        alert(`產生 PDF 時發生錯誤：${error.message || error}\n\n請確認頁面已完成排盤後再試一次。`);
+    } finally {
+        exportElement.classList.remove('pdf-exporting');
+        if (downloadBtn) {
+            downloadBtn.disabled = false;
+            downloadBtn.textContent = originalBtnText || '輸出PDF報告';
+        }
+    }
+}
+
+
+    // ▼▼▼ V1.16：正式版 PDF 報告排版引擎 ▼▼▼
+    function pdfSafeText(selector, fallback = '—') {
+        const el = document.querySelector(selector);
+        if (!el) return fallback;
+        const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+        return text || fallback;
+    }
+
+    function pdfSafeValue(id, fallback = '—') {
+        const el = document.getElementById(id);
+        if (!el) return fallback;
+        return (el.value || el.textContent || '').toString().trim() || fallback;
+    }
+
+    function pdfHtml(selector, fallback = '') {
+        const el = document.querySelector(selector);
+        if (!el) return fallback;
+        const html = (el.innerHTML || '').trim();
+        return html || fallback;
+    }
+
+    function pdfVisibleHtml(selector) {
+        const el = document.querySelector(selector);
+        if (!el) return '';
+        const style = window.getComputedStyle(el);
+        if (style.display === 'none' || style.visibility === 'hidden') return '';
+        const html = (el.innerHTML || '').trim();
+        return html ? html : '';
+    }
+
+    function pdfGenderText() {
+        const checked = document.querySelector('input[name="gender"]:checked');
+        if (!checked) return '—';
+        return checked.value === 'female' ? '女' : '男';
+    }
+
+    function pdfBirthDateText(data) {
+        const y = pdfSafeValue('birth-year');
+        const m = pdfSafeValue('birth-month');
+        const d = pdfSafeValue('birth-day');
+        const h = pdfSafeValue('birth-hour');
+        if (y !== '—' && m !== '—' && d !== '—') return `${y} 年 ${m} 月 ${d} 日 ${h} 時`;
+        return data?.birthDate ? `${data.birthDate} ${h}時` : '—';
+    }
+
+    function pdfFourPillarsText(data) {
+        const fromDom = [
+            pdfSafeText('#year-pillar-stem', ''), pdfSafeText('#year-pillar-branch', ''),
+            pdfSafeText('#month-pillar-stem', ''), pdfSafeText('#month-pillar-branch', ''),
+            pdfSafeText('#day-pillar-stem', ''), pdfSafeText('#day-pillar-branch', ''),
+            pdfSafeText('#hour-pillar-stem', ''), pdfSafeText('#hour-pillar-branch', '')
+        ].join('').trim();
+        if (fromDom && fromDom.length >= 4) {
+            return `${pdfSafeText('#year-pillar-stem', '')}${pdfSafeText('#year-pillar-branch', '')}　${pdfSafeText('#month-pillar-stem', '')}${pdfSafeText('#month-pillar-branch', '')}　${pdfSafeText('#day-pillar-stem', '')}${pdfSafeText('#day-pillar-branch', '')}　${pdfSafeText('#hour-pillar-stem', '')}${pdfSafeText('#hour-pillar-branch', '')}`;
+        }
+        return [data?.yearPillar, data?.monthPillar, data?.dayPillar, data?.hourPillar].filter(Boolean).join('　') || '—';
+    }
+
+    async function pdfSvgToPngDataUrl(svgSelector) {
+        const svg = document.querySelector(svgSelector);
+        if (!svg) return '';
+        try {
+            const clonedSvg = svg.cloneNode(true);
+            clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(clonedSvg);
+            const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            const dataUrl = await new Promise((resolve, reject) => {
+                img.onload = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 1200;
+                        canvas.height = 1250;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#fffaf0';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        URL.revokeObjectURL(url);
+                        resolve(canvas.toDataURL('image/png', 0.98));
+                    } catch (e) {
+                        URL.revokeObjectURL(url);
+                        reject(e);
+                    }
+                };
+                img.onerror = reject;
+                img.src = url;
+            });
+            return dataUrl;
+        } catch (error) {
+            console.warn('命盤 SVG 轉圖失敗，PDF 會略過命盤圖片：', error);
+            return '';
+        }
+    }
+
+    function pdfCanvasDataUrl(selector) {
+        const canvas = document.querySelector(selector);
+        if (!canvas) return '';
+        try {
+            if (!canvas.width || !canvas.height) return '';
+            return canvas.toDataURL('image/png', 0.95);
+        } catch (error) {
+            console.warn('趨勢圖轉圖失敗，PDF 會略過趨勢圖：', error);
+            return '';
+        }
+    }
+
+    function pdfInfoCard(label, value) {
+        return `<div class="pdf-info-card"><span>${label}</span><strong>${value || '—'}</strong></div>`;
+    }
+
+    function pdfSection(title, bodyHtml, extraClass = '') {
+        if (!bodyHtml || !bodyHtml.trim()) return '';
+        return `<section class="pdf-section ${extraClass}"><h2>${title}</h2><div class="pdf-section-body">${bodyHtml}</div></section>`;
+    }
+
+    function buildBeautifulTaiyiPdfReportHTML(data, plateImage, chartImage) {
+        const userName = pdfSafeValue('user-name', '未提供');
+        const targetYear = pdfSafeValue('target-year', data?.targetYear || new Date().getFullYear());
+        const generatedDate = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        const fourPillars = pdfFourPillarsText(data);
+        const mainSummary = pdfHtml('#calculation-summary', '<p>尚無摘要內容。</p>');
+        const aiMonthly = pdfVisibleHtml('#ai-summary-output');
+        const aiYearly = pdfVisibleHtml('#n8n-ai-output');
+
+        const coreInfo = [
+            pdfInfoCard('姓名', userName),
+            pdfInfoCard('生日', pdfBirthDateText(data)),
+            pdfInfoCard('性別', pdfGenderText()),
+            pdfInfoCard('分析年份', `${targetYear} 年`),
+            pdfInfoCard('四柱', fourPillars),
+            pdfInfoCard('日積數／時積數', `${pdfSafeText('#day-jishu-display')} ／ ${pdfSafeText('#hour-jishu-display')}`)
+        ].join('');
+
+        const baziHtml = document.getElementById('bazi-pillars-container') ? document.getElementById('bazi-pillars-container').outerHTML : '';
+        const resultCards = [
+            pdfInfoCard('日主資訊', pdfSafeText('#day-master-info')),
+            pdfInfoCard('空亡資訊', pdfSafeText('#kong-wang-info')),
+            pdfInfoCard('十神資訊', pdfSafeText('#ten-gods-info')),
+            pdfInfoCard('天剋地沖', pdfSafeText('#tianke-dichong-info')),
+            pdfInfoCard('五行互動', pdfSafeText('#element-interaction-info'))
+        ].join('');
+
+        const sideDetails = [
+            pdfVisibleHtml('#star-strength-info') ? pdfSection('星曜強弱', pdfVisibleHtml('#star-strength-info'), 'pdf-compact') : '',
+            pdfVisibleHtml('#luma-info') ? pdfSection('祿馬資訊', pdfVisibleHtml('#luma-info'), 'pdf-compact') : '',
+            pdfVisibleHtml('#kejia-years-info') ? pdfSection('科甲年提示', pdfVisibleHtml('#kejia-years-info'), 'pdf-compact') : '',
+            pdfVisibleHtml('#strength-info') ? pdfSection('格局強弱', pdfVisibleHtml('#strength-info'), 'pdf-compact') : '',
+            pdfVisibleHtml('#remedy-info') ? pdfSection('補救建議', pdfVisibleHtml('#remedy-info'), 'pdf-compact') : ''
+        ].join('');
+
+        const plateBlock = plateImage ? `<div class="pdf-plate-frame"><img src="${plateImage}" alt="太乙命盤"></div>` : '<p>命盤圖片尚未產生。</p>';
+        const chartBlock = chartImage ? `<div class="pdf-chart-frame"><img src="${chartImage}" alt="行年趨勢圖"></div>` : '';
+        const aiBlock = [
+            aiYearly ? pdfSection('AI 年運解說', aiYearly, 'pdf-ai-section') : '',
+            aiMonthly ? pdfSection('AI 月運／流日解說', aiMonthly, 'pdf-ai-section') : ''
+        ].join('') || '<p class="pdf-muted">尚未產生 AI 解說內容。若需要完整 AI 解說，請先點擊頁面中的 AI 解說按鈕，再輸出 PDF。</p>';
+
+        return `
+            <div class="pdf-cover">
+                <div class="pdf-kicker">TAIYI HUMAN DESTINY REPORT</div>
+                <h1>太乙人道命法排盤報告</h1>
+                <p>以太乙盤面、四柱資訊、限例趨勢與 AI 解說整理成正式報告。</p>
+                <div class="pdf-cover-meta">
+                    <span>姓名：${userName}</span>
+                    <span>年份：${targetYear}</span>
+                    <span>產製日期：${generatedDate}</span>
+                </div>
+            </div>
+
+            <section class="pdf-section pdf-no-break">
+                <h2>一、基本資料</h2>
+                <div class="pdf-info-grid">${coreInfo}</div>
+            </section>
+
+            <section class="pdf-section pdf-no-break">
+                <h2>二、四柱與命盤概要</h2>
+                ${baziHtml}
+                <div class="pdf-info-grid pdf-result-grid">${resultCards}</div>
+            </section>
+
+            <section class="pdf-section pdf-no-break">
+                <h2>三、太乙命盤</h2>
+                ${plateBlock}
+            </section>
+
+            ${pdfSection('四、限例與流年推演', mainSummary)}
+            ${chartBlock ? pdfSection('五、趨勢圖', chartBlock, 'pdf-no-break') : ''}
+            ${sideDetails}
+            ${pdfSection('六、AI 解說', aiBlock)}
+
+            <div class="pdf-footer-note">
+                本報告依據輸入資料與系統排盤結果產生，適合作為趨勢參考與命理研究紀錄。
+            </div>
+        `;
+    }
+
+    async function generateBeautifulTaiyiPdfReport(data) {
         const downloadBtn = document.getElementById('download-pdf-btn');
-        if (!reportElement || !downloadBtn) return;
+        if (!downloadBtn) return;
 
         const originalBtnText = downloadBtn.textContent;
-        downloadBtn.textContent = '報告生成中...';
+        downloadBtn.textContent = '美化報告生成中...';
         downloadBtn.disabled = true;
 
+        let reportWrapper = null;
         try {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({
-                orientation: 'p',
-                unit: 'mm',
-                format: 'a4'
-            });
+            const plateImage = await pdfSvgToPngDataUrl('#taiyi-plate');
+            const chartImage = pdfCanvasDataUrl('#fortune-chart');
 
-            doc.addFont('fonts/biaukai.ttf', 'BiauKaiWeb', 'normal');
+            reportWrapper = document.createElement('div');
+            reportWrapper.id = 'pdf-report-layout';
+            reportWrapper.innerHTML = buildBeautifulTaiyiPdfReportHTML(data || currentChartData || {}, plateImage, chartImage);
+            document.body.appendChild(reportWrapper);
+
+            await new Promise(resolve => setTimeout(resolve, 250));
+
+            const doc = new JsPDFConstructor({ orientation: 'p', unit: 'mm', format: 'a4' });
             doc.setFont('BiauKaiWeb');
 
-            await doc.html(reportElement, {
+            await doc.html(reportWrapper, {
                 callback: function (doc) {
-                    const userName = document.getElementById('user-name').value || '未提供';
-                    // <--- 修正點 2: 使用傳入的標題來命名檔案
-                    doc.save(`小六太乙-${userName}-${reportTitle}.pdf`);
+                    const userName = pdfSafeValue('user-name', '未提供');
+                    const targetYear = pdfSafeValue('target-year', data?.targetYear || new Date().getFullYear());
+                    doc.save(`小六太乙-${userName}-${targetYear}年-太乙人道命法排盤報告.pdf`);
                 },
-                margin: [15, 15, 15, 15],
+                margin: [10, 10, 12, 10],
                 autoPaging: 'text',
-                width: 180,
-                windowWidth: 650, 
+                width: 190,
+                windowWidth: 900,
+                html2canvas: {
+                    scale: 0.72,
+                    useCORS: true,
+                    backgroundColor: '#fffaf0'
+                },
                 fontFaces: [{
                     family: 'BiauKaiWeb',
                     style: 'normal',
@@ -4905,13 +5227,13 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
                     src: [{ url: 'fonts/biaukai.ttf', format: 'truetype' }]
                 }]
             });
-
         } catch (error) {
-            console.error("產生PDF時發生錯誤:", error);
-            alert("產生PDF報告時發生錯誤，請檢查主控台。");
+            console.error('產生美化 PDF 報告時發生錯誤:', error);
+            alert('產生美化 PDF 報告時發生錯誤，請檢查主控台。');
         } finally {
+            if (reportWrapper && reportWrapper.parentNode) reportWrapper.parentNode.removeChild(reportWrapper);
             downloadBtn.textContent = originalBtnText;
-            // PDF 產生完後，按鈕會自動恢復可用狀態
+            downloadBtn.disabled = false;
         }
     }
 
@@ -5840,11 +6162,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         if (downloadBtn) {
             downloadBtn.disabled = false; // 解鎖 PDF 按鈕
             downloadBtn.onclick = function() {
-                generatePdfReport(
-                    currentChartData, 
-                    'main-export-area', 
-                    `${currentChartData.targetYear}年-排盤結果`
-                );
+                generateBeautifulTaiyiPdfReport(currentChartData);
             };
         }
     });

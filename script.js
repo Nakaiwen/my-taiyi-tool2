@@ -4867,120 +4867,166 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return headerHTML;
     }
 
-    // ▼▼▼ PDF 報告生成引擎 (v9 - 通用版) ▼▼▼
-    async function generatePdfReport(data, elementId, reportTitle) {
-    const exportElement = document.getElementById(elementId);
-    if (!exportElement) {
-        alert('找不到要輸出的報告內容。');
-        return;
-    }
 
-    const downloadBtn = document.getElementById('download-pdf-btn');
-    const originalBtnText = downloadBtn ? downloadBtn.textContent : '';
+    // ▼▼▼ V23：沿用 V1.19 PDF 分頁與檔名輸出設定 ▼▼▼
+    // 說明：
+    // 保留 V19 之後「中文不亂碼」的圖片式輸出，
+    // 但分頁方式改回 V1.19 較穩定的「整份報告連續切片」邏輯，
+    // 避免一個區塊一張圖造成版面過度跳頁或分頁節奏怪異。
+    async function exportElementAsRasterPdf(element, filename, options = {}) {
+        if (!element) return;
 
-    try {
-        if (downloadBtn) {
-            downloadBtn.disabled = true;
-            downloadBtn.textContent = 'PDF產生中...';
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const marginX = options.marginX ?? 8;
+        const marginTop = options.marginTop ?? 8;
+        const marginBottom = options.marginBottom ?? 8;
+        const contentWidth = pageWidth - marginX * 2;
+        const contentHeight = pageHeight - marginTop - marginBottom;
+        const backgroundColor = options.backgroundColor || '#fffaf0';
+        const pageBackgroundColor = options.pageBackgroundColor || backgroundColor;
+
+        function hexToRgb(hex) {
+            const normalized = String(hex || '#fffaf0').replace('#', '').trim();
+            const full = normalized.length === 3
+                ? normalized.split('').map(ch => ch + ch).join('')
+                : normalized;
+            const value = parseInt(full, 16);
+            return {
+                r: (value >> 16) & 255,
+                g: (value >> 8) & 255,
+                b: value & 255
+            };
         }
 
-        const JsPDFConstructor = window.jspdf && window.jspdf.jsPDF;
-        if (!JsPDFConstructor) {
-            throw new Error('jsPDF 尚未載入，請確認 index.html 已載入 jspdf.umd.min.js。');
+        function paintPdfPageBackground() {
+            const rgb = hexToRgb(pageBackgroundColor);
+            doc.setFillColor(rgb.r, rgb.g, rgb.b);
+            doc.rect(0, 0, pageWidth, pageHeight, 'F');
         }
 
-        exportElement.classList.add('pdf-exporting');
+        function addSlice(canvas, offsetY, sliceHeight) {
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = sliceHeight;
+
+            const ctx = pageCanvas.getContext('2d');
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+            ctx.drawImage(
+                canvas,
+                0, offsetY, canvas.width, sliceHeight,
+                0, 0, pageCanvas.width, pageCanvas.height
+            );
+
+            const imgHeightMm = sliceHeight * contentWidth / canvas.width;
+            doc.addImage(pageCanvas.toDataURL('image/jpeg', 0.98), 'JPEG', marginX, marginTop, contentWidth, imgHeightMm);
+        }
+
+        paintPdfPageBackground();
 
         if (document.fonts && document.fonts.ready) {
             try { await document.fonts.ready; } catch (e) {}
         }
 
-        await new Promise(resolve => setTimeout(resolve, 350));
+        const originalInlineStyle = {
+            position: element.style.position,
+            left: element.style.left,
+            top: element.style.top,
+            zIndex: element.style.zIndex,
+            opacity: element.style.opacity,
+            visibility: element.style.visibility,
+            pointerEvents: element.style.pointerEvents
+        };
 
-        const canvas = await html2canvas(exportElement, {
-            scale: 2,
-            useCORS: false,
-            allowTaint: true,
-            backgroundColor: '#f7f1e8',
-            logging: false,
-            windowWidth: Math.max(exportElement.scrollWidth, 1000)
-        });
+        element.style.position = 'absolute';
+        element.style.left = '0';
+        element.style.top = '0';
+        element.style.zIndex = '-1';
+        element.style.opacity = '1';
+        element.style.visibility = 'visible';
+        element.style.pointerEvents = 'none';
 
-        const pdf = new JsPDFConstructor('p', 'mm', 'a4');
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
+        try {
+            const canvas = await html2canvas(element, {
+                scale: options.scale || 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: Math.max(element.scrollWidth || 900, 900)
+            });
 
-        const margin = 8;
-        const usableWidth = pageWidth - margin * 2;
-        const usableHeight = pageHeight - margin * 2;
+            if (!canvas.width || !canvas.height) return;
 
-        const imgWidth = usableWidth;
-        const pxPerMm = canvas.width / imgWidth;
+            const sliceHeightPx = Math.floor(contentHeight * canvas.width / contentWidth);
+            let offsetY = 0;
+            let pageIndex = 0;
 
-        // V1.19 修正：
-        // V1.18 直接用 A4 可用高度切圖，若切點剛好落在文字行中間，就會出現「文字被分頁切掉」。
-        // 這裡把每頁切片高度縮短，並在頁尾保留安全緩衝，避免切在文字上。
-        const safeBottomMm = 10;
-        const pageSliceHeightPx = Math.floor((usableHeight - safeBottomMm) * pxPerMm);
+            while (offsetY < canvas.height) {
+                if (pageIndex > 0) {
+                    doc.addPage();
+                    paintPdfPageBackground();
+                }
 
-        const pageCanvas = document.createElement('canvas');
-        const pageCtx = pageCanvas.getContext('2d');
-        pageCanvas.width = canvas.width;
+                const remaining = canvas.height - offsetY;
+                const sliceHeight = Math.min(sliceHeightPx, remaining);
+                addSlice(canvas, offsetY, sliceHeight);
 
-        let renderedHeight = 0;
-        let pageIndex = 0;
+                offsetY += sliceHeight;
+                pageIndex += 1;
+            }
 
-        while (renderedHeight < canvas.height) {
-            const sliceHeight = Math.min(pageSliceHeightPx, canvas.height - renderedHeight);
-            pageCanvas.height = sliceHeight;
-
-            pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
-            pageCtx.drawImage(
-                canvas,
-                0,
-                renderedHeight,
-                canvas.width,
-                sliceHeight,
-                0,
-                0,
-                canvas.width,
-                sliceHeight
-            );
-
-            const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.96);
-            const pageImgHeightMm = sliceHeight / pxPerMm;
-
-            if (pageIndex > 0) pdf.addPage();
-            pdf.addImage(pageImgData, 'JPEG', margin, margin, imgWidth, pageImgHeightMm);
-
-            renderedHeight += sliceHeight;
-            pageIndex++;
-        }
-
-        const nameInput = document.getElementById('user-name');
-        const rawName = nameInput && nameInput.value ? nameInput.value.trim() : '';
-        const reportName = rawName || '命主';
-
-        const yearInput = document.getElementById('target-year');
-        const rawYear = yearInput && yearInput.value ? yearInput.value.trim() : '';
-        const reportYear = rawYear || new Date().getFullYear();
-
-        const fileName = `小六太乙-${reportName}-${reportYear}年運勢報告`
-            .replace(/[\\/:*?"<>|]/g, '')
-            .replace(/\s+/g, '');
-
-        pdf.save(`${fileName}.pdf`);
-    } catch (error) {
-        console.error('產生PDF時發生錯誤:', error);
-        alert(`產生 PDF 時發生錯誤：${error.message || error}\n\n請確認頁面已完成排盤後再試一次。`);
-    } finally {
-        exportElement.classList.remove('pdf-exporting');
-        if (downloadBtn) {
-            downloadBtn.disabled = false;
-            downloadBtn.textContent = originalBtnText || '輸出PDF報告';
+            doc.save(filename);
+        } finally {
+            element.style.position = originalInlineStyle.position;
+            element.style.left = originalInlineStyle.left;
+            element.style.top = originalInlineStyle.top;
+            element.style.zIndex = originalInlineStyle.zIndex;
+            element.style.opacity = originalInlineStyle.opacity;
+            element.style.visibility = originalInlineStyle.visibility;
+            element.style.pointerEvents = originalInlineStyle.pointerEvents;
         }
     }
-}
+
+
+    // ▼▼▼ PDF 報告生成引擎 (v23 - V1.19 分頁設定回復版) ▼▼▼
+    async function generatePdfReport(data, elementId, reportTitle) {
+        const reportElement = document.getElementById(elementId);
+        const downloadBtn = document.getElementById('download-pdf-btn');
+        if (!reportElement || !downloadBtn) return;
+
+        const originalBtnText = downloadBtn.textContent;
+        downloadBtn.textContent = '報告生成中...';
+        downloadBtn.disabled = true;
+
+        try {
+            const userName = document.getElementById('user-name')?.value || '未提供';
+            const safeTitle = reportTitle || '運勢報告';
+            await exportElementAsRasterPdf(
+                reportElement,
+                `小六太乙-${userName}-${safeTitle}.pdf`,
+                {
+                    marginX: 12,
+                    marginTop: 12,
+                    marginBottom: 12,
+                    backgroundColor: '#fffaf0',
+                    pageBackgroundColor: '#fffaf0',
+                    scale: 2
+                }
+            );
+        } catch (error) {
+            console.error("產生PDF時發生錯誤:", error);
+            alert("產生PDF報告時發生錯誤，請檢查主控台。");
+        } finally {
+            downloadBtn.textContent = originalBtnText;
+            downloadBtn.disabled = false;
+        }
+    }
 
 
     // ▼▼▼ V1.16：正式版 PDF 報告排版引擎 ▼▼▼
@@ -5100,14 +5146,88 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         return `<section class="pdf-section ${extraClass}"><h2>${title}</h2><div class="pdf-section-body">${bodyHtml}</div></section>`;
     }
 
+
+    // ▼▼▼ V22：PDF AI 流月卦象條列格式化 ▼▼▼
+    function pdfMonthlyTextToList(rawText) {
+        const text = String(rawText || '').replace(/\s+/g, ' ').trim();
+        if (!text) return '';
+
+        const monthPattern = /(正月|二月|三月|四月|五月|六月|七月|八月|九月|十月|十一月|十二月)(?=[（(])/g;
+        const matches = [...text.matchAll(monthPattern)];
+
+        if (matches.length < 2) return '';
+
+        const items = [];
+        for (let i = 0; i < matches.length; i++) {
+            const start = matches[i].index;
+            const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
+            const item = text.slice(start, end).trim().replace(/^[-•・\s]+/, '');
+            if (item) items.push(item);
+        }
+
+        return `<ul class="pdf-monthly-gua-list">${items.map(item => {
+            const formatted = item.replace(
+                /^(正月|二月|三月|四月|五月|六月|七月|八月|九月|十月|十一月|十二月)([（(][^）)]*[）)])?\s*[：:]\s*/,
+                '<strong>$1$2：</strong>'
+            );
+            return `<li>${formatted}</li>`;
+        }).join('')}</ul>`;
+    }
+
+    function pdfFormatMonthlyGuaSections(html) {
+        const rawHtml = String(html || '').trim();
+        if (!rawHtml) return rawHtml;
+
+        const temp = document.createElement('div');
+        temp.innerHTML = rawHtml;
+
+        const headings = Array.from(temp.querySelectorAll('h1,h2,h3,h4,h5,strong,b,p,div'))
+            .filter(el => /流月卦象|流月/.test(el.textContent || ''));
+
+        for (const heading of headings) {
+            const headingText = (heading.textContent || '').trim();
+            if (!/流月卦象|流月/.test(headingText)) continue;
+
+            // 先找標題後方第一個含有 3 個以上月份名稱的段落／區塊。
+            let node = heading.nextElementSibling;
+            while (node) {
+                const listHtml = pdfMonthlyTextToList(node.textContent || '');
+                if (listHtml) {
+                    node.outerHTML = listHtml;
+                    return temp.innerHTML;
+                }
+                node = node.nextElementSibling;
+            }
+
+            // 若標題與內容被包在同一段，嘗試將標題後面的文字拆出。
+            const sameText = heading.textContent || '';
+            const listHtml = pdfMonthlyTextToList(sameText);
+            if (listHtml) {
+                const titleOnly = sameText.split(/正月(?=[（(])/)[0].trim();
+                heading.innerHTML = titleOnly || '2026年流月卦象總覽';
+                heading.insertAdjacentHTML('afterend', listHtml);
+                return temp.innerHTML;
+            }
+        }
+
+        // 最後備援：整段 HTML 純文字內若含十二月份，也轉成條列並附在原內容後。
+        const fallbackList = pdfMonthlyTextToList(temp.textContent || '');
+        if (fallbackList) {
+            return fallbackList;
+        }
+
+        return rawHtml;
+    }
+
+
     function buildBeautifulTaiyiPdfReportHTML(data, plateImage, chartImage) {
         const userName = pdfSafeValue('user-name', '未提供');
         const targetYear = pdfSafeValue('target-year', data?.targetYear || new Date().getFullYear());
         const generatedDate = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
         const fourPillars = pdfFourPillarsText(data);
         const mainSummary = pdfHtml('#calculation-summary', '<p>尚無摘要內容。</p>');
-        const aiMonthly = pdfVisibleHtml('#ai-summary-output');
-        const aiYearly = pdfVisibleHtml('#n8n-ai-output');
+        const aiMonthly = pdfFormatMonthlyGuaSections(pdfVisibleHtml('#ai-summary-output'));
+        const aiYearly = pdfFormatMonthlyGuaSections(pdfVisibleHtml('#n8n-ai-output'));
 
         const coreInfo = [
             pdfInfoCard('姓名', userName),
@@ -5191,42 +5311,32 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
         let reportWrapper = null;
         try {
-            const { jsPDF } = window.jspdf;
             const plateImage = await pdfSvgToPngDataUrl('#taiyi-plate');
             const chartImage = pdfCanvasDataUrl('#fortune-chart');
 
             reportWrapper = document.createElement('div');
             reportWrapper.id = 'pdf-report-layout';
+            reportWrapper.classList.add('pdf-raster-output');
             reportWrapper.innerHTML = buildBeautifulTaiyiPdfReportHTML(data || currentChartData || {}, plateImage, chartImage);
             document.body.appendChild(reportWrapper);
 
-            await new Promise(resolve => setTimeout(resolve, 250));
+            await new Promise(resolve => setTimeout(resolve, 350));
 
-            const doc = new JsPDFConstructor({ orientation: 'p', unit: 'mm', format: 'a4' });
-            doc.setFont('BiauKaiWeb');
+            const userName = pdfSafeValue('user-name', '未提供');
+            const targetYear = pdfSafeValue('target-year', data?.targetYear || new Date().getFullYear());
 
-            await doc.html(reportWrapper, {
-                callback: function (doc) {
-                    const userName = pdfSafeValue('user-name', '未提供');
-                    const targetYear = pdfSafeValue('target-year', data?.targetYear || new Date().getFullYear());
-                    doc.save(`小六太乙-${userName}-${targetYear}年-太乙人道命法排盤報告.pdf`);
-                },
-                margin: [10, 10, 12, 10],
-                autoPaging: 'text',
-                width: 190,
-                windowWidth: 900,
-                html2canvas: {
-                    scale: 0.72,
-                    useCORS: true,
-                    backgroundColor: '#fffaf0'
-                },
-                fontFaces: [{
-                    family: 'BiauKaiWeb',
-                    style: 'normal',
-                    weight: 'normal',
-                    src: [{ url: 'fonts/biaukai.ttf', format: 'truetype' }]
-                }]
-            });
+            await exportElementAsRasterPdf(
+                reportWrapper,
+                `小六太乙-${userName}-${targetYear}年運勢報告.pdf`,
+                {
+                    marginX: 8,
+                    marginTop: 8,
+                    marginBottom: 8,
+                    backgroundColor: '#fffaf0',
+                    pageBackgroundColor: '#fffaf0',
+                    scale: 2
+                }
+            );
         } catch (error) {
             console.error('產生美化 PDF 報告時發生錯誤:', error);
             alert('產生美化 PDF 報告時發生錯誤，請檢查主控台。');

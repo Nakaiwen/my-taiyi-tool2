@@ -13,6 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
+    <link rel="icon" type="image/png" href="assets/favicon.png">
 </head>
 <body class="tool-only-page">
 
@@ -20,7 +21,7 @@
         <section id="tool" class="tool-section tool-section-standalone">
             <div class="section-heading tool-title-heading">
                 <span></span>
-                <h1>開始排盤</h1>
+                <h1 class="logo-only-title"><img class="hero-brand-logo" src="assets/xiaoliu-logo-final-transparent.png" alt="小六命理網 Logo"></h1>
                 <span></span>
             </div>
             <p class="tool-intro">輸入基本資料後更新盤面，系統會同步產生命盤、限例資訊、趨勢圖與 AI 解說區塊。</p>
@@ -100,8 +101,10 @@
 </div>
 
 
-                <div id="output-area">
-                  <div class="output-row" id="jishu-display"> <label>日積數：</label>
+                                <div id="output-area">
+                <div class="ai-output-brand-fallback">
+                </div>
+                <div class="output-row" id="jishu-display"> <label>日積數：</label>
         <span id="day-jishu-display"></span>
         <label style="margin-left: 20px;">時積數：</label>
         <span id="hour-jishu-display"></span>

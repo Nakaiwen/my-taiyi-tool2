@@ -6,7 +6,7 @@
     }
 
     body {
-    font-family: 'BiauKaiWeb', sans-serif;
+    font-family: 'BiauKaiWeb';
     display: flex;
     padding: 0px;
     background-color: #ffffff;
@@ -1604,9 +1604,9 @@ a { color: inherit; text-decoration: none; }
   background: rgba(255, 250, 240, 0.7) !important;
   border: 1px solid rgba(185,154,93,0.42) !important;
   color: var(--green-dark) !important;
-  font-family: '微軟正黑體', 'PingFang TC', sans-serif;
+  font-family: var(--font-ui) !important;
   font-weight: 700 !important;
-  font-size: 15px !important;
+  font-size: 13px !important;
   box-shadow: none !important;
 }
 .action-btn.calculate-highlight,
@@ -2555,25 +2555,221 @@ a { color: inherit; text-decoration: none; }
 
 
 /* ======================================================
-   V1.17 PDF 字型錯誤修正
-   - PDF 報告輸出時避免依賴 jsPDF 直接載入本機 ttf
-   - 以畫面渲染後截圖方式輸出，保留視覺並避免 file:// CORS
+   V17：小六命理網 Logo 套用
+   - 標題列加入品牌 Logo
+   - AI 輸出／解說區塊加入品牌 Logo
 ====================================================== */
-.pdf-exporting,
-.pdf-exporting * {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+.title-logo-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
 }
 
-.pdf-report-layout {
-    font-family: 'BiauKaiWeb', 'Noto Serif TC', 'PMingLiU', 'MingLiU', serif;
+.title-logo {
+    width: 54px;
+    height: 54px;
+    object-fit: contain;
+    flex: 0 0 auto;
+    filter: drop-shadow(0 6px 12px rgba(80, 94, 56, .14));
+}
+
+.ai-output-title,
+.ai-output-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ai-output-title {
+    justify-content: flex-start;
+}
+
+.ai-output-brand {
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(184, 154, 93, .22);
+    color: #3f5f56;
+    font-family: 'BiauKaiWeb', 'DFKai-SB', 'KaiTi', 'Noto Serif TC', 'PMingLiU', 'MingLiU', serif;
+    font-weight: 700;
+    letter-spacing: .08em;
+    font-size: 1.05rem;
+}
+
+.ai-output-logo {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    flex: 0 0 auto;
+    filter: drop-shadow(0 4px 8px rgba(80, 94, 56, .12));
+}
+
+@media (max-width: 640px) {
+    .title-logo-wrap {
+        gap: 10px;
+    }
+
+    .title-logo {
+        width: 42px;
+        height: 42px;
+    }
+
+    .ai-output-logo {
+        width: 30px;
+        height: 30px;
+    }
 }
 
 
-/* V1.18：PDF 產生流程改用 window.jspdf.jsPDF，避免 jsPDF 全域名稱錯誤。 */
+/* ======================================================
+   V18：Logo 取代「開始排盤」標題
+====================================================== */
+.logo-only-title {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-brand-logo {
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 10px 22px rgba(80, 94, 56, .14));
+}
+
+.tool-title-heading:has(.hero-brand-logo) {
+    margin-bottom: 14px;
+}
+
+.tool-title-heading:has(.hero-brand-logo) > span {
+    align-self: center;
+}
+
+@media (max-width: 640px) {
+    .hero-brand-logo {
+        width: 104px;
+        height: 104px;
+    }
+}
 
 
-/* V1.19：PDF 分頁安全留白，降低文字被切頁裁切的機率。 */
-.pdf-exporting {
-    padding-bottom: 48px;
+/* ======================================================
+   V19：PDF 亂碼修正
+   - PDF 改用高解析圖片分頁輸出，避免 jsPDF 中文字型亂碼
+   ====================================================== */
+#pdf-report-layout.pdf-raster-output {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+#pdf-report-layout.pdf-raster-output,
+#pdf-report-layout.pdf-raster-output * {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+}
+
+
+/* ======================================================
+   V21：PDF 整頁淡米黃底修正
+   - 每頁 PDF 由 script.js 先鋪滿 #fffaf0
+   - 報告容器本身也保持同色背景，避免只在文字行下方出現黃底
+====================================================== */
+#pdf-report-layout,
+#pdf-report-layout.pdf-raster-output,
+#pdf-report-layout .pdf-page,
+#pdf-report-layout .pdf-section,
+#pdf-report-layout .pdf-report-body {
+    background-color: #fffaf0 !important;
+}
+
+#pdf-report-layout p,
+#pdf-report-layout li,
+#pdf-report-layout div {
+    background-clip: padding-box;
+}
+
+
+/* ======================================================
+   V22：PDF 流月卦象條列美化
+   - 每月獨立條列，避免十二個月份擠成同一段
+====================================================== */
+#pdf-report-layout .pdf-monthly-gua-list {
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+#pdf-report-layout .pdf-monthly-gua-list li {
+    position: relative;
+    margin: 0;
+    padding: 8px 12px 8px 20px;
+    border-left: 3px solid #b89a5d;
+    background: rgba(255, 250, 240, .94);
+    border-radius: 7px;
+    line-height: 1.85;
+    color: #37423a;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+#pdf-report-layout .pdf-monthly-gua-list li::before {
+    content: '•';
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    color: #b86b3f;
+    font-weight: 700;
+}
+
+#pdf-report-layout .pdf-monthly-gua-list strong {
+    color: #b35f36;
+    font-weight: 700;
+    margin-right: 2px;
+}
+
+
+/* ======================================================
+   V23：沿用 V1.19 PDF 分頁設定
+   - PDF 改回整份報告連續切片分頁
+   - 保留 V22 的流月條列與 V21 的整頁米黃底
+====================================================== */
+#pdf-report-layout {
+    width: 900px !important;
+    padding: 20px 24px !important;
+    background-color: #fffaf0 !important;
+}
+
+#pdf-report-layout .pdf-cover {
+    padding: 18px 20px 14px !important;
+    margin-bottom: 14px !important;
+}
+
+#pdf-report-layout .pdf-section {
+    margin: 0 0 14px !important;
+    padding: 12px 14px !important;
+}
+
+#pdf-report-layout .pdf-section h2 {
+    margin: 0 0 8px !important;
+    padding-bottom: 6px !important;
+}
+
+#pdf-report-layout .pdf-section-body p {
+    margin: 0 0 8px !important;
+    line-height: 1.78 !important;
+}
+
+#pdf-report-layout .pdf-monthly-gua-list {
+    gap: 5px !important;
+}
+
+#pdf-report-layout .pdf-monthly-gua-list li {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+    line-height: 1.68 !important;
 }

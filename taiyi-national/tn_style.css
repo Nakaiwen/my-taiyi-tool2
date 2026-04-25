@@ -105,7 +105,7 @@ body {
 .action-btn {
     width: 100%;
     padding: 5px 0;
-    font-size: 15px; 
+    font-size: 14px; 
     font-family: '微軟正黑體', 'PingFang TC', sans-serif; 
     font-weight: normal; /* 🌟 新增這行：強制設定為一般粗細 (不加粗) */
     box-sizing: border-box;
@@ -668,7 +668,7 @@ body.tool-only-page::before {
     border: 1px solid rgba(255,255,255,.18) !important;
     border-radius: 999px !important;
     box-shadow: 0 10px 24px rgba(53,72,56,.16);
-    font-family: 'BiauKaiWeb', 'Microsoft JhengHei', sans-serif !important;
+    font-family: '微軟正黑體', 'PingFang TC', sans-serif; 
     font-size: 14px !important;
     letter-spacing: .03em;
 }
@@ -884,7 +884,7 @@ body.tool-only-page::before {
     background: rgba(255, 250, 240, 0.7) !important;
     border: 1px solid rgba(185,154,93,0.42) !important;
     color: var(--green-dark) !important;
-    font-family: var(--font-ui) !important;
+    font-family: '微軟正黑體', 'PingFang TC', sans-serif; 
     font-weight: 700 !important;
     font-size: 15px !important;
     line-height: 1.15 !important;
@@ -1142,7 +1142,7 @@ body.tool-only-page::before {
 #save-pdf-btn,
 #switch-to-personal-btn,
 #lucky-table-btn {
-    font-family: '微軟正黑體', 'PingFang TC', sans-serif;
+    font-family: '微軟正黑體', 'PingFang TC', sans-serif; 
     font-weight: 700 !important;
     letter-spacing: .06em !important;
     line-height: 1.25 !important;
@@ -1159,94 +1159,139 @@ body.tool-only-page::before {
 
 
 /* ======================================================
-   V16：從 V11 保守修正，不動左右欄 HTML 結構
-   - 四柱以 CSS 排序：時柱、日柱、月柱、年柱
-   - 手機按鈕維持一行一顆
-   - 基準時間視覺合併：日期列 + 時間列靠近呈現
-   - 不重建 input-container，避免圓盤掉到左欄下方
+   V17：太乙國運上方標題改為小六命理網 Logo
+   - 與太乙人道命法頁面 Logo 尺寸一致
 ====================================================== */
-
-/* 四柱順序：時、日、月、年 */
-#bazi-pillars-container {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 8px !important;
+.logo-only-title {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.pillar-hour { order: 1; }
-.pillar-day { order: 2; }
-.pillar-month { order: 3; }
-.pillar-year { order: 4; }
+.hero-brand-logo,
+.national-hero-brand-logo {
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 10px 22px rgba(80, 94, 56, .14));
+}
 
-/* 手機版按鈕：一行一顆 */
 @media (max-width: 640px) {
-    #action-buttons-container {
-        grid-template-columns: 1fr !important;
-        gap: 10px !important;
+    .hero-brand-logo,
+    .national-hero-brand-logo {
+        width: 88px;
+        height: 88px;
     }
+}
 
-    #action-buttons-container .action-btn,
-    .action-btn {
-        width: 100% !important;
-        min-height: 48px !important;
-    }
 
+/* ======================================================
+   V18：太乙國運四柱順序修正
+   - 顯示順序固定為：時柱、日柱、月柱、年柱
+====================================================== */
+#bazi-pillars-container {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+#bazi-pillars-container .pillar-hour { order: 1 !important; }
+#bazi-pillars-container .pillar-day { order: 2 !important; }
+#bazi-pillars-container .pillar-month { order: 3 !important; }
+#bazi-pillars-container .pillar-year { order: 4 !important; }
+
+@media (max-width: 640px) {
     #bazi-pillars-container {
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-        gap: 6px !important;
-    }
-
-    .pillar {
-        padding: 8px 2px !important;
-        border-radius: 12px !important;
-    }
-
-    .pillar-title {
-        font-size: 11px !important;
-        margin-bottom: 3px !important;
-    }
-
-    .pillar-char {
-        font-size: 20px !important;
-        line-height: 1.05 !important;
     }
 }
 
-/* 視覺上讓「基準時間」與「時間」更像同一組欄位，但不移動 DOM */
-.birth-date-row {
-    margin-bottom: 8px !important;
+
+/* ======================================================
+   V19：修正太乙國運圓盤掉到資訊區下方
+   - 不重建 HTML 表單
+   - 只固定桌機／平板橫向版面的左右欄排列
+====================================================== */
+
+/* 桌機版：左側資料區、右側圓盤區固定並排 */
+@media (min-width: 961px) {
+    .main-container.tool-workspace,
+    .main-container {
+        display: grid !important;
+        grid-template-columns: minmax(360px, 410px) minmax(0, 1fr) !important;
+        gap: 12px !important;
+        align-items: flex-start !important;
+        width: min(100%, 1320px) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    .controls-column {
+        grid-column: 1 !important;
+        width: 100% !important;
+        max-width: 410px !important;
+        min-width: 0 !important;
+    }
+
+    .plate-column {
+        grid-column: 2 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+    }
+
+    #plate-container,
+    .plate-container,
+    #taiyi-plate,
+    svg#taiyi-plate {
+        max-width: 100% !important;
+    }
 }
 
-/* 若原始時間列仍顯示「時間：10 時」，讓它靠近日期列，視覺上更簡潔 */
-.birth-date-row + .input-row {
-    margin-top: -4px !important;
+/* 手機版：維持上下排列 */
+@media (max-width: 960px) {
+    .main-container.tool-workspace,
+    .main-container {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 18px !important;
+    }
+
+    .controls-column,
+    .plate-column {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
 }
 
-/* 積數：桌機兩欄、手機四行 */
-#jishu-display-row1,
-#jishu-display-row2 {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 6px 8px !important;
+
+/* ======================================================
+   V20：以使用者上傳 tn_index(3).html 為基準置換 Logo
+   - 最上方「開始國運排盤」改為定稿 Logo
+   - Logo 尺寸與太乙人道命法一致：88px × 88px
+====================================================== */
+.logo-only-title {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-brand-logo,
+.national-hero-brand-logo {
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 10px 22px rgba(80, 94, 56, .14));
 }
 
 @media (max-width: 640px) {
-    #jishu-display-row1,
-    #jishu-display-row2 {
-        display: grid !important;
-        grid-template-columns: 1fr !important;
-        gap: 6px !important;
-        margin-bottom: 0 !important;
-    }
-
-    #jishu-display-row1 label,
-    #jishu-display-row2 label {
-        margin-left: 0 !important;
-    }
-
-    #jishu-display-row1 span,
-    #jishu-display-row2 span {
-        display: inline-block !important;
-        margin-bottom: 4px !important;
+    .hero-brand-logo,
+    .national-hero-brand-logo {
+        width: 88px;
+        height: 88px;
     }
 }

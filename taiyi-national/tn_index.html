@@ -41,12 +41,13 @@
                 <select id="birth-day"></select>
                 <span>日</span>
             </span>
+            <span class="date-select-unit">
+                <select id="birth-hour"></select>
+                <span>時</span>
+            </span>
         </div>
         </div>
-      <div class="input-row">
-      <label for="birth-hour">時間：</label>
-      <select id="birth-hour"></select> 時
-      </div>
+      
       <div class="input-row">
       <label for="timezone-select">時區：</label>
       <select id="timezone-select"></select>
@@ -100,22 +101,22 @@
 
                     <div id="output-title">太乙國運排盤計算結果：</div>
                     <div id="bazi-pillars-container">
-            <div class="pillar">
+            <div class="pillar pillar-year">
                 <div class="pillar-title">年柱</div>
                 <div class="pillar-char" id="year-pillar-stem"></div>
                 <div class="pillar-char" id="year-pillar-branch"></div>
             </div>
-            <div class="pillar">
+            <div class="pillar pillar-month">
                 <div class="pillar-title">月柱</div>
                 <div class="pillar-char" id="month-pillar-stem"></div>
                 <div class="pillar-char" id="month-pillar-branch"></div>
             </div>
-            <div class="pillar">
+            <div class="pillar pillar-day">
                 <div class="pillar-title">日柱</div>
                 <div class="pillar-char" id="day-pillar-stem"></div>
                 <div class="pillar-char" id="day-pillar-branch"></div>
             </div>
-            <div class="pillar">
+            <div class="pillar pillar-hour">
                 <div class="pillar-title">時柱</div>
                 <div class="pillar-char" id="hour-pillar-stem"></div>
                 <div class="pillar-char" id="hour-pillar-branch"></div>

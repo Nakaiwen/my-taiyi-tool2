@@ -668,7 +668,7 @@ body.tool-only-page::before {
     border: 1px solid rgba(255,255,255,.18) !important;
     border-radius: 999px !important;
     box-shadow: 0 10px 24px rgba(53,72,56,.16);
-    font-family: 'BiauKaiWeb', 'Microsoft JhengHei', sans-serif !important;
+    font-family: '微軟正黑體', 'PingFang TC', sans-serif; 
     font-size: 14px !important;
     letter-spacing: .03em;
 }
@@ -884,7 +884,7 @@ body.tool-only-page::before {
     background: rgba(255, 250, 240, 0.7) !important;
     border: 1px solid rgba(185,154,93,0.42) !important;
     color: var(--green-dark) !important;
-    font-family: var(--font-ui) !important;
+    font-family: '微軟正黑體', 'PingFang TC', sans-serif; 
     font-weight: 700 !important;
     font-size: 15px !important;
     line-height: 1.15 !important;
@@ -1036,6 +1036,123 @@ body.tool-only-page::before {
 .pdf-exporting #taiyi-plate tspan,
 .pdf-exporting #taiyi-plate .dynamic-text,
 .pdf-exporting #taiyi-plate [class*="-style"] {
-    font-family: 'BiauKaiWeb', 'KaiTi', 'PMingLiU', 'MingLiU', serif !important;
+    font-family: 'DFKai-SB', 'KaiTi', 'BiauKaiWeb', 'PMingLiU', 'MingLiU', serif !important;
 }
 
+
+
+/* ======================================================
+   V10：太乙國運手機版版面調整
+   - 手機按鈕改為一行一顆
+   - 積數改為四筆獨立顯示，手機版四行排列
+   - 四柱改為年月日時，手機版維持同一排四欄
+====================================================== */
+#jishu-display-container {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 18px;
+    margin-bottom: 14px;
+}
+
+.jishu-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.jishu-item label {
+    color: var(--green-dark);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.jishu-item span {
+    min-width: 0;
+    color: #2e5fa8;
+    font-weight: 700;
+    letter-spacing: .02em;
+    word-break: break-all;
+}
+
+#bazi-pillars-container {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 640px) {
+    #action-buttons-container {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    .action-btn {
+        width: 100% !important;
+        min-height: 48px !important;
+    }
+
+    #jishu-display-container {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+
+    .jishu-item {
+        font-size: 15px !important;
+        line-height: 1.55 !important;
+        padding-bottom: 2px;
+        border-bottom: 1px solid rgba(185,154,93,.14);
+    }
+
+    .jishu-item:last-child {
+        border-bottom: none;
+    }
+
+    #bazi-pillars-container {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+    }
+
+    .pillar {
+        padding: 8px 2px !important;
+        border-radius: 12px !important;
+    }
+
+    .pillar-title {
+        font-size: 11px !important;
+        margin-bottom: 3px !important;
+    }
+
+    .pillar-char {
+        font-size: 20px !important;
+        line-height: 1.05 !important;
+    }
+}
+
+
+/* ======================================================
+   V11：國運盤按鈕文字統一為太乙人道命法按鈕風格
+   - 使用同一套楷體 / 明體優先序
+   - 調整字重、字距與行高，讓兩個子系統按鈕更一致
+====================================================== */
+#action-buttons-container .action-btn,
+.action-btn,
+.action-btn.calculate-highlight,
+#calculate-btn,
+#save-pdf-btn,
+#switch-to-personal-btn,
+#lucky-table-btn {
+    font-family: '微軟正黑體', 'PingFang TC', sans-serif; 
+    font-weight: 700 !important;
+    letter-spacing: .06em !important;
+    line-height: 1.25 !important;
+    text-align: center !important;
+}
+
+@media (max-width: 640px) {
+    #action-buttons-container .action-btn,
+    .action-btn {
+        font-size: 16px !important;
+        letter-spacing: .07em !important;
+    }
+}

@@ -1604,7 +1604,7 @@ a { color: inherit; text-decoration: none; }
   background: rgba(255, 250, 240, 0.7) !important;
   border: 1px solid rgba(185,154,93,0.42) !important;
   color: var(--green-dark) !important;
-  font-family: var(--font-ui) !important;
+  font-family: '微軟正黑體', 'PingFang TC', sans-serif;
   font-weight: 700 !important;
   font-size: 13px !important;
   box-shadow: none !important;

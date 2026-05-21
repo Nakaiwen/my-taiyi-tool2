@@ -6299,6 +6299,78 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const finalAnnualTrendScore = dataForCalculation.currentGreatLimitScore + (dataForCalculation.annualPalaceScore * 0.7);
         dataForCalculation.annualTrendScore = finalAnnualTrendScore;
 
+        // ▼▼▼ 新增：計算未來 30 年的趨勢分，找出低分區間（供 Skill 寫年末提醒用）▼▼▼
+        try {
+            // 1. 建立大限分數對照表
+            const greatLimitAgeRanges = arrangeAgeLimits(arrangedLifePalaces);
+            const greatLimitDataForFuture = greatLimitAgeRanges.map((ageRange, idx) => ({
+                palaceId: VALID_PALACES_CLOCKWISE[idx],
+                ageRange: ageRange
+            })).filter(item => item.ageRange);
+            const greatLimitScoreMapFuture = {};
+            greatLimitDataForFuture.forEach((limit, idx) => {
+                greatLimitScoreMapFuture[limit.palaceId] = greatLimitScoresForAI[idx];
+            });
+
+            // 2. 計算命主未來 30 年的逐年分數
+            const futureScores = [];
+            const futureStartAge = dataForCalculation.currentUserAge + 1;
+            const futureEndAge   = Math.min(dataForCalculation.currentUserAge + 30, 106);
+            for (let age = futureStartAge; age <= futureEndAge; age++) {
+                const currentGreatLimit = greatLimitDataForFuture.find(l => {
+                    if (!l.ageRange) return false;
+                    const [s, e] = l.ageRange.split('-').map(Number);
+                    return age >= s && age <= e;
+                });
+                if (!currentGreatLimit) continue;
+                const glScore  = greatLimitScoreMapFuture[currentGreatLimit.palaceId] || 0;
+                const annScore = calculateAnnualScore(age, dataForCalculation.chartModel, dataForCalculation);
+                futureScores.push({ age: age, score: glScore + annScore });
+            }
+
+            // 3. 用相對閾值找低點：低於 (平均 − 0.5×標準差) 的年份
+            let lowScoreYears = [];
+            if (futureScores.length > 0) {
+                const avg = futureScores.reduce((a, b) => a + b.score, 0) / futureScores.length;
+                const variance = futureScores.reduce((a, b) => a + Math.pow(b.score - avg, 2), 0) / futureScores.length;
+                const stddev = Math.sqrt(variance);
+                const threshold = avg - stddev * 0.5;
+
+                // 標出低於閾值的年份
+                const lowPoints = futureScores
+                    .filter(s => s.score < threshold)
+                    .map(s => ({
+                        age:   s.age,
+                        year:  dataForCalculation.targetYear + (s.age - dataForCalculation.currentUserAge),
+                        score: Math.round(s.score)
+                    }));
+
+                // 4. 合併相鄰年齡為「區間」
+                lowPoints.forEach(p => {
+                    const last = lowScoreYears[lowScoreYears.length - 1];
+                    if (last && p.age === last.endAge + 1) {
+                        last.endAge   = p.age;
+                        last.endYear  = p.year;
+                        last.minScore = Math.min(last.minScore, p.score);
+                    } else {
+                        lowScoreYears.push({
+                            startAge: p.age,
+                            endAge:   p.age,
+                            startYear: p.year,
+                            endYear:   p.year,
+                            minScore:  p.score
+                        });
+                    }
+                });
+            }
+
+            dataForCalculation.upcomingLowScoreYears = lowScoreYears;
+            dataForCalculation.upcomingScoreWindow = { startAge: futureStartAge, endAge: futureEndAge };
+        } catch (e) {
+            console.warn('計算未來低分歲數時發生錯誤:', e);
+            dataForCalculation.upcomingLowScoreYears = [];
+        }
+
         currentChartData = dataForCalculation; 
 
         // --- ▼▼▼ 將主要計算結果渲染到畫面上 ▼▼▼ ---

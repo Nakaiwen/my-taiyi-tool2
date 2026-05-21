@@ -3211,16 +3211,34 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     }
     const huaYaoResults = calculateAllHuaYao(data.yearPillar.charAt(0), data.dayPillar.charAt(0), data.dayPillar.charAt(1));
     const starToHuaYaoMap = {};
+    // ▼▼▼ 新增：化曜分層 map（供 Skill 區分來源用，保留合併版 huaYao 給原有邏輯）▼▼▼
+    const starToHuaYaoMap_BirthYear      = {}; // 本命年干化曜
+    const starToHuaYaoMap_BirthDayStem   = {}; // 本命日干化曜
+    const starToHuaYaoMap_BirthDayBranch = {}; // 本命日支化曜
+    const sourceTypeToLayeredMap = {
+        'nianGan': starToHuaYaoMap_BirthYear,
+        'riGan':   starToHuaYaoMap_BirthDayStem,
+        'riZhi':   starToHuaYaoMap_BirthDayBranch
+    };
     if (huaYaoResults) {
         Object.keys(huaYaoResults).forEach(sourceType => {
             const roles = huaYaoResults[sourceType];
+            const layeredMap = sourceTypeToLayeredMap[sourceType];
             Object.keys(roles).forEach(roleName => {
                 const starNames = roles[roleName].split(' ').filter(Boolean);
                 starNames.forEach(starName => {
                     if (!starToHuaYaoMap[starName]) starToHuaYaoMap[starName] = [];
+                    if (layeredMap && !layeredMap[starName]) layeredMap[starName] = [];
                     const chineseRoleName = HUA_YAO_ROLE_MAP[roleName];
-                    if (chineseRoleName && !starToHuaYaoMap[starName].includes(chineseRoleName)) {
-                        starToHuaYaoMap[starName].push(chineseRoleName);
+                    if (chineseRoleName) {
+                        // 合併版：跨層去重（原有行為，不變）
+                        if (!starToHuaYaoMap[starName].includes(chineseRoleName)) {
+                            starToHuaYaoMap[starName].push(chineseRoleName);
+                        }
+                        // 分層版：每層各自去重
+                        if (layeredMap && !layeredMap[starName].includes(chineseRoleName)) {
+                            layeredMap[starName].push(chineseRoleName);
+                        }
                     }
                 });
             });
@@ -3235,6 +3253,10 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             if (starToHuaYaoMap[starName]) {
                 model[palaceId].stars[starName].huaYao = starToHuaYaoMap[starName];
             }
+            // ▼▼▼ 新增：寫入三層化曜資料（每顆星都會有這三個欄位，沒化曜時為空陣列）▼▼▼
+            model[palaceId].stars[starName].huaYaoFromBirthYear      = starToHuaYaoMap_BirthYear[starName]      || [];
+            model[palaceId].stars[starName].huaYaoFromBirthDayStem   = starToHuaYaoMap_BirthDayStem[starName]   || [];
+            model[palaceId].stars[starName].huaYaoFromBirthDayBranch = starToHuaYaoMap_BirthDayBranch[starName] || [];
         });
     });
     const xiaoYouPalaceId = BRANCH_TO_PALACE_ID[allStars['小遊']];
@@ -4141,7 +4163,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
     }
 
     // ▼▼▼ (已整合寄宮規則) 分析年干化曜所在宮位的函式 ▼▼▼
-    function analyzeAnnualHuaYaoPalaces(annualStem, chartModel, arrangedLifePalaces, lookupResult, suanStarsResult) {
+    function analyzeAnnualHuaYaoPalaces(annualStem, chartModel, arrangedLifePalaces, lookupResult, suanStarsResult, structuredOut /* 可選：傳入陣列接住結構化結果 */) {
         if (!annualStem || !chartModel || !lookupResult) {
             return '無法分析';
         }
@@ -4200,6 +4222,19 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
                         const lifePalaceName = arrangedLifePalaces[palaceIndex];
                         const chineseRoleName = HUA_YAO_ROLE_MAP[role];
                         results.push(`${chineseRoleName}(${starName})在${lifePalaceName}宮`);
+                        // ▼▼▼ 新增：同時寫入結構化版本（供 Skill 用）▼▼▼
+                        if (structuredOut) {
+                            const dedupKey = `${chineseRoleName}|${starName}|${finalPalaceId}`;
+                            if (!structuredOut.some(s => `${s.role}|${s.star}|${s.palaceId}` === dedupKey)) {
+                                structuredOut.push({
+                                    role: chineseRoleName,
+                                    star: starName,
+                                    palaceId: finalPalaceId,
+                                    palaceShortName: lifePalaceName,
+                                    palaceFullName: PALACE_FULL_NAME_MAP[lifePalaceName] || lifePalaceName
+                                });
+                            }
+                        }
                     }
                 }
             });
@@ -5723,6 +5758,11 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             transitActivations = getTransitDayPalaceActivation(dataForCalculation.transitGanZhi, dataForCalculation.chartModel, newLifePalacesData, dataForCalculation.suanStarsResult, lookupResult, realTransitDayJishu);
         }
 
+        // ▼▼▼ 新增：把三個引動結果寫回 dataForCalculation，存檔時會自動帶到 JSON ▼▼▼
+        dataForCalculation.annualActivations = activations;
+        dataForCalculation.dayActivations = dayActivations;
+        dataForCalculation.transitActivations = transitActivations;
+
         // ▼▼▼ 呼叫繪圖函式 ▼▼▼
         renderChart(newMainChartData, newLifePalacesData, newAgeLimitData, newSdrData, centerData, outerRingData, xingNianData, yangJiuForDisplay, baiLiuForDisplay, dataForCalculation.baiLiuXiaoXianResult, daYouForDisplay, dataForCalculation.feiLuDaXianResult, dataForCalculation.feiMaDaXianResult, dataForCalculation.feiMaLiuNianResult, dataForCalculation.feiLuLiuNianResult, dataForCalculation.heiFuResult, activations, dataForCalculation.targetYear, 
         dayActivations, transitActivations, dataForCalculation.transitMonth, dataForCalculation.transitDay); 
@@ -6214,7 +6254,10 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         dataForCalculation.annualChangingHexagramResult = calculateAnnualChangingHexagram(dataForCalculation.annualHexagramResult, dataForCalculation.baiLiuResult, dataForCalculation.currentUserAge);
         dataForCalculation.monthlyHexagramsResult = calculateMonthlyHexagrams(dataForCalculation.annualHexagramResult?.number);
         dataForCalculation.chartModel = buildChartModel(dataForCalculation);
-        dataForCalculation.annualHuaYaoInfo = analyzeAnnualHuaYaoPalaces(dataForCalculation.annualPillar.charAt(0), dataForCalculation.chartModel, arrangedLifePalaces, dataForCalculation.lookupResult, dataForCalculation.suanStarsResult);
+        // ▼▼▼ 新增：傳入結構化輸出陣列，讓 Skill 不必 parse 字串 ▼▼▼
+        const annualHuaYaoStructured = [];
+        dataForCalculation.annualHuaYaoInfo = analyzeAnnualHuaYaoPalaces(dataForCalculation.annualPillar.charAt(0), dataForCalculation.chartModel, arrangedLifePalaces, dataForCalculation.lookupResult, dataForCalculation.suanStarsResult, annualHuaYaoStructured);
+        dataForCalculation.annualHuaYaoStructured = annualHuaYaoStructured;
         dataForCalculation.tenGodsAnalysis = analyzeTenGods(dataForCalculation.dayMasterData, dataForCalculation.annualPillar);
         dataForCalculation.tianKeDiChongYears = findTianKeDiChongYears(dataForCalculation.dayPillar, new Date().getFullYear(), 2050);
         dataForCalculation.yangJiuResult = calculateYangJiu(dataForCalculation.monthPillar.charAt(0), dataForCalculation.gender);

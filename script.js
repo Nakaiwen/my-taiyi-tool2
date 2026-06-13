@@ -4999,6 +4999,31 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             if (!canvas.width || !canvas.height) return;
 
             const sliceHeightPx = Math.floor(contentHeight * canvas.width / contentWidth);
+
+            // 計算「不可被分頁切斷」的區塊（標記為 .pdf-no-break，例如太乙命盤、趨勢圖）
+            // 在整張長圖上的垂直範圍（換算成 canvas 像素）。
+            // 命盤是太乙人道命法最重要的圖，必須完整落在同一頁。
+            const totalLayoutHeight = element.scrollHeight || canvas.height;
+            const pxRatio = canvas.height / totalLayoutHeight;
+            function topWithinElement(node, root) {
+                let y = 0;
+                let cur = node;
+                while (cur && cur !== root) {
+                    y += cur.offsetTop || 0;
+                    cur = cur.offsetParent;
+                    if (cur && cur !== root && !root.contains(cur)) break;
+                }
+                return y;
+            }
+            const noBreakBlocks = Array.from(element.querySelectorAll('.pdf-no-break'))
+                .map(node => {
+                    const top = topWithinElement(node, element) * pxRatio;
+                    const height = (node.offsetHeight || 0) * pxRatio;
+                    return { top, bottom: top + height, height };
+                })
+                // 只保護「本身就能放進一頁」的區塊；比一頁還高的（如長篇摘要）無法避免切割。
+                .filter(b => b.height > 0 && b.height <= sliceHeightPx - 1);
+
             let offsetY = 0;
             let pageIndex = 0;
 
@@ -5009,7 +5034,21 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
                 }
 
                 const remaining = canvas.height - offsetY;
-                const sliceHeight = Math.min(sliceHeightPx, remaining);
+                let sliceHeight = Math.min(sliceHeightPx, remaining);
+
+                // 若這一頁的底部切點會切過某個不可分割區塊，
+                // 就把這一頁提早結束在該區塊的上緣，讓它整塊移到下一頁。
+                if (sliceHeight < remaining) {
+                    let cut = offsetY + sliceHeight;
+                    for (const b of noBreakBlocks) {
+                        if (b.top > offsetY + 1 && b.top < cut && b.bottom > cut) {
+                            cut = Math.min(cut, b.top);
+                        }
+                    }
+                    const adjusted = Math.round(cut - offsetY);
+                    if (adjusted > 0) sliceHeight = adjusted;
+                }
+
                 addSlice(canvas, offsetY, sliceHeight);
 
                 offsetY += sliceHeight;
@@ -5126,19 +5165,80 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const svg = document.querySelector(svgSelector);
         if (!svg) return '';
         try {
+            // 等字型載入完成，盤面文字才會以正確字型量測位置。
+            if (document.fonts && document.fonts.ready) {
+                try { await document.fonts.ready; } catch (e) {}
+            }
+
+            // 把畫面上「實際算出的樣式」逐一寫進複本，
+            // 這樣序列化後的 SVG 不必依賴外部 CSS（class），
+            // 顏色（彩色宮位、彩色星名、八門紅圈）與文字才能忠實呈現，
+            // 等同把螢幕上的盤面直接拍下來。
             const clonedSvg = svg.cloneNode(true);
+            const liveEls = [svg, ...svg.querySelectorAll('*')];
+            const cloneEls = [clonedSvg, ...clonedSvg.querySelectorAll('*')];
+            const styleProps = [
+                'fill', 'stroke', 'stroke-width', 'stroke-miterlimit',
+                'opacity', 'fill-opacity', 'stroke-opacity',
+                'font-family', 'font-size', 'font-weight', 'font-style',
+                'text-anchor', 'dominant-baseline', 'display', 'visibility',
+                // 星名為直式排列，需保留書寫方向相關屬性，否則會變回橫式。
+                'writing-mode', 'text-orientation', 'glyph-orientation-vertical',
+                'letter-spacing', 'word-spacing', 'white-space', 'direction'
+            ];
+            const count = Math.min(liveEls.length, cloneEls.length);
+            for (let i = 0; i < count; i++) {
+                const cs = window.getComputedStyle(liveEls[i]);
+                let inline = '';
+                for (const prop of styleProps) {
+                    const value = cs.getPropertyValue(prop);
+                    if (value) inline += `${prop}:${value};`;
+                }
+                if (inline) cloneEls[i].setAttribute('style', inline);
+            }
+
+            // 盤面的星名／數字是以淡入動畫（.star-visible 由 opacity:0→1）呈現，
+            // 匯出時可能還沒淡入完成。這裡在複本上強制設為最終可見狀態，
+            // 確保所有星曜文字都會出現在 PDF 裡。
+            clonedSvg.querySelectorAll('.dynamic-text').forEach(el => {
+                el.style.opacity = '1';
+                el.style.visibility = 'visible';
+            });
+
             clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+            // 內嵌標楷體子集：序列化後的 SVG 以 <img> 載入時無法存取外部字型，
+            // 因此把命盤用字的楷體子集（base64）以 @font-face 寫進 SVG，
+            // 命盤文字才會是楷體（而非系統備用字型）。
+            if (window.__BIAUKAI_PLATE_FONT) {
+                const fontStyle = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+                fontStyle.setAttribute('type', 'text/css');
+                fontStyle.textContent =
+                    "@font-face{font-family:'BiauKaiWeb';" +
+                    "src:url(" + window.__BIAUKAI_PLATE_FONT + ") format('woff2');" +
+                    "font-weight:normal;font-style:normal;}";
+                clonedSvg.insertBefore(fontStyle, clonedSvg.firstChild);
+            }
+
+            // 用 viewBox 的原始比例輸出，避免變形；再以較高倍率提升清晰度。
+            const viewBox = (svg.getAttribute('viewBox') || '0 0 793.05 826.32').split(/[\s,]+/).map(Number);
+            const baseWidth = viewBox[2] || 793.05;
+            const baseHeight = viewBox[3] || 826.32;
+            clonedSvg.setAttribute('width', baseWidth);
+            clonedSvg.setAttribute('height', baseHeight);
+
             const serializer = new XMLSerializer();
             const svgString = serializer.serializeToString(clonedSvg);
             const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const img = new Image();
+            const exportScale = 3;
             const dataUrl = await new Promise((resolve, reject) => {
                 img.onload = () => {
                     try {
                         const canvas = document.createElement('canvas');
-                        canvas.width = 1200;
-                        canvas.height = 1250;
+                        canvas.width = Math.round(baseWidth * exportScale);
+                        canvas.height = Math.round(baseHeight * exportScale);
                         const ctx = canvas.getContext('2d');
                         ctx.fillStyle = '#fffaf0';
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -5260,9 +5360,9 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const targetYear = pdfSafeValue('target-year', data?.targetYear || new Date().getFullYear());
         const generatedDate = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
         const fourPillars = pdfFourPillarsText(data);
-        const mainSummary = pdfHtml('#calculation-summary', '<p>尚無摘要內容。</p>');
-        const aiMonthly = pdfFormatMonthlyGuaSections(pdfVisibleHtml('#ai-summary-output'));
-        const aiYearly = pdfFormatMonthlyGuaSections(pdfVisibleHtml('#n8n-ai-output'));
+        // 摘要原本就以 \n 逐項分行撰寫，PDF 需保留 white-space: pre-wrap 才會斷行條列，
+        // 與排盤工具上的顯示一致。
+        const mainSummary = `<div class="pdf-summary-prewrap" style="white-space: pre-wrap; line-height: 1.9;">${pdfHtml('#calculation-summary', '尚無摘要內容。')}</div>`;
 
         const coreInfo = [
             pdfInfoCard('姓名', userName),
@@ -5282,26 +5382,20 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             pdfInfoCard('五行互動', pdfSafeText('#element-interaction-info'))
         ].join('');
 
+        // 「格局強弱」「補救建議」「趨勢圖」依使用者需求不放入 PDF（自行於排盤工具查看即可）。
         const sideDetails = [
             pdfVisibleHtml('#star-strength-info') ? pdfSection('星曜強弱', pdfVisibleHtml('#star-strength-info'), 'pdf-compact') : '',
             pdfVisibleHtml('#luma-info') ? pdfSection('祿馬資訊', pdfVisibleHtml('#luma-info'), 'pdf-compact') : '',
-            pdfVisibleHtml('#kejia-years-info') ? pdfSection('科甲年提示', pdfVisibleHtml('#kejia-years-info'), 'pdf-compact') : '',
-            pdfVisibleHtml('#strength-info') ? pdfSection('格局強弱', pdfVisibleHtml('#strength-info'), 'pdf-compact') : '',
-            pdfVisibleHtml('#remedy-info') ? pdfSection('補救建議', pdfVisibleHtml('#remedy-info'), 'pdf-compact') : ''
+            pdfVisibleHtml('#kejia-years-info') ? pdfSection('科甲年提示', pdfVisibleHtml('#kejia-years-info'), 'pdf-compact') : ''
         ].join('');
 
         const plateBlock = plateImage ? `<div class="pdf-plate-frame"><img src="${plateImage}" alt="太乙命盤"></div>` : '<p>命盤圖片尚未產生。</p>';
-        const chartBlock = chartImage ? `<div class="pdf-chart-frame"><img src="${chartImage}" alt="行年趨勢圖"></div>` : '';
-        const aiBlock = [
-            aiYearly ? pdfSection('AI 年運解說', aiYearly, 'pdf-ai-section') : '',
-            aiMonthly ? pdfSection('AI 月運／流日解說', aiMonthly, 'pdf-ai-section') : ''
-        ].join('') || '<p class="pdf-muted">尚未產生 AI 解說內容。若需要完整 AI 解說，請先點擊頁面中的 AI 解說按鈕，再輸出 PDF。</p>';
 
         return `
             <div class="pdf-cover">
                 <div class="pdf-kicker">TAIYI HUMAN DESTINY REPORT</div>
                 <h1>太乙人道命法排盤報告</h1>
-                <p>以太乙盤面、四柱資訊、限例趨勢與 AI 解說整理成正式報告。</p>
+                <p>以太乙盤面、四柱資訊、命盤要素與限例趨勢整理成完整報告。</p>
                 <div class="pdf-cover-meta">
                     <span>姓名：${userName}</span>
                     <span>年份：${targetYear}</span>
@@ -5326,9 +5420,7 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             </section>
 
             ${pdfSection('四、限例與流年推演', mainSummary)}
-            ${chartBlock ? pdfSection('五、趨勢圖', chartBlock, 'pdf-no-break') : ''}
             ${sideDetails}
-            ${pdfSection('六、AI 解說', aiBlock)}
 
             <div class="pdf-footer-note">
                 本報告依據輸入資料與系統排盤結果產生，適合作為趨勢參考與命理研究紀錄。
@@ -6505,16 +6597,8 @@ if (switchToNationalBtn) {
                 const headerHtml = generatePersonalInfoHeaderHTML(currentChartData, '能量趨勢報告');
                 n8nAiOutput.innerHTML = headerHtml + marked.parse(aiMarkdownContent);
 
-                downloadBtn.disabled = false; 
-                
-                // ▼▼▼ 修正點：呼叫新的 PDF 函式，並傳入年度報告的資訊 ▼▼▼
-                downloadBtn.onclick = function() {
-                    generatePdfReport(
-                        currentChartData, 
-                        'n8n-ai-output', 
-                        `${currentChartData.targetYear}年運勢報告`
-                    );
-                };
+                downloadBtn.disabled = false;
+                // 「輸出PDF報告」固定匯出整個盤面資訊，這裡不再覆寫其點擊行為。
             }
         });
     } else {
@@ -6553,16 +6637,9 @@ if (switchToNationalBtn) {
             const headerHtml = generatePersonalInfoHeaderHTML(currentChartData, '本月運勢深度解析');
             aiSummaryOutput.innerHTML = headerHtml + marked.parse(summaryText);
 
-            // ▼▼▼ 修正點 2：在產生報告後，啟用下載按鈕並綁定新任務 ▼▼▼
+            // 「輸出PDF報告」固定匯出整個盤面資訊，這裡只啟用按鈕、不再覆寫其點擊行為。
             if (downloadBtn) {
                 downloadBtn.disabled = false;
-                downloadBtn.onclick = function() {
-                    generatePdfReport(
-                        currentChartData,
-                        'ai-summary-output',
-                        `${currentChartData.targetYear}年${currentLunarDateStr}運勢報告`
-                    );
-                };
             }
         });
 }

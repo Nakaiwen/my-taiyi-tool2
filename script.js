@@ -5143,9 +5143,13 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         const y = pdfSafeValue('birth-year');
         const m = pdfSafeValue('birth-month');
         const d = pdfSafeValue('birth-day');
-        const h = pdfSafeValue('birth-hour');
-        if (y !== '—' && m !== '—' && d !== '—') return `${y} 年 ${m} 月 ${d} 日 ${h} 時`;
-        return data?.birthDate ? `${data.birthDate} ${h}時` : '—';
+        // 出生時間以時辰名稱顯示（取下拉選單目前選中的文字，例如「辰時 (07–09)」）。
+        const hourSelect = document.getElementById('birth-hour');
+        const shichen = (hourSelect && hourSelect.selectedOptions && hourSelect.selectedOptions[0])
+            ? hourSelect.selectedOptions[0].textContent.trim()
+            : '—';
+        if (y !== '—' && m !== '—' && d !== '—') return `${y} 年 ${m} 月 ${d} 日　${shichen}`;
+        return data?.birthDate ? `${data.birthDate}　${shichen}` : '—';
     }
 
     function pdfFourPillarsText(data) {
@@ -5739,7 +5743,24 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
         for (let i = 2050; i >= 1930; i--) { const option = document.createElement('option'); option.value = i; option.textContent = i; yearSelect.appendChild(option); }
         for (let i = 1; i <= 12; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; monthSelect.appendChild(option); }
         for (let i = 1; i <= 31; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; daySelect.appendChild(option); }
-        for (let i = 0; i <= 23; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; hourSelect.appendChild(option); }
+        // 出生時間以「時辰」呈現。value 仍為整數小時，沿用既有排盤計算邏輯：
+        //   早子時(子時)=0、夜子時=23（引擎以此區分日柱是否進位），其餘時辰取代表小時。
+        const SHICHEN_OPTIONS = [
+            { value: 0,  label: '子時 (23–01)' },
+            { value: 2,  label: '丑時 (01–03)' },
+            { value: 4,  label: '寅時 (03–05)' },
+            { value: 6,  label: '卯時 (05–07)' },
+            { value: 8,  label: '辰時 (07–09)' },
+            { value: 10, label: '巳時 (09–11)' },
+            { value: 12, label: '午時 (11–13)' },
+            { value: 14, label: '未時 (13–15)' },
+            { value: 16, label: '申時 (15–17)' },
+            { value: 18, label: '酉時 (17–19)' },
+            { value: 20, label: '戌時 (19–21)' },
+            { value: 22, label: '亥時 (21–23)' },
+            { value: 23, label: '夜子時 (23–00)' }
+        ];
+        SHICHEN_OPTIONS.forEach(o => { const option = document.createElement('option'); option.value = o.value; option.textContent = o.label; hourSelect.appendChild(option); });
         document.getElementById('target-year').value = new Date().getFullYear();
 
         // ▼▼▼ 處理流月、流日下拉選單與 Checkbox 的聯動 ▼▼▼
@@ -6526,7 +6547,17 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
                         document.getElementById('birth-month').value = m;
                         document.getElementById('birth-day').value = d;
                     }
-                    if (importedData.birthHour !== undefined) document.getElementById('birth-hour').value = importedData.birthHour;
+                    if (importedData.birthHour !== undefined) {
+                        // 舊存檔的出生時間可能是 0–23 任一小時，需對齊到新的時辰選項值，
+                        // 才能正確選中且維持相同排盤結果（夜子時 23、早子時 0 保留區分）。
+                        const h = parseInt(importedData.birthHour, 10);
+                        let shichenValue;
+                        if (isNaN(h)) shichenValue = '8';
+                        else if (h === 23) shichenValue = '23';
+                        else if (h <= 0) shichenValue = '0';
+                        else shichenValue = String(h % 2 === 0 ? h : h + 1);
+                        document.getElementById('birth-hour').value = shichenValue;
+                    }
                     if (importedData.gender === '男') document.getElementById('gender-male').checked = true;
                     else document.getElementById('gender-female').checked = true;
 

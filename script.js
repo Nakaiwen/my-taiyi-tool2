@@ -5899,6 +5899,8 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
 
         const shenPalaceId = Object.keys(newSdrData).find(k => newSdrData[k].includes('身'));
         const shenPalaceBranch = shenPalaceId ? PALACE_ID_TO_BRANCH[shenPalaceId] : '計算失敗';
+        // 身宮地支隨存檔 JSON 帶出（currentChartData 與 dataForCalculation 為同一物件），供命書圓盤頁顯示。
+        dataForCalculation.shenPalaceBranch = shenPalaceBranch;
         const shouQiResult = dataForCalculation.shouQiResult;
         const birthHexagramResult = dataForCalculation.birthHexagramResult;
         const liYeHexagramResult = dataForCalculation.liYeHexagramResult;
@@ -6484,7 +6486,59 @@ function renderFortuneChart(ageLabels, scoreData, overlapFlags) {
             dataForCalculation.upcomingLowScoreYears = [];
         }
 
-        currentChartData = dataForCalculation; 
+        // ▼▼▼ 十二宮主星摘要（供命書「本命十二宮」逐宮解說、並隨存檔 JSON 帶出）▼▼▼
+        // 與下方資訊區同邏輯：本宮 + 寄宮（乾寄亥/艮寄寅/巽寄巳/坤寄申），過濾非論斷星；
+        // 本宮+寄宮皆無星時借對宮，並標註每顆星來源（本宮/寄宮/借對宮）。
+        try {
+            const _palaceFullNameMap = { '命':'命宮','父':'父母宮','貌':'相貌宮','福':'福德宮','疾':'疾厄宮','奴':'奴僕宮','官':'官祿宮','田':'田宅宮','財':'財帛宮','孫':'子孫宮','妻':'夫妻宮','兄':'兄弟宮' };
+            const _cm = dataForCalculation.chartModel || {};
+            const _collectStars = (pid, source) => {
+                const out = [];
+                if (pid && _cm[pid] && _cm[pid].stars) {
+                    Object.values(_cm[pid].stars).forEach(s => {
+                        if (!EXCLUDED_STARS_FROM_ANALYSIS.includes(s.name) && s.name !== '皇恩星') {
+                            out.push({ name: s.name, source: source, huaYao: s.huaYao || [] });
+                        }
+                    });
+                }
+                return out;
+            };
+            const _starsForPalace = (pid) => {
+                let arr = _collectStars(pid, '本宮');
+                const guestPid = Object.keys(JI_GONG_MAP).find(k => JI_GONG_MAP[k] === pid);
+                if (guestPid) arr = arr.concat(_collectStars(guestPid, '寄宮'));
+                return arr;
+            };
+            const _summary = [];
+            (dataForCalculation.arrangedLifePalaces || []).forEach((shortName, i) => {
+                const pid = VALID_PALACES_CLOCKWISE[i];
+                if (!pid) return;
+                let stars = _starsForPalace(pid);
+                const emptyNative = stars.length === 0;
+                let borrowed = false;
+                if (emptyNative) {
+                    const oppId = OPPOSITE_PALACE_MAP[pid];
+                    const opp = _starsForPalace(oppId).map(s => ({ name: s.name, source: '借對宮', huaYao: s.huaYao }));
+                    if (opp.length) { stars = opp; borrowed = true; }
+                }
+                _summary.push({
+                    order: i + 1,
+                    palaceId: pid,
+                    branch: PALACE_ID_TO_BRANCH[pid] || '',
+                    shortName: shortName,
+                    fullName: _palaceFullNameMap[shortName] || shortName,
+                    mainStars: stars,
+                    isEmptyNative: emptyNative,
+                    borrowedFromOpposite: borrowed
+                });
+            });
+            dataForCalculation.lifePalacesSummary = _summary;
+        } catch (e) {
+            console.warn('組十二宮主星摘要時發生錯誤:', e);
+            dataForCalculation.lifePalacesSummary = [];
+        }
+
+        currentChartData = dataForCalculation;
 
         // --- ▼▼▼ 將主要計算結果渲染到畫面上 ▼▼▼ ---
         // 注意：剛剛的流年感應文字，老師傅裡面已經寫好了，所以這裡不用再重複寫！
